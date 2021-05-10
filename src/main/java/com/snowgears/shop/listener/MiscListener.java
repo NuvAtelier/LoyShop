@@ -13,6 +13,7 @@ import com.snowgears.shop.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.block.*;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.Rotatable;
@@ -436,6 +437,15 @@ public class MiscListener implements Listener {
                 }
 
                 ItemStack shopItem = player.getInventory().getItemInMainHand();
+
+                //stop the edge case of shulker boxes being able to be used in shulker chests
+                if(Tag.SHULKER_BOXES.isTagged(shopItem.getType())){
+                    if(shop.getChestLocation().getBlock().getState() instanceof ShulkerBox){
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+
                 if (shop.getItemStack() == null) {
 
                     PlayerInitializeShopEvent e = new PlayerInitializeShopEvent(player, shop);
