@@ -9,10 +9,7 @@ import com.snowgears.shop.handler.EnderChestHandler;
 import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.handler.ShopHandler;
 import com.snowgears.shop.listener.*;
-import com.snowgears.shop.util.ItemNameUtil;
-import com.snowgears.shop.util.PriceUtil;
-import com.snowgears.shop.util.ShopMessage;
-import com.snowgears.shop.util.UtilMethods;
+import com.snowgears.shop.util.*;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -84,6 +81,23 @@ public class Shop extends JavaPlugin {
 
     public static Shop getPlugin() {
         return plugin;
+    }
+
+    //preload the main config.yml to look for the worldguard boolean, as it needs a flag registered before worldguard is enabled
+    @Override
+    public void onLoad(){
+        File configFile = new File(getDataFolder(), "config.yml");
+        if (!configFile.exists()) {
+            configFile.getParentFile().mkdirs();
+            UtilMethods.copy(getResource("config.yml"), configFile);
+        }
+        config = YamlConfiguration.loadConfiguration(configFile);
+
+        hookWorldGuard = config.getBoolean("hookWorldGuard");
+
+        if(hookWorldGuard){
+            WorldGuardHook.registerAllowShopFlag();
+        }
     }
 
     @Override
