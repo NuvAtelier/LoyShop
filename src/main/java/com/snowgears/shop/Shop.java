@@ -54,6 +54,7 @@ public class Shop extends JavaPlugin {
     private boolean enableGUI;
     private boolean useVault;
     private boolean hookWorldGuard;
+    private boolean hookTowny;
     private String commandAlias;
     private DisplayType displayType;
     private DisplayTagOption displayNameTags;
@@ -193,6 +194,7 @@ public class Shop extends JavaPlugin {
         //enableMetrics = config.getBoolean("enableMetrics");
         enableGUI = config.getBoolean("enableGUI");
         hookWorldGuard = config.getBoolean("hookWorldGuard");
+        hookTowny = config.getBoolean("hookTowny");
         commandAlias = config.getString("commandAlias");
         checkItemDurability = config.getBoolean("checkItemDurability");
         allowCreativeSelection = config.getBoolean("allowCreativeSelection");
@@ -371,6 +373,10 @@ public class Shop extends JavaPlugin {
 
     public boolean hookWorldGuard(){
         return hookWorldGuard;
+    }
+
+    public boolean hookTowny(){
+        return hookTowny;
     }
 
     public DisplayType getDisplayType(){

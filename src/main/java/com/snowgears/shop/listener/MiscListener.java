@@ -1,5 +1,10 @@
 package com.snowgears.shop.listener;
 
+import com.palmergames.bukkit.towny.TownyAPI;
+import com.palmergames.bukkit.towny.TownyUniverse;
+import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
+import com.palmergames.bukkit.towny.object.Resident;
+import com.palmergames.bukkit.towny.object.Town;
 import com.snowgears.shop.AbstractShop;
 import com.snowgears.shop.SellShop;
 import com.snowgears.shop.Shop;
@@ -121,11 +126,32 @@ public class MiscListener implements Listener {
                     }
                 }
 
+                //do a check for the WorldGuard region (optional hook)
                 boolean canCreateShopInRegion = true;
                 try {
                     canCreateShopInRegion = WorldGuardHook.canCreateShop(player, b.getLocation());
                 } catch (NoClassDefFoundError e) {
                 }
+
+                //do a check for the Towny region (optional hook)
+                try {
+                    if(plugin.hookTowny()) {
+                        if (!TownyAPI.getInstance().isWilderness(player.getLocation())) {
+                            Town town = TownyAPI.getInstance().getTownBlock(player.getLocation()).getTown();
+                            Resident resident = TownyUniverse.getInstance().getResident(player.getUniqueId());
+                            if (!resident.getTown().equals(town)) {
+                                canCreateShopInRegion = false;
+                            }
+                        }
+                    }
+                } catch (NotRegisteredException e) {
+                    //Code put here can also be code that ought to be run if the player is in the wilderness and not a town.
+                    e.printStackTrace();
+                }
+
+                //make sure players who are OPs are always allowed to create shops in the region
+                if (player.isOp() || (plugin.usePerms() && player.hasPermission("shop.operator")))
+                    canCreateShopInRegion = true;
 
                 if (!canCreateShopInRegion) {
                     player.sendMessage(ShopMessage.getMessage("interactionIssue", "regionRestriction", null, player));
