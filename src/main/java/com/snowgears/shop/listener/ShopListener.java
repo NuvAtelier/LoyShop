@@ -163,7 +163,7 @@ public class ShopListener implements Listener {
                     }
                 }
                 //non-owner is trying to open shop
-                if (!shop.getOwnerName().equals(player.getName())) {
+                if (!shop.getOwnerUUID().equals(player.getUniqueId())) {
                     if ((plugin.usePerms() && player.hasPermission("shop.operator")) || player.isOp()) {
                         if (shop.isAdmin()) {
                             if (shop.getType() == ShopType.GAMBLE) {

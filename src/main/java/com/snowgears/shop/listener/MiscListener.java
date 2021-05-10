@@ -656,25 +656,8 @@ public class MiscListener implements Listener {
             else if(b.getType() == Material.ENDER_CHEST)
                 return;
 
-            Block shopChestBlock = shop.getChestLocation().getBlock();
-
-            //prevent placing the chest behind current shop (changing its direction)
-            if(shopChestBlock.getRelative(shop.getFacing().getOppositeFace()).getLocation().equals(b.getLocation())){
-                event.setCancelled(true);
-                return;
-            }
-
-         //   DirectionalContainer chest = (DirectionalContainer) b.getState().getData();
-            BlockFace chestFacing = UtilMethods.getDirectionOfChest(b);
-
-            //prevent placing the chest next to the shop but facing the opposite direction (changing its direction)
-            if(chestFacing == shop.getFacing().getOppositeFace()){
-                event.setCancelled(true);
-                return;
-            }
-
             //owner is trying to
-            if (shop.getOwnerName().equals(player.getName())) {
+            if (shop.getOwnerUUID().equals(player.getUniqueId())) {
                 PlayerResizeShopEvent e = new PlayerResizeShopEvent(player, shop, b.getLocation(), true);
                 Bukkit.getPluginManager().callEvent(e);
 

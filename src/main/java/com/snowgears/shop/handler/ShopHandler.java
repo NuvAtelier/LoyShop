@@ -34,6 +34,7 @@ public class ShopHandler {
     private HashMap<Location, AbstractShop> allShops = new HashMap<>();
     private ArrayList<Material> shopMaterials = new ArrayList<Material>();
     private UUID adminUUID;
+    private BlockFace[] directions = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
 
     private ArrayList<UUID> playersSavingShops = new ArrayList<>();
 
@@ -62,14 +63,45 @@ public class ShopHandler {
     public AbstractShop getShopByChest(Block shopChest) {
 
         try {
-            if(shopChest.getState() instanceof ShulkerBox || shopChest.getState() instanceof Barrel){
-                BlockFace[] directions = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
+            if(isChest(shopChest)) {
+
                 AbstractShop shop = null;
-                for(BlockFace direction : directions){
+                InventoryHolder ih = null;
+
+                //if the shop is a single chest or double chest, add the chest blocks to check
+                if (shopChest.getState() instanceof Chest) {
+                    Chest chest = (Chest) shopChest.getState();
+                    ih = chest.getInventory().getHolder();
+
+                    if (ih instanceof DoubleChest) {
+
+                        DoubleChest dc = (DoubleChest) ih;
+                        Chest leftChest = (Chest) dc.getLeftSide();
+                        Chest rightChest = (Chest) dc.getRightSide();
+
+                        for (BlockFace direction : directions) {
+                            shop = this.getShop(leftChest.getBlock().getRelative(direction).getLocation());
+                            if (shop != null) {
+                                //make sure the shop sign you found is actually attached to the correct shop
+                                if (shop.getChestLocation().equals(leftChest.getLocation()) || shop.getChestLocation().equals(rightChest.getLocation()))
+                                    return shop;
+                            }
+                            shop = this.getShop(rightChest.getBlock().getRelative(direction).getLocation());
+                            if (shop != null) {
+                                //make sure the shop sign you found is actually attached to the correct shop
+                                if (shop.getChestLocation().equals(leftChest.getLocation()) || shop.getChestLocation().equals(rightChest.getLocation()))
+                                    return shop;
+                            }
+                        }
+                        return null;
+                    }
+                }
+
+                for (BlockFace direction : directions) {
                     shop = this.getShop(shopChest.getRelative(direction).getLocation());
-                    if(shop != null) {
+                    if (shop != null) {
                         //make sure the shop sign you found is actually attached to the correct shop
-                        if(shop.getChestLocation().equals(shopChest.getLocation()))
+                        if (shop.getChestLocation().equals(shopChest.getLocation()))
                             return shop;
                     }
                 }
