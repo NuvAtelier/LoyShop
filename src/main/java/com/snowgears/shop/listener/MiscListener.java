@@ -11,7 +11,6 @@ import com.snowgears.shop.event.PlayerInitializeShopEvent;
 import com.snowgears.shop.event.PlayerResizeShopEvent;
 import com.snowgears.shop.util.*;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.*;
@@ -349,11 +348,12 @@ public class MiscListener implements Listener {
                             if (!shop.isInitialized()) {
                                 plugin.getShopHandler().removeShop(shop);
                                 if (b.getBlockData() instanceof WallSign) {
+                                    String[] lines = ShopMessage.getTimeoutSignLines(shop);
                                     Sign sign = (Sign) b.getState();
-                                    sign.setLine(0, ChatColor.RED + "SHOP CLOSED");
-                                    sign.setLine(1, ChatColor.GRAY + "CREATION TIMEOUT");
-                                    sign.setLine(2, "");
-                                    sign.setLine(3, "");
+                                    sign.setLine(0, lines[0]);
+                                    sign.setLine(1, lines[1]);
+                                    sign.setLine(2, lines[2]);
+                                    sign.setLine(3, lines[3]);
                                     sign.update(true);
                                     plugin.getCreativeSelectionListener().removePlayerData(player);
                                 }

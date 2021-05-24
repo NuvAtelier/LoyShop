@@ -24,6 +24,7 @@ public class SellShop extends AbstractShop {
     @Override
     public TransactionError executeTransaction(int orders, Player player, boolean isCheck, ShopType transactionType) {
 
+        this.isPerformingTransaction = true;
         TransactionError issue = null;
         ItemStack is = this.getItemStack();
 
@@ -81,6 +82,7 @@ public class SellShop extends AbstractShop {
         player.updateInventory();
 
         if(issue != null){
+            this.isPerformingTransaction = false;
             return issue;
         }
 
@@ -90,13 +92,15 @@ public class SellShop extends AbstractShop {
             PlayerExchangeShopEvent e = new PlayerExchangeShopEvent(player, this);
             Bukkit.getPluginManager().callEvent(e);
 
-            if(e.isCancelled())
+            if(e.isCancelled()) {
+                this.isPerformingTransaction = false;
                 return TransactionError.CANCELLED;
+            }
 
             //run the transaction again without the check clause
             return executeTransaction(orders, player, false, transactionType);
         }
-
+        this.isPerformingTransaction = false;
         return TransactionError.NONE;
     }
 }

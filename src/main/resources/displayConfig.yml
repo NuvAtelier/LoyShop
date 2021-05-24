@@ -40,6 +40,8 @@
 # [owner] : The name of the shop owner #
 # [server name] : The name of the server #
 # [shop type] : The type of the shop (sell, buy, barter) #
+# [location] : The x,y,z coordinates of the shop sign #
+# [world] : The name of the world the shop is in #
 
 # [lshift] : shift location of entire nametag left #
 # [rshift] : shift location of entire nametag right #

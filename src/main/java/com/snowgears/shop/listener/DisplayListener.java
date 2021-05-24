@@ -49,16 +49,23 @@ public class DisplayListener implements Listener {
             //run task every 15 ticks
             Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                 ArrayList<AbstractShop> nonViewedShops = new ArrayList<>(viewedShops);
-                for(Player player : plugin.getServer().getOnlinePlayers()){
-                    Block block = player.getTargetBlock(null, 8);
-                    if(block.getBlockData() instanceof WallSign){
-                        AbstractShop shopObj = plugin.getShopHandler().getShop(block.getLocation());
-                        if(shopObj != null){
-                            shopObj.getDisplay().showNameTags();
-                            nonViewedShops.remove(shopObj);
-                            if (!viewedShops.contains(shopObj)) {
-                                viewedShops.add(shopObj);
+                for(Player player : plugin.getServer().getOnlinePlayers()) {
+                    if (player != null){
+                        try {
+                            Block block = player.getTargetBlock(null, 8);
+                            if (block.getBlockData() instanceof WallSign) {
+                                AbstractShop shopObj = plugin.getShopHandler().getShop(block.getLocation());
+                                if (shopObj != null) {
+                                    shopObj.getDisplay().showNameTags();
+                                    nonViewedShops.remove(shopObj);
+                                    if (!viewedShops.contains(shopObj)) {
+                                        viewedShops.add(shopObj);
+                                    }
+                                }
                             }
+                        }
+                        catch(IllegalStateException e){
+                            //do nothing, the block iterator missed a block for a player
                         }
                     }
                 }

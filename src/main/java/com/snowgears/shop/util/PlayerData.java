@@ -86,6 +86,7 @@ public class PlayerData {
         if(player == null)
             return;
         player.setGameMode(oldGameMode);
+        //System.out.println("[Shop] set old gamemode to "+oldGameMode.toString());
         removeFile();
     }
 

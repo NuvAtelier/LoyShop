@@ -28,6 +28,7 @@ public class ComboShop extends AbstractShop {
     //TODO incorporate # of orders at a time into this transaction
     @Override
     public TransactionError executeTransaction(int orders, Player player, boolean isCheck, ShopType transactionType) {
+        this.isPerformingTransaction = true;
         TransactionError issue;
         if(transactionType == ShopType.SELL){
             issue = executeSellTransaction(orders, player, isCheck);
@@ -35,6 +36,7 @@ public class ComboShop extends AbstractShop {
         else{
             issue = executeBuyTransaction(orders, player, isCheck);
         }
+        this.isPerformingTransaction = false;
         return issue;
     }
 

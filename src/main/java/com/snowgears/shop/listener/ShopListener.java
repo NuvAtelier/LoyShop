@@ -17,7 +17,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -226,18 +225,20 @@ public class ShopListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void signDetachCheck(BlockPhysicsEvent event) {
-        Block b = event.getBlock();
-        if (b.getBlockData() instanceof WallSign) {
-            if(plugin.getShopHandler() != null) {
-                AbstractShop shop = plugin.getShopHandler().getShop(b.getLocation());
-                if (shop != null) {
-                    event.setCancelled(true);
-                }
-            }
-        }
-    }
+    //THIS CODE IS BEING TEMPORARILY SUSPENDED
+    //it causes a lot of timing issues but may be needed for checking signs falling off of chests
+//    @EventHandler(priority = EventPriority.HIGHEST)
+//    public void signDetachCheck(BlockPhysicsEvent event) {
+//        Block b = event.getBlock();
+//        if (b.getBlockData() instanceof WallSign) {
+//            if(plugin.getShopHandler() != null) {
+//                AbstractShop shop = plugin.getShopHandler().getShop(b.getLocation());
+//                if (shop != null) {
+//                    event.setCancelled(true);
+//                }
+//            }
+//        }
+//    }
 
     @EventHandler
     public void onShopExpansion(BlockPlaceEvent event) {

@@ -55,6 +55,14 @@ public class TransactionListener implements Listener {
                 if (shop == null || !shop.isInitialized())
                     return;
 
+                if(shop.isPerformingTransaction()) {
+                    String message = ShopMessage.getMessage("interactionIssue", "useShopAlreadyInUse", shop, player);
+                    if(message != null && !message.isEmpty())
+                        player.sendMessage(message);
+                    event.setCancelled(true);
+                    return;
+                }
+
                 boolean canUseShopInRegion = true;
                 try {
                     canUseShopInRegion = WorldGuardHook.canUseShop(player, shop.getSignLocation());

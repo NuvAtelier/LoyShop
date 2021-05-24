@@ -30,14 +30,16 @@ public class GambleShop extends AbstractShop {
     @Override
     public TransactionError executeTransaction(int orders, Player player, boolean isCheck, ShopType transactionType) {
 
+        this.isPerformingTransaction = true;
         TransactionError issue = null;
 
         //check if shop has enough items
         if (!isAdmin()) {
             if(isCheck) {
                 int shopItems = InventoryUtils.getAmount(this.getInventory(), gambleItem);
-                if (shopItems < gambleItem.getAmount())
+                if (shopItems < gambleItem.getAmount()) {
                     issue = TransactionError.INSUFFICIENT_FUNDS_SHOP;
+                }
             }
             else {
                 //remove items from shop
@@ -49,8 +51,9 @@ public class GambleShop extends AbstractShop {
             if (isCheck) {
                 //check if player has enough currency
                 boolean hasFunds = EconomyUtils.hasSufficientFunds(player, player.getInventory(), this.getPrice());
-                if (!hasFunds)
+                if (!hasFunds) {
                     issue = TransactionError.INSUFFICIENT_FUNDS_PLAYER;
+                }
             } else {
                 //remove currency from player
                 EconomyUtils.removeFunds(player, player.getInventory(), this.getPrice());
@@ -86,6 +89,7 @@ public class GambleShop extends AbstractShop {
         player.updateInventory();
 
         if(issue != null){
+            this.isPerformingTransaction = false;
             return issue;
         }
 
@@ -95,8 +99,10 @@ public class GambleShop extends AbstractShop {
             PlayerExchangeShopEvent e = new PlayerExchangeShopEvent(player, this);
             Bukkit.getPluginManager().callEvent(e);
 
-            if(e.isCancelled())
+            if(e.isCancelled()) {
+                this.isPerformingTransaction = false;
                 return TransactionError.CANCELLED;
+            }
 
             //run the transaction again without the check clause
             return executeTransaction(orders, player, false, transactionType);
@@ -104,6 +110,7 @@ public class GambleShop extends AbstractShop {
 
         this.shuffleGambleItem();
 
+        this.isPerformingTransaction = false;
         return TransactionError.NONE;
     }
 

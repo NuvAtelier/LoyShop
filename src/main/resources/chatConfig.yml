@@ -24,9 +24,11 @@
 # &e : YELLOW
 
 # [item] : The name of the item in the transaction #
+# [[item]] : Hoverable text of the item in the transaction#
 # [item amount] : The amount of the item #
 # [item type] : The material type of the item in the transaction #
 # [barter item] : The name of the barter item in the transaction #
+# [[barter item]] : Hoverable text of the barter item in the transaction #
 # [barter item amount] : The amount of the barter item #
 # [barter item type] : The material type of the barter item in the transaction #
 # [price] : The price of the items (adjusted to match virtual or physical currency) #
@@ -40,6 +42,8 @@
 # [owner] : The name of the shop owner #
 # [server name] : The name of the server #
 # [shop type] : The type of the shop (sell, buy, barter) #
+# [location] : The x,y,z coordinates of the shop sign #
+# [world] : The name of the world the shop is in #
 
 transaction:
    SELL:
@@ -124,6 +128,7 @@ interaction_issue:
    createInsufficientFunds: "&cYou do not have the funds required to create this shop."
    destroyInsufficientFunds: "&cYou do not have the funds required to destroy this shop."
    initializeOtherShop: "&cYou may not initialize another players shop with an item."
+   useShopAlreadyInUse: "&cThis shop is in the middle of a transaction."
    destroyChest: "&cYou must remove the sign from this shop to break it."
    useOwnShop: "&7You cannot use your own shop."
    adminOpen: "&7Admin shops are not able to be opened."

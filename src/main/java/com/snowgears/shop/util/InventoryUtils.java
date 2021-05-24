@@ -4,9 +4,11 @@ package com.snowgears.shop.util;
 import com.snowgears.shop.Shop;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.Beehive;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -149,6 +151,14 @@ public class InventoryUtils {
                 return itemStack1.isSimilar(itemStack2);
             }
         }
+
+        //special case to check for beehives
+        //TODO might have to implement some other case checks for potions and other unique items
+        if(i1.getType() == Material.BEEHIVE){
+            if(((Beehive)((BlockStateMeta)i1Meta).getBlockState()).getEntityCount() == ((Beehive)((BlockStateMeta)i2Meta).getBlockState()).getEntityCount())
+                return true;
+        }
+
         //fix NBT attributes for cached older items to be compatible with Spigot serializer updates
         if (i1Meta != null && i2Meta != null && i1Meta.hasAttributeModifiers() && i2Meta.hasAttributeModifiers()) {
             i1Meta.setAttributeModifiers(i1Meta.getAttributeModifiers());

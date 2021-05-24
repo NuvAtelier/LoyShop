@@ -200,6 +200,10 @@ public class UtilMethods {
                 break;
         }
 
+        if(player.getLocation().getPitch() < 0)
+            d = -d;
+        //System.out.println("Side clicked: "+d);
+
         if(d > 0)
             return 1;
         else if(d < 0)

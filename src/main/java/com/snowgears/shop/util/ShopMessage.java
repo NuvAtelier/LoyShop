@@ -128,6 +128,10 @@ public class ShopMessage {
                 unformattedMessage = unformattedMessage.replace("[owner]", "" + shop.getOwnerName());
 
             unformattedMessage = unformattedMessage.replace("[amount]", "" + shop.getAmount());
+            if(shop.getSignLocation() != null) {
+                unformattedMessage = unformattedMessage.replace("[location]", "" + UtilMethods.getCleanLocation(shop.getSignLocation(), false));
+                unformattedMessage = unformattedMessage.replace("[world]", "" + shop.getSignLocation().getWorld().getName());
+            }
 
             if(shop.getType() == ShopType.COMBO) {
                 unformattedMessage = unformattedMessage.replace("[price sell]", "" + ((ComboShop)shop).getPriceSellString());
@@ -220,6 +224,21 @@ public class ShopMessage {
         }
 
         String[] lines = getUnformattedShopSignLines(shopType, shopFormat);
+
+        for(int i=0; i<lines.length; i++) {
+            lines[i] = formatMessage(lines[i], shop, null, true);
+            lines[i] = ChatColor.translateAlternateColorCodes('&', lines[i]);
+
+            //TODO have smart way of cutting lines if too long so at least some of word can go on
+//            if(lines[i].length() > 15)
+//                lines[i]
+        }
+        return lines;
+    }
+
+    public static String[] getTimeoutSignLines(AbstractShop shop){
+
+        String[] lines = shopSignTextMap.get("timeout");
 
         for(int i=0; i<lines.length; i++) {
             lines[i] = formatMessage(lines[i], shop, null, true);
@@ -332,6 +351,7 @@ public class ShopMessage {
         messageMap.put("interactionIssue_initialize", chatConfig.getString("interaction_issue.initializeOtherShop"));
         messageMap.put("interactionIssue_destroyChest", chatConfig.getString("interaction_issue.destroyChest"));
         messageMap.put("interactionIssue_useOwnShop", chatConfig.getString("interaction_issue.useOwnShop"));
+        messageMap.put("interactionIssue_useShopAlreadyInUse", chatConfig.getString("interaction_issue.useShopAlreadyInUse"));
         messageMap.put("interactionIssue_adminOpen", chatConfig.getString("interaction_issue.adminOpen"));
         messageMap.put("interactionIssue_worldBlacklist", chatConfig.getString("interaction_issue.worldBlacklist"));
         messageMap.put("interactionIssue_regionRestriction", chatConfig.getString("interaction_issue.regionRestriction"));
@@ -426,6 +446,18 @@ public class ShopMessage {
                 } catch (NullPointerException e) {}
             }
         }
+        String[] timeoutLines = new String[4];
+
+        for (int i=1; i<5; i++) {
+            String message = signConfig.getString("sign_text.timeout." + i);
+            if (message == null)
+                timeoutLines[i] = "";
+            else
+                timeoutLines[i] = message;
+            i++;
+        }
+
+        this.shopSignTextMap.put("timeout", timeoutLines);
     }
 
     private void loadDisplayTextFromConfig() {

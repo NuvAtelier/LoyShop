@@ -166,7 +166,7 @@ public class Shop extends JavaPlugin {
 
         try {
             displayNameTags = DisplayTagOption.valueOf(config.getString("displayNameTags"));
-        } catch (Exception e){ displayNameTags = DisplayTagOption.VIEW_SIGN; }
+        } catch (Exception e){ displayNameTags = DisplayTagOption.NONE; }
 
         try {
             displayNameTagsLifespan = config.getInt("displayNameTagsLifespan");

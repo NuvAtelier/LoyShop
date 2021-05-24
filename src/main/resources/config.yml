@@ -33,7 +33,7 @@ returnCreationCost: false
 displayType: ITEM
 
 # This will show the name tags above the display items #
-# The options are: OFF, RIGHT_CLICK_CHEST, VIEW_SIGN #
+# The options are: NONE, RIGHT_CLICK_CHEST, VIEW_SIGN #
 displayNameTags: VIEW_SIGN
 
 # This is how long display name tags are shown for when activated (in seconds) #

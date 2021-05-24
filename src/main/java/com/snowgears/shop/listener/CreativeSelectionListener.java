@@ -237,6 +237,6 @@ public class CreativeSelectionListener implements Listener {
                     data.apply();
                 }
             }
-        }, 10);
+        }, 20);
     }
 }

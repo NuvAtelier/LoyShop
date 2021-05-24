@@ -6,6 +6,7 @@ import com.snowgears.shop.ShopType;
 import com.snowgears.shop.util.DisplayUtil;
 import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.UtilMethods;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -178,7 +179,13 @@ public class Display {
                     tagEntityAsDisplay(caseDisplayItem);
                     break;
                 case ITEM_FRAME:
-                    ItemFrame frame = (ItemFrame) shop.getChestLocation().getWorld().spawn(shop.getChestLocation().getBlock().getLocation().clone().add(0, 1, 0),
+                    Block aboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP);
+                    Location frameLocation = aboveShop.getLocation();
+                    //if display is blocked, put item frame on front
+                    if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
+                        frameLocation = aboveShop.getRelative(shop.getFacing()).getLocation();
+                    }
+                    ItemFrame frame = (ItemFrame) shop.getChestLocation().getWorld().spawn(frameLocation,
                                 ItemFrame.class,
                                 entity -> {
                                     ItemFrame itemFrame = (ItemFrame) entity;
@@ -294,9 +301,17 @@ public class Display {
     }
 
     private void tagEntityAsDisplay(Entity entity){
-        PersistentDataContainer persistentData = entity.getPersistentDataContainer();
-        persistentData.set(new NamespacedKey(Shop.getPlugin(), "display"), PersistentDataType.INTEGER, 1);
-        persistentData.set(new NamespacedKey(Shop.getPlugin(), "signlocation"), PersistentDataType.STRING, UtilMethods.getCleanLocation(this.shopSignLocation, false));
+        //give player a limited amount of time to finish creating the shop until it is deleted
+        Bukkit.getScheduler().scheduleSyncDelayedTask(Shop.getPlugin(), new Runnable() {
+            public void run() {
+                if(entity != null && !entity.isDead()) {
+                    PersistentDataContainer persistentData = entity.getPersistentDataContainer();
+                    persistentData.set(new NamespacedKey(Shop.getPlugin(), "display"), PersistentDataType.INTEGER, 1);
+                    persistentData.set(new NamespacedKey(Shop.getPlugin(), "signlocation"), PersistentDataType.STRING, UtilMethods.getCleanLocation(shopSignLocation, false));
+                    entity.setPersistent(true);
+                }
+            }
+        }, 2); //2 ticks
         entities.add(entity);
     }
 
@@ -311,7 +326,7 @@ public class Display {
     public void setType(DisplayType type){
         DisplayType oldType = this.type;
 
-        if(oldType == DisplayType.NONE){
+        if((oldType == DisplayType.NONE && type != DisplayType.ITEM_FRAME) || (oldType == DisplayType.ITEM_FRAME && type != DisplayType.NONE)){
             //make sure there is room above the shop for the display
             Block aboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP);
             if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
@@ -319,25 +334,28 @@ public class Display {
             }
         }
 
-        if(type == DisplayType.ITEM_FRAME && this.getShop().getType() == ShopType.BARTER){
-            //make sure there are two blocks free above the shop for the 2 itemframe displays
-            Block twoAboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP).getRelative(BlockFace.UP);
-            if (!UtilMethods.materialIsNonIntrusive(twoAboveShop.getType())) {
-                return;
-            }
-        }
+        //unused code, barter shops will simply skip the ITEM_FRAME type
+//        if(type == DisplayType.ITEM_FRAME && this.getShop().getType() == ShopType.BARTER){
+//            //make sure there are two blocks free above the shop for the 2 itemframe displays
+//            Block twoAboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP).getRelative(BlockFace.UP);
+//            if (!UtilMethods.materialIsNonIntrusive(twoAboveShop.getType())) {
+//                return;
+//            }
+//        }
 
 
         this.type = type;
-        if(!(type == DisplayType.NONE || type == DisplayType.ITEM)) {
-            try {
-                if (EntityType.ARMOR_STAND == EntityType.ARROW) {
-                    //check that armor stand exists (server not on MC 1.7)
-                }
-            } catch (NoSuchFieldError e) {
-                this.type = oldType;
-            }
-        }
+
+        //this code is no longer used, after requiring spigot 1.16+ going forward
+//        if(!(type == DisplayType.NONE || type == DisplayType.ITEM)) {
+//            try {
+//                if (EntityType.ARMOR_STAND == EntityType.ARROW) {
+//                    //check that armor stand exists (server not on MC 1.7)
+//                }
+//            } catch (NoSuchFieldError e) {
+//                this.type = oldType;
+//            }
+//        }
 
         this.spawn();
     }
@@ -348,28 +366,74 @@ public class Display {
             displayType = Shop.getPlugin().getDisplayType();
         }
 
+        int index = -1;
         if(displayType == DisplayType.NONE){
             //make sure there is room above the shop for the display
             Block aboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP);
             if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
-                return;
+                //if the cycle contains the ITEM_FRAME display type
+                for(int i=0; i<cycle.length; i++){
+                    if(cycle[i] == DisplayType.ITEM_FRAME){
+                        index = i;
+                    }
+                }
+                //there is no ITEM_FRAME in cycle, return because display is blocked
+                if(index == -1)
+                    return;
+            }
+        }
+        else if(displayType == DisplayType.ITEM_FRAME){
+            //make sure there is room above the shop for the display
+            Block aboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP);
+            if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
+                //if the cycle contains the NONE display type
+                for(int i=0; i<cycle.length; i++){
+                    if(cycle[i] == DisplayType.NONE){
+                        index = i;
+                    }
+                }
+                //there is no NONE in cycle, return because display is blocked
+                if(index == -1)
+                    return;
             }
         }
 
-        int index = 0;
-        for(int i=0; i<cycle.length; i++){
-            if(cycle[i] == displayType)
-                index = i + 1;
-        }
-        if(index >= cycle.length)
+        //index is still not set, continue and cycle index to next display type
+        if(index == -1) {
             index = 0;
+            for (int i = 0; i < cycle.length; i++) {
+                if (cycle[i] == displayType)
+                    index = i + 1;
+            }
+            if (index >= cycle.length)
+                index = 0;
+        }
 
         //don't allow barter shops to have ITEM_FRAME display types (for NOW)
-        if(cycle[index] == DisplayType.ITEM_FRAME && getShop().getType() == ShopType.BARTER){
+        if(cycle[index] == DisplayType.ITEM_FRAME){
 
-            index++;
-            if(index >= cycle.length)
-                index = 0;
+            boolean skip = false;
+            if(getShop().getType() == ShopType.BARTER){
+                skip = true;
+            }
+            else {
+                //calculate where ITEM_FRAME display may be
+                for(Entity e : this.getShop().getChestLocation().getWorld().getNearbyEntities(this.getItemDropLocation(false), 1, 1, 1)){
+                    if(e.getType() == EntityType.ITEM_FRAME){
+                        ItemFrame i = (ItemFrame)e;
+                        if(i.getAttachedFace() == getShop().getSign().getFacing().getOppositeFace()) {
+                            skip = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if(skip) {
+                index++;
+                if (index >= cycle.length)
+                    index = 0;
+            }
         }
 
         this.setType(cycle[index]);
@@ -501,7 +565,6 @@ public class Display {
                 return (dataDisplay == 1);
             } catch (NullPointerException e){ return false; }
         }
-
         return false;
     }
 

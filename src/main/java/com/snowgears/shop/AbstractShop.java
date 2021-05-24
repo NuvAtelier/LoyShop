@@ -43,6 +43,7 @@ public abstract class AbstractShop {
     protected ShopType type;
     protected String[] signLines;
     protected boolean signLinesRequireRefresh;
+    protected boolean isPerformingTransaction;
 
     public AbstractShop(Location signLoc, UUID player, double pri, int amt, Boolean admin) {
         signLocation = signLoc;
@@ -256,6 +257,10 @@ public abstract class AbstractShop {
 
     public boolean getSignLinesRequireRefresh(){
         return this.signLinesRequireRefresh;
+    }
+
+    public boolean isPerformingTransaction(){
+        return isPerformingTransaction;
     }
 
     //common base methods to all shops
