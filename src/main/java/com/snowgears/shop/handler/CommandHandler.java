@@ -31,12 +31,11 @@ public class CommandHandler extends BukkitCommand {
     }
 
     private void sendCommandMessage(String subType, Player player) {
-        String message = ShopMessage.getMessage("command", "subType", null, player);
+        String message = ShopMessage.getMessage("command", subType, null, player);
         if(message != null && !message.isEmpty())
             player.sendMessage(message);
     }
 
-    //TODO replace all of these messages
     @Override
     public boolean execute(CommandSender sender, String label, String[] args) {
         if (args.length == 0) {
