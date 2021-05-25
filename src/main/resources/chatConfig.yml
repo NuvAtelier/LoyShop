@@ -44,6 +44,15 @@
 # [shop type] : The type of the shop (sell, buy, barter) #
 # [location] : The x,y,z coordinates of the shop sign #
 # [world] : The name of the world the shop is in #
+# [plugin] : The main command of the plugin (default is 'shop') #
+# [total shops] : The total amount of shops registered on the server #
+# [user amount] : The total amount of shops a specific player has registered on the server #
+# [build limit] : The total amount of shops a specific player is allowed to have registered on the server #
+# [currency name] : The name of the currency on the server #
+# [currency item] : The currency item on the server (only applicable if using an item economy)#
+# [notify user] : The on/off value of how the player has their user notifications set #
+# [notify owner] : The on/off value of how the player has their owner notifications set #
+# [notify stock] : The on/off value of how the player has their stock notifications set #
 
 transaction:
    SELL:
@@ -172,3 +181,27 @@ creativeSelection:
       - "&cYou cannot move in locked creative mode."
       - "&6Open your inventory and select the item you want to receive."
       - "&eTo select the item, pick it up and drop it outside of the inventory window."
+
+command:
+   list: "&b/[plugin] list &7- list your shops on the server"
+   list_output_total: "There are &6[total shops]&f shops registered on the server."
+   list_output_perms: "&7You have built [user amount] out of your [build limit] allotted shops."
+   list_output_noperms: "&7You own [user amount] of these shops."
+   currency: "&b/[plugin] currency &7- info about the currency shops use"
+   currency_output: "&7The server is using [currency name] as currency."
+   currency_output_tip: "&7To change this, run the command '/[plugin] setcurrency' with the item you want in your hand."
+   setcurrency: "&c/[plugin] setcurrency &7- set the currency item to item in hand"
+   setcurrency_output: "&7The server is now using [currency item] as currency."
+   setgamble: "&c/[plugin] setgamble &7- set the gamble item display to item in hand"
+   itemrefresh: "&c/[plugin] item refresh &7- refresh all display items on shops"
+   itemrefresh_output: "&7The display items on all of the shops have been refreshed."
+   reload: "&c/[plugin] reload &7- reload Shop plugin"
+   reload_output: "&aSuccessfully reloaded Shop."
+   error_novault: "&cThe server is using Vault so no item currency could be set."
+   error_nohand: "&cYou must be holding a valid item to use that command."
+   not_authorized: "&cYou are not authorized to use that command."
+   notify_user: "&7Your notifications for your own transactions with shops are now [notify user]"
+   notify_owner: "&7Your notifications for players transacting with your shops are now [notify owner]"
+   notify_stock: "&7Your notifications for your shops running out of stock are now [notify stock]"
+   notify_on: "&aON"
+   notify_off: "&cOFF"

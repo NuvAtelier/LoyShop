@@ -165,9 +165,38 @@ public class ShopMessage {
         }
         if(player != null) {
             unformattedMessage = unformattedMessage.replace("[user]", "" + player.getName());
+            unformattedMessage = unformattedMessage.replace("[user amount]", "" + Shop.getPlugin().getShopHandler().getNumberOfShops(player));
             unformattedMessage = unformattedMessage.replace("[build limit]", "" + Shop.getPlugin().getShopListener().getBuildLimit(player));
+
+            if(unformattedMessage.contains("[notify")) {
+
+                String text_on = getUnformattedMessage("command", "notify_on");
+                String text_off = getUnformattedMessage("command", "notify_off");
+
+                boolean active = Shop.getPlugin().getGuiHandler().getSettingsOption(player, PlayerSettings.Option.SALE_USER_NOTIFICATIONS);
+                if(active)
+                    unformattedMessage = unformattedMessage.replace("[notify user]", "" + text_on);
+                else
+                    unformattedMessage = unformattedMessage.replace("[notify user]", "" + text_off);
+
+                active = Shop.getPlugin().getGuiHandler().getSettingsOption(player, PlayerSettings.Option.SALE_OWNER_NOTIFICATIONS);
+                if(active)
+                    unformattedMessage = unformattedMessage.replace("[notify owner]", "" + text_on);
+                else
+                    unformattedMessage = unformattedMessage.replace("[notify owner]", "" + text_off);
+
+                active = Shop.getPlugin().getGuiHandler().getSettingsOption(player, PlayerSettings.Option.STOCK_NOTIFICATIONS);
+                if(active)
+                    unformattedMessage = unformattedMessage.replace("[notify stock]", "" + text_on);
+                else
+                    unformattedMessage = unformattedMessage.replace("[notify stock]", "" + text_off);
+            }
         }
         unformattedMessage = unformattedMessage.replace("[server name]", "" + ShopMessage.getServerDisplayName());
+        unformattedMessage = unformattedMessage.replace("[currency name]", "" + Shop.getPlugin().getCurrencyName());
+        unformattedMessage = unformattedMessage.replace("[currency item]", "" + Shop.getPlugin().getItemNameUtil().getName(Shop.getPlugin().getItemCurrency()));
+        unformattedMessage = unformattedMessage.replace("[total shops]", "" + Shop.getPlugin().getShopHandler().getNumberOfShops());
+        unformattedMessage = unformattedMessage.replace("[plugin]", "" + Shop.getPlugin().getCommandAlias());
 
         if(forSign){
             if(unformattedMessage.contains("[item]") && shop != null && shop.getItemStack() != null){
@@ -366,6 +395,29 @@ public class ShopMessage {
             messageMap.put("creativeSelection_prompt"+count, s);
             count++;
         }
+
+        messageMap.put("command_list", chatConfig.getString("command.list"));
+        messageMap.put("command_list_output_total", chatConfig.getString("command.list_output_total"));
+        messageMap.put("command_list_output_perms", chatConfig.getString("command.list_output_perms"));
+        messageMap.put("command_list_output_noperms", chatConfig.getString("command.list_output_noperms"));
+        messageMap.put("command_currency", chatConfig.getString("command.currency"));
+        messageMap.put("command_currency_output", chatConfig.getString("command.currency_output"));
+        messageMap.put("command_currency_output_tip", chatConfig.getString("command.currency_output_tip"));
+        messageMap.put("command_setcurrency", chatConfig.getString("command.setcurrency"));
+        messageMap.put("command_setcurrency_output", chatConfig.getString("command.setcurrency_output"));
+        messageMap.put("command_setgamble", chatConfig.getString("command.setgamble"));
+        messageMap.put("command_itemrefresh", chatConfig.getString("command.itemrefresh"));
+        messageMap.put("command_itemrefresh_output", chatConfig.getString("command.itemrefresh_output"));
+        messageMap.put("command_reload", chatConfig.getString("command.reload"));
+        messageMap.put("command_reload_output", chatConfig.getString("command.reload_output"));
+        messageMap.put("command_error_novault", chatConfig.getString("command.error_novault"));
+        messageMap.put("command_error_nohand", chatConfig.getString("command.error_nohand"));
+        messageMap.put("command_not_authorized", chatConfig.getString("command.not_authorized"));
+        messageMap.put("command_notify_user", chatConfig.getString("command.notify_user"));
+        messageMap.put("command_notify_owner", chatConfig.getString("command.notify_owner"));
+        messageMap.put("command_notify_stock", chatConfig.getString("command.notify_stock"));
+        messageMap.put("command_notify_on", chatConfig.getString("command.notify_on"));
+        messageMap.put("command_notify_off", chatConfig.getString("command.notify_off"));
     }
 
     private void loadSignTextFromConfig() {

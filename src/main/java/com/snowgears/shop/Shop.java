@@ -550,6 +550,13 @@ public class Shop extends JavaPlugin {
         return format;
     }
 
+    public String getCurrencyName(){
+        if(this.useVault)
+            return this.getVaultCurrencySymbol();
+        else
+            return this.getItemCurrencyName();
+    }
+
     public double getTaxPercent(){
         return taxPercent;
     }
