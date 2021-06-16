@@ -168,7 +168,7 @@ public class CreativeSelectionListener implements Listener {
                             return;
 
                         shop.setItemStack(event.getCursor());
-                        shop.getDisplay().spawn();
+                        shop.getDisplay().spawn(true);
                         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);
@@ -184,7 +184,7 @@ public class CreativeSelectionListener implements Listener {
                             return;
 
                         shop.setSecondaryItemStack(event.getCursor());
-                        shop.getDisplay().spawn();
+                        shop.getDisplay().spawn(true);
                         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);

@@ -1,9 +1,6 @@
 package com.snowgears.shop.util;
 
-import com.palmergames.bukkit.towny.TownyAPI;
-import com.palmergames.bukkit.towny.TownyUniverse;
-import com.palmergames.bukkit.towny.object.Resident;
-import com.palmergames.bukkit.towny.object.Town;
+import com.palmergames.bukkit.towny.utils.ShopPlotUtil;
 import com.snowgears.shop.Shop;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -31,12 +28,16 @@ public class TownyHook {
             return true;
         }
         try {
-            if (!TownyAPI.getInstance().isWilderness(player.getLocation())) {
-                Town town = TownyAPI.getInstance().getTownBlock(player.getLocation()).getTown();
-                Resident resident = TownyUniverse.getInstance().getResident(player.getUniqueId());
-                if (!resident.getTown().equals(town)) {
-                    return false;
-                }
+//            if (!TownyAPI.getInstance().isWilderness(player.getLocation())) {
+//                Town town = TownyAPI.getInstance().getTownBlock(player.getLocation()).getTown();
+//                Resident resident = TownyUniverse.getInstance().getResident(player.getUniqueId());
+//                if (!resident.getTown().equals(town)) {
+//                    return false;
+//                }
+//            }
+            //this is what the Towny API said to use specifically for Shop developers
+            if(!ShopPlotUtil.doesPlayerHaveAbilityToEditShopPlot(player, location)) {
+                return false;
             }
         } catch (Exception | NoClassDefFoundError ignore) {
         }

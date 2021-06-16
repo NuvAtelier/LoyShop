@@ -60,9 +60,12 @@ public class Shop extends JavaPlugin {
     private boolean checkItemDurability;
     private boolean allowCreativeSelection;
     private boolean forceDisplayToNoneIfBlocked;
+    private int displayLightLevel;
+    private boolean setGlowingItemFrame;
     private int hoursOfflineToRemoveShops;
     private boolean playSounds;
     private boolean playEffects;
+    private boolean setGlowingSignText;
     private ItemStack gambleDisplayItem;
     private ItemStack itemCurrency = null;
     private String itemCurrencyName = "";
@@ -101,7 +104,6 @@ public class Shop extends JavaPlugin {
     }
 
     @Override
-    //@SuppressWarnings("deprecation")
     public void onEnable() {
         plugin = this;
 
@@ -213,9 +215,12 @@ public class Shop extends JavaPlugin {
         checkItemDurability = config.getBoolean("checkItemDurability");
         allowCreativeSelection = config.getBoolean("allowCreativeSelection");
         forceDisplayToNoneIfBlocked = config.getBoolean("forceDisplayToNoneIfBlocked");
+        displayLightLevel = config.getInt("displayLightLevel");
+        setGlowingItemFrame = config.getBoolean("setGlowingItemFrame");
         hoursOfflineToRemoveShops = config.getInt("deletePlayerShopsAfterXHoursOffline");
         playSounds = config.getBoolean("playSounds");
         playEffects = config.getBoolean("playEffects");
+        setGlowingSignText = config.getBoolean("setGlowingSignText");
         useVault = config.getBoolean("useVault");
         //TODO
 //        taxPercent = config.getDouble("taxPercent");
@@ -322,6 +327,7 @@ public class Shop extends JavaPlugin {
 //        if(useEnderChests())
 //            enderChestHandler.saveEnderChests();
         //shopHandler.saveAllShops();
+        plugin.getShopHandler().saveDebugChunkTimings();
     }
 
     public void reload(){
@@ -421,6 +427,14 @@ public class Shop extends JavaPlugin {
         return forceDisplayToNoneIfBlocked;
     }
 
+    public int getDisplayLightLevel(){
+        return displayLightLevel;
+    }
+
+    public boolean getGlowingItemFrame(){
+        return setGlowingItemFrame;
+    }
+
     public int getHoursOfflineToRemoveShops(){
         return hoursOfflineToRemoveShops;
     }
@@ -431,6 +445,10 @@ public class Shop extends JavaPlugin {
 
     public boolean playEffects(){
         return playEffects;
+    }
+
+    public boolean getGlowingSignText(){
+        return setGlowingSignText;
     }
 
     public boolean useGUI(){

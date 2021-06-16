@@ -1,9 +1,6 @@
 package com.snowgears.shop.listener;
 
-import com.snowgears.shop.AbstractShop;
-import com.snowgears.shop.SellShop;
-import com.snowgears.shop.Shop;
-import com.snowgears.shop.ShopType;
+import com.snowgears.shop.*;
 import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.event.PlayerCreateShopEvent;
 import com.snowgears.shop.event.PlayerDestroyShopEvent;
@@ -16,6 +13,7 @@ import org.bukkit.Tag;
 import org.bukkit.block.*;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.Rotatable;
+import org.bukkit.block.data.type.Light;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -235,7 +233,26 @@ public class MiscListener implements Listener {
                 }
 
                 String playerMessage = null;
-                AbstractShop tempShop = new SellShop(null, player.getUniqueId(), 0, 0, false);
+                AbstractShop tempShop;
+                switch(type) {
+                    case SELL:
+                        tempShop=new SellShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin);
+                        break;
+                    case BUY:
+                        tempShop=new BuyShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin);
+                        break;
+                    case BARTER:
+                        tempShop=new BarterShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin);
+                        break;
+                    case GAMBLE:
+                        tempShop=new GambleShop(b.getLocation(), player.getUniqueId(), price, amount, true);
+                        break;
+                    case COMBO:
+                        tempShop=new ComboShop(b.getLocation(), player.getUniqueId(), price, 0, amount, isAdmin);
+                        break;
+                    default:
+                        return;
+                }
 
                 if (plugin.usePerms()) {
                     if (!(player.hasPermission("shop.create." + type.toString().toLowerCase()) || player.hasPermission("shop.create")))
@@ -244,6 +261,9 @@ public class MiscListener implements Listener {
 
                 if (type == ShopType.GAMBLE) {
                     isAdmin = true;
+                    if ((plugin.usePerms() && !player.hasPermission("shop.operator")) || (!plugin.usePerms() && !player.isOp())) {
+                        playerMessage = ShopMessage.getMessage("permission", "create", tempShop, player);
+                    }
                 }
 
                 //if players must pay to create shops, check that they have enough money first
@@ -314,6 +334,14 @@ public class MiscListener implements Listener {
 
                     if (e.isCancelled())
                         return;
+
+                    if(plugin.getDisplayLightLevel() > 0) {
+                        Block displayBlock = shop.getChestLocation().getBlock().getRelative(BlockFace.UP);
+                        displayBlock.setType(Material.LIGHT);
+                        Light data = (Light) displayBlock.getBlockData();
+                        data.setLevel(plugin.getDisplayLightLevel());
+                        displayBlock.setBlockData(data);
+                    }
 
                     if (type == ShopType.GAMBLE) {
                         shop.setItemStack(plugin.getGambleDisplayItem());
@@ -470,7 +498,7 @@ public class MiscListener implements Listener {
                         }
                     }
                     else {
-                        shop.getDisplay().spawn();
+                        shop.getDisplay().spawn(true);
                         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);
@@ -488,7 +516,7 @@ public class MiscListener implements Listener {
 
                         if(shop.getSecondaryItemStack() == null)
                             shop.setSecondaryItemStack(shopItem);
-                        shop.getDisplay().spawn();
+                        shop.getDisplay().spawn(true);
                         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);
@@ -509,10 +537,19 @@ public class MiscListener implements Listener {
     }
 
     //player destroys shop, call PlayerDestroyShopEvent or PlayerResizeShopEvent
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGH)
     public void shopDestroy(BlockBreakEvent event) {
-        if (event.isCancelled())
-            return;
+        //refresh the shop display even if the event was cancelled as sometimes items can bug out and fall through chest
+        if (event.isCancelled()) {
+            Block b = event.getBlock();
+            if (b.getBlockData() instanceof WallSign) {
+                AbstractShop shop = plugin.getShopHandler().getShop(b.getLocation());
+                if (shop != null) {
+                    if (shop.getDisplay().getType() == DisplayType.ITEM)
+                        shop.getDisplay().spawn(true);
+                }
+            }
+        }
 
         Block b = event.getBlock();
         Player player = event.getPlayer();

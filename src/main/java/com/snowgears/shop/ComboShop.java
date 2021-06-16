@@ -37,6 +37,7 @@ public class ComboShop extends AbstractShop {
             issue = executeBuyTransaction(orders, player, isCheck);
         }
         this.isPerformingTransaction = false;
+        setGuiIcon();
         return issue;
     }
 

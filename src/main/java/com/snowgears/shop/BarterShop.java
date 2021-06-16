@@ -114,6 +114,7 @@ public class BarterShop extends AbstractShop {
             return executeTransaction(orders, player, false, transactionType);
         }
         this.isPerformingTransaction = false;
+        setGuiIcon();
         return TransactionError.NONE;
     }
 

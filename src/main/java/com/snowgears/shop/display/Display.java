@@ -6,16 +6,12 @@ import com.snowgears.shop.ShopType;
 import com.snowgears.shop.util.DisplayUtil;
 import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.UtilMethods;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -23,7 +19,6 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Random;
 
 public class Display {
 
@@ -32,14 +27,24 @@ public class Display {
     private ArrayList<Entity> entities;
     private DisplayType[] cycle = Shop.getPlugin().getDisplayCycle();
     private boolean nameTagsVisible;
+    private int chunkX;
+    private int chunkZ;
 
     public Display(Location shopSignLocation) {
         this.shopSignLocation = shopSignLocation;
         entities = new ArrayList<>();
+
+        chunkX = UtilMethods.floor(shopSignLocation.getBlockX()) >> 4;
+        chunkZ = UtilMethods.floor(shopSignLocation.getBlockZ()) >> 4;
     }
 
-    public void spawn() {
-        remove();
+    public boolean isInChunk(Chunk chunk){
+        return chunk.getX() == chunkX && chunk.getZ() == chunkZ && chunk.getWorld().toString().equals(shopSignLocation.getWorld().toString());
+    }
+
+    public void spawn(boolean removeOld) {
+        if(removeOld)
+            remove();
         //Random random = new Random();
 
         AbstractShop shop = this.getShop();
@@ -185,7 +190,19 @@ public class Display {
                     if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
                         frameLocation = aboveShop.getRelative(shop.getFacing()).getLocation();
                     }
-                    ItemFrame frame = (ItemFrame) shop.getChestLocation().getWorld().spawn(frameLocation,
+                    if(Shop.getPlugin().getGlowingItemFrame()){
+                        GlowItemFrame frame = (GlowItemFrame) shop.getChestLocation().getWorld().spawn(frameLocation,
+                                GlowItemFrame.class,
+                                entity -> {
+                                    GlowItemFrame itemFrame = (GlowItemFrame) entity;
+                                    itemFrame.setFacingDirection(shop.getFacing(), true);
+                                    itemFrame.setFixed(true);
+                                    itemFrame.setItem(shop.getItemStack());
+                                });
+                        tagEntityAsDisplay(frame);
+                    }
+                    else {
+                        ItemFrame frame = (ItemFrame) shop.getChestLocation().getWorld().spawn(frameLocation,
                                 ItemFrame.class,
                                 entity -> {
                                     ItemFrame itemFrame = (ItemFrame) entity;
@@ -193,27 +210,13 @@ public class Display {
                                     itemFrame.setFixed(true);
                                     itemFrame.setItem(shop.getItemStack());
                                 });
-                    //todo might only want to do this if the item is not already custom named in frame?
-                    //tagDisplayWithName(frame, item);
-                    tagEntityAsDisplay(frame);
+                        tagEntityAsDisplay(frame);
+                    }
                     break;
             }
         }
         shop.updateSign();
     }
-
-//    private void tagDisplayWithName(Entity entity, ItemStack item){
-//        if(Shop.getPlugin().showDisplayNameTags()){
-//            if(this.getShop().getType() == ShopType.GAMBLE) {
-//                ItemStack gambleItem = ((GambleShop)this.getShop()).getGambleItem();
-//                entity.setCustomName(Shop.getPlugin().getItemNameUtil().getName(gambleItem));
-//                return;
-//            }
-//
-//            entity.setCustomName(Shop.getPlugin().getItemNameUtil().getName(item));
-//            entity.setCustomNameVisible(true);
-//        }
-//    }
 
     public void showNameTags(){
         if(nameTagsVisible || !getShop().isInitialized()) {
@@ -334,30 +337,8 @@ public class Display {
             }
         }
 
-        //unused code, barter shops will simply skip the ITEM_FRAME type
-//        if(type == DisplayType.ITEM_FRAME && this.getShop().getType() == ShopType.BARTER){
-//            //make sure there are two blocks free above the shop for the 2 itemframe displays
-//            Block twoAboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP).getRelative(BlockFace.UP);
-//            if (!UtilMethods.materialIsNonIntrusive(twoAboveShop.getType())) {
-//                return;
-//            }
-//        }
-
-
         this.type = type;
-
-        //this code is no longer used, after requiring spigot 1.16+ going forward
-//        if(!(type == DisplayType.NONE || type == DisplayType.ITEM)) {
-//            try {
-//                if (EntityType.ARMOR_STAND == EntityType.ARROW) {
-//                    //check that armor stand exists (server not on MC 1.7)
-//                }
-//            } catch (NoSuchFieldError e) {
-//                this.type = oldType;
-//            }
-//        }
-
-        this.spawn();
+        this.spawn(true);
     }
 
     public void cycleType(){
@@ -542,22 +523,6 @@ public class Display {
     }
 
     public static boolean isDisplay(Entity entity){
-        //keep this old legacy code around for a bit //TODO delete this later and only use persistentDataContainer code for checking
-        try {
-            if (entity.getType() == EntityType.DROPPED_ITEM) {
-                ItemMeta itemMeta = ((Item) entity).getItemStack().getItemMeta();
-                if (itemMeta != null && UtilMethods.containsLocation(itemMeta.getDisplayName())) {
-                    return true;
-                }
-            } else if (entity.getType() == EntityType.ARMOR_STAND || entity.getType() == EntityType.ITEM_FRAME) {
-                if (UtilMethods.containsLocation(entity.getCustomName())) {
-                    return true;
-                }
-            }
-        } catch (NoSuchFieldError error){
-            //do nothing
-        }
-
         PersistentDataContainer persistentData = entity.getPersistentDataContainer();
         if(persistentData != null) {
             try {
@@ -582,36 +547,6 @@ public class Display {
 
             } catch (NullPointerException e){ }
         }
-        
-        //otherwise, use legacy display string (1.8.2.3 and lower)
-        if(display == null)
-            return null;
-        String name = null;
-        if (display.getType() == EntityType.DROPPED_ITEM) {
-            ItemMeta itemMeta = ((Item) display).getItemStack().getItemMeta();
-            name = itemMeta.getDisplayName();
-        }
-        try {
-            if (display.getType() == EntityType.ARMOR_STAND || display.getType() == EntityType.ITEM_FRAME) {
-                name = display.getCustomName();
-            }
-        } catch (NoSuchFieldError error){
-            return null;
-        }
-
-        if(!UtilMethods.containsLocation(name)) {
-            return null;
-        }
-
-        String locString = name.substring(name.indexOf('{')+1, name.indexOf('}'));
-        String[] parts = locString.split(",");
-        Location location = new Location(display.getWorld(), Double.parseDouble(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]));
-        return Shop.getPlugin().getShopHandler().getShop(location);
-    }
-
-    private String generateDisplayName(Random random){
-        Location loc = this.shopSignLocation;
-        String name = "***{"+loc.getBlockX()+","+loc.getBlockY()+","+loc.getBlockZ()+"}"; //+random.nextInt(1000);
-        return name;
+        return null;
     }
 }

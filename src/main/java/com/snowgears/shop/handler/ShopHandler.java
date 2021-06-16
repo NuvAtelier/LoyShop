@@ -168,6 +168,16 @@ public class ShopHandler {
         return null;
     }
 
+    public List<AbstractShop> getShopsInChunk(Chunk chunk){
+        List<AbstractShop> shopList = new ArrayList<>();
+        for(Map.Entry<Location, AbstractShop> shopEntry : this.allShops.entrySet()){
+            if(shopEntry.getValue().getDisplay().isInChunk(chunk)){
+                shopList.add(shopEntry.getValue());
+            }
+        }
+        return shopList;
+    }
+
     public void addShop(AbstractShop shop) {
 
         //this is to remove a bug that caused one shop to be saved to multiple files at one point
@@ -182,6 +192,7 @@ public class ShopHandler {
             shopLocations.add(shop.getSignLocation());
             playerShops.put(shop.getOwnerUUID(), shopLocations);
         }
+        plugin.getGuiHandler().reloadPlayerHeadIcon(shop.getOwnerUUID());
     }
 
     //This method should only be used by AbstractShop object to delete
@@ -266,7 +277,7 @@ public class ShopHandler {
             }
         }
         for (AbstractShop shop : allShops.values()) {
-            shop.getDisplay().spawn();
+            shop.getDisplay().spawn(true);
         }
     }
 
@@ -579,5 +590,44 @@ public class ShopHandler {
             }
         } catch (NoClassDefFoundError e) {}
         return shopMaterials.contains(b.getType());
+    }
+
+    public void saveDebugChunkTimings(){
+        try {
+
+            File fileDirectory = new File(plugin.getDataFolder(), "Data");
+            //UtilMethods.deleteDirectory(fileDirectory);
+            if (!fileDirectory.exists())
+                fileDirectory.mkdir();
+
+            File debugDirectory = new File(fileDirectory, "debug");
+            if (!debugDirectory.exists())
+                debugDirectory.mkdir();
+
+
+            long time = System.currentTimeMillis();
+            File currentFile = new File(debugDirectory + "/"+time+".yml");
+
+            if (!currentFile.exists()) // file doesn't exist
+                currentFile.createNewFile();
+
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(currentFile);
+
+            HashMap<String, Integer> amounts = plugin.getDisplayListener().getDebugAverageChunkAmounts();
+            for (Map.Entry<String, Long> entry : plugin.getDisplayListener().getDebugAverageChunkTimes().entrySet()) {
+                int firstUnderscore = entry.getKey().indexOf('_');
+                String loadType = entry.getKey().substring(0, firstUnderscore);
+                int secondUnderscore = entry.getKey().indexOf("_", firstUnderscore+1);
+                String world = entry.getKey().substring(firstUnderscore+1, secondUnderscore);
+                //System.out.println(entry.getKey()+" - "+entry.getValue());
+                String chunk = entry.getKey().substring(secondUnderscore+1);
+
+                config.set(world+"."+chunk+"."+loadType+".average", entry.getValue());
+                config.set(world+"."+chunk+"."+loadType+".amount", amounts.get(entry.getKey()));
+            }
+            config.save(currentFile);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

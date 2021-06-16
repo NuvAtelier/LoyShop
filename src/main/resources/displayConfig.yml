@@ -26,9 +26,13 @@
 # [item] : The name of the item in the transaction #
 # [item amount] : The amount of the item #
 # [item type] : The material type of the item in the transaction #
+# [item lore] : The lore (description) of the item in the transaction #
+# [item enchants] : The enchantments of the item in the transaction #
 # [barter item] : The name of the barter item in the transaction #
 # [barter item amount] : The amount of the barter item #
 # [barter item type] : The material type of the barter item in the transaction #
+# [barter item lore] : The lore (description) of the barter item in the transaction #
+# [barter item enchants] : The enchantments of the barter item in the transaction #
 # [price] : The price of the items (adjusted to match virtual or physical currency) #
 # [price sell] : The sell price of combo shops (adjusted to match virtual or physical currency) #
 # [price combo] : The full combo price string (adjusted to match virtual or physical currency) #
@@ -50,17 +54,21 @@ display_tag_text:
    SELL:
       normal:
          - "[item]&7(x[item amount])"
+         - "[item enchants]"
          - "&7<right click sign to have shop sell the item to you>"
    BUY:
       normal:
          - "[item]&7(x[item amount])"
+         - "[item enchants]"
          - "&7<right click sign to have shop buy the item from you>"
    BARTER:
       normal:
          - "[lshift]&aYou get:"
          - "[lshift][item]&7(x[item amount])"
+         - "[item enchants]"
          - "[rshift]&6You trade:"
          - "[rshift][barter item]&7(x[barter item amount])"
+         - "[barter item enchants]"
          - "&7<right click sign to barter items with shop>"
    GAMBLE:
       normal:
@@ -69,6 +77,7 @@ display_tag_text:
    COMBO:
       normal:
          - "[item]&7(x[item amount])"
+         - "[item enchants]"
          - "&7<click &aLEFT &7side of sign for shop to &aBUY &7item from you>"
          - "[item]&7(x[item amount]) for &a[price]"
          - "&7<click &6RIGHT &7side of sign for shop to &6SELL &7item to you>"

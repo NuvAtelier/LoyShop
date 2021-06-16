@@ -53,6 +53,14 @@ displayCycle:
 # If this is false, the shop will simply say it cannot be created because the display is blocked #
 forceDisplayToNoneIfBlocked: true
 
+# This controls what light level (0 to 15) shop displays emit #
+# THIS CAN ONLY BE USED IN MINECRAFT 1.17 OR ABOVE #
+displayLightLevel: 0
+
+# This controls whether the item frames of shop displays are glowing #
+# THIS CAN ONLY BE USED IN MINECRAFT 1.17 OR ABOVE #
+setGlowingItemFrame: false
+
 # =================================================================== #
 #                         GENERAL SETTINGS                            #
 # =================================================================== #
@@ -89,6 +97,10 @@ deletePlayerShopsAfterXHoursOffline: 0
 # These will need to be set to false if your server is running anything less than Minecraft 1.9 #
 playSounds: true
 playEffects: true
+
+# This controls whether shop sign text should be glowing by default #
+# THIS CAN ONLY BE USED IN MINECRAFT 1.17 OR ABOVE #
+setGlowingSignText: false
 
 # This controls whether or not ender chests are able to be used as shops on the server #
 enableEnderChests: false

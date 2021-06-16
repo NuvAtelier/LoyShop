@@ -6,8 +6,10 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.WallSign;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
@@ -161,6 +163,11 @@ public class UtilMethods {
         }
     }
 
+    public static int floor(double num) {
+        int floor = (int) num;
+        return floor == num ? floor : floor - (int) (Double.doubleToRawLongBits(num) >>> 63);
+    }
+
     public static String getEulerAngleString(EulerAngle angle){
         return "EulerAngle("+angle.getX() + ", " + angle.getY() + ", " + angle.getZ() + ")";
     }
@@ -280,6 +287,120 @@ public class UtilMethods {
         return (nonIntrusiveMaterials.contains(material));
     }
 
+    public static String getLoreString(ItemStack is){
+        if(is.getItemMeta() == null || is.getItemMeta().getLore() == null || is.getItemMeta().getLore().isEmpty())
+            return "";
+        return is.getItemMeta().getLore().toString();
+    }
+
+    public static String getEnchantmentsString(ItemStack is){
+        Map<Enchantment, Integer> enchantsMap;
+        if(is.getItemMeta() instanceof EnchantmentStorageMeta){
+            enchantsMap = ((EnchantmentStorageMeta) is.getItemMeta()).getStoredEnchants();
+        }
+        else{
+            enchantsMap = is.getEnchantments();
+        }
+
+        if(enchantsMap == null || enchantsMap.isEmpty())
+            return "";
+
+        String enchants = "[";
+        int i=0;
+        for(Map.Entry<Enchantment, Integer> entry : enchantsMap.entrySet()){
+            enchants += getEnchantmentName(entry.getKey()) + " " + entry.getValue();
+            i++;
+            if(i != enchantsMap.size())
+                enchants += ", ";
+            else
+                enchants += "]";
+        }
+        return enchants;
+    }
+
+    public static String getEnchantmentName(Enchantment enchantment){
+        switch (enchantment.getName()) {
+            case "ARROW_DAMAGE":
+                return "Power";
+            case "ARROW_FIRE":
+                return "Flame";
+            case "ARROW_INFINITE":
+                return "Infinity";
+            case "ARROW_KNOCKBACK":
+                return "Punch";
+            case "BINDING_CURSE":
+                return "Curse of Binding";
+            case "CHANNELING":
+                return "Channeling";
+            case "DAMAGE_ALL":
+                return "Sharpness";
+            case "DAMAGE_ARTHROPODS":
+                return "Bane of Arthropods";
+            case "DAMAGE_UNDEAD":
+                return "Smite";
+            case "DEPTH_STRIDER":
+                return "Depth Strider";
+            case "DIG_SPEED":
+                return "Efficiency";
+            case "DURABILITY":
+                return "Unbreaking";
+            case "FIRE_ASPECT":
+                return "Fire Aspect";
+            case "FROST_WALKER":
+                return "Frost Walker";
+            case "IMPALING":
+                return "Impaling";
+            case "KNOCKBACK":
+                return "Knockback";
+            case "LOOT_BONUS_BLOCKS":
+                return "Fortune";
+            case "LOOT_BONUS_MOBS":
+                return "Looting";
+            case "LOYALTY":
+                return "Loyalty";
+            case "LUCK":
+                return "Luck of the Sea";
+            case "LURE":
+                return "Lure";
+            case "MENDING":
+                return "Mending";
+            case "MULTISHOT":
+                return "Multishot";
+            case "OXYGEN":
+                return "Respiration";
+            case "PIERCING":
+                return "Piercing";
+            case "PROTECTION_ENVIRONMENTAL    ":
+                return "Protection";
+            case "PROTECTION_EXPLOSIONS":
+                return "Blast Protection";
+            case "PROTECTION_FALL":
+                return "Feather Falling";
+            case "PROTECTION_FIRE":
+                return "Fire Protection";
+            case "PROTECTION_PROJECTILE":
+                return "Projectile Protection";
+            case "QUICK_CHARGE":
+                return "Quick Charge";
+            case "RIPTIDE":
+                return "Riptide";
+            case "SILK_TOUCH":
+                return "Silk Touch";
+            case "SOUL_SPEED":
+                return "Soul Speed";
+            case "SWEEPING_EDGE":
+                return "Sweeping Edge";
+            case "THORNS":
+                return "Thorns";
+            case "VANISHING_CURSE":
+                return "Cure of Vanishing";
+            case "WATER_WORKER":
+                return "Aqua Affinity";
+            default:
+                return "Unknown";
+        }
+    }
+
     private static void initializeNonIntrusiveMaterials(){
         for(Material m : Material.values()){
             if(!m.isSolid())
@@ -302,6 +423,11 @@ public class UtilMethods {
         nonIntrusiveMaterials.remove(Material.WITHER_SKELETON_SKULL);
         nonIntrusiveMaterials.remove(Material.PLAYER_HEAD);
         nonIntrusiveMaterials.remove(Material.CREEPER_HEAD);
+
+        //only available in MC 1.17+
+        try {
+            nonIntrusiveMaterials.add(Material.LIGHT);
+        } catch (NoSuchFieldError e) {}
     }
 
     public static BlockFace getDirectionOfChest(Block block){

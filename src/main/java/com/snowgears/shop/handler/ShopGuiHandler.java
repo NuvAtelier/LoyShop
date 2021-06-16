@@ -2,10 +2,10 @@ package com.snowgears.shop.handler;
 
 import com.snowgears.shop.AbstractShop;
 import com.snowgears.shop.Shop;
-import com.snowgears.shop.ShopType;
 import com.snowgears.shop.gui.*;
 import com.snowgears.shop.util.PlayerSettings;
 import com.snowgears.shop.util.UtilMethods;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -33,13 +33,14 @@ public class ShopGuiHandler {
 
     }
 
-    public Shop plugin = Shop.getPlugin();
-
+    public Shop plugin;
     private HashMap<UUID, ShopGuiWindow> playerGuiWindows = new HashMap<>();
     private HashMap<UUID, PlayerSettings> playerSettings = new HashMap<>();
 
     private HashMap<GuiIcon, ItemStack> guiIcons = new HashMap<>();
     private HashMap<GuiTitle, String> guiWindowTitles = new HashMap<>();
+
+    private HashMap<UUID, ItemStack> playerHeads = new HashMap<>();
 
     public ShopGuiHandler(Shop instance){
         plugin = instance;
@@ -59,6 +60,44 @@ public class ShopGuiHandler {
         playerGuiWindows.put(player.getUniqueId(), window);
 
         window.open();
+    }
+
+    //TODO make this text configurable
+    public void reloadPlayerHeadIcon(UUID playerUUID){
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
+
+        ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta skMeta = (SkullMeta) playerHead.getItemMeta();
+        if(offlinePlayer != null) {
+            skMeta.setOwningPlayer(offlinePlayer);
+            skMeta.setDisplayName(offlinePlayer.getName());
+        }
+        else if(playerUUID.equals(plugin.getShopHandler().getAdminUUID())){ //admin UUID thats not an actual player
+            skMeta.setDisplayName("Admin");
+        }
+        else
+            return;
+        playerHead.setItemMeta(skMeta);
+
+        List<String> lore = new ArrayList<>();
+
+        lore.add("Shops: "+Shop.getPlugin().getShopHandler().getShops(playerUUID).size());
+
+        SkullMeta meta = (SkullMeta) playerHead.getItemMeta();
+        meta.setOwningPlayer(offlinePlayer);
+        meta.setDisplayName(offlinePlayer.getName());
+        meta.setLore(lore);
+
+        playerHead.setItemMeta(meta);
+        playerHeads.put(playerUUID, playerHead);
+    }
+
+    public ItemStack getPlayerHeadIcon(UUID playerUUID){
+        if(playerHeads.containsKey(playerUUID))
+            return playerHeads.get(playerUUID);
+        System.out.println("Player heads did not contain the head");
+        return new ItemStack(Material.AIR); //TODO change this back to null once you see why the icons arent loaded on addShop()
+        //return null;
     }
 
     //TODO have a change window to type method here that can be called from the button listener to clean things up?
@@ -95,67 +134,11 @@ public class ShopGuiHandler {
     }
 
     public ItemStack getIcon(GuiIcon iconEnum, OfflinePlayer player, AbstractShop shop){
-        ItemStack icon;
         if(iconEnum == GuiIcon.LIST_SHOP){
-            icon = shop.getItemStack().clone();
-            icon.setAmount(1);
-
-            List<String> lore = new ArrayList<>();
-            lore.add("Type: " + shop.getType().toString().toUpperCase());
-            if(shop.getType() == ShopType.BARTER)
-                lore.add("Price: "+(int)shop.getPrice() + " "+Shop.getPlugin().getItemNameUtil().getName(shop.getSecondaryItemStack()));
-            else if(shop.getType() == ShopType.BUY)
-                lore.add("Pays: " + shop.getPriceString());
-            else
-                lore.add("Price: " + shop.getPriceString());
-            if(!shop.isAdmin()) {
-                lore.add("Stock: " + shop.getStock());
-            }
-            lore.add("Location: " + UtilMethods.getCleanLocation(shop.getSignLocation(), true));
-
-            //TODO encorporate gambling shops and bartering shops better
-
-            String name = UtilMethods.getItemName(shop.getItemStack()) + " (x" + shop.getAmount() + ")";
-            ItemMeta iconMeta = icon.getItemMeta();
-            iconMeta.setDisplayName(name);
-            iconMeta.setLore(lore);
-
-            icon.setItemMeta(iconMeta);
-            return icon;
+            return shop.getGuiIcon();
         }
-        else if(iconEnum == GuiIcon.LIST_PLAYER){
-
-            icon = new ItemStack(Material.PLAYER_HEAD, 1, (short) 3);
-
-            if(player == null) //TODO this should never be null but for some reason it is
-                return icon;
-
-            List<String> lore = new ArrayList<>();
-
-            lore.add("Shops: "+Shop.getPlugin().getShopHandler().getShops(player.getUniqueId()).size());
-
-            SkullMeta meta = (SkullMeta) icon.getItemMeta();
-            meta.setOwner(player.getName());
-            meta.setDisplayName(player.getName());
-            meta.setLore(lore);
-
-            icon.setItemMeta(meta);
-            return icon;
-        }
-        else if(iconEnum == GuiIcon.LIST_PLAYER_ADMIN){
-            icon = guiIcons.get(iconEnum).clone();
-            ItemMeta iconMeta = icon.getItemMeta();
-
-            List<String> lore = iconMeta.getLore();
-            if(lore == null){
-                lore = new ArrayList<>();
-            }
-            lore.add("Shops: "+Shop.getPlugin().getShopHandler().getShops(plugin.getShopHandler().getAdminUUID()).size());
-
-            iconMeta.setLore(lore);
-            icon.setItemMeta(iconMeta);
-
-            return icon;
+        else if(iconEnum == GuiIcon.LIST_PLAYER || iconEnum == GuiIcon.LIST_PLAYER_ADMIN){
+            return getPlayerHeadIcon(player.getUniqueId());
         }
 
         if(guiIcons.containsKey(iconEnum))

@@ -2,6 +2,8 @@ package com.snowgears.shop.util;
 
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.potion.PotionData;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,6 +42,18 @@ public class ItemNameUtil {
     public String getName(ItemStack item){
         if(item == null)
             return "";
+
+        if(item.getItemMeta() != null && item.getItemMeta() instanceof PotionMeta){
+            String name = getBackupName(item.getType());
+            PotionData data = ((PotionMeta) item.getItemMeta()).getBasePotionData();
+            name += " {"+UtilMethods.capitalize(data.getType().name().replace("_", " ").toLowerCase());
+            if(data.isUpgraded())
+                name += " 2";
+            if(data.isExtended())
+                name += " - extended";
+            name += "}";
+            return name;
+        }
 
         if(item.getItemMeta() != null && item.getItemMeta().getDisplayName() != null && !item.getItemMeta().getDisplayName().isEmpty())
             return item.getItemMeta().getDisplayName();

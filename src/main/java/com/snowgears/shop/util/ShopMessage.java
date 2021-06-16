@@ -99,6 +99,8 @@ public class ShopMessage {
         if(shop != null && shop.getItemStack() != null) {
             unformattedMessage = unformattedMessage.replace("[item amount]", "" + shop.getItemStack().getAmount());
             unformattedMessage = unformattedMessage.replace("[location]", shop.getChestLocation().getWorld().getName()+","+shop.getChestLocation().getBlockX()+","+shop.getChestLocation().getBlockY()+","+shop.getChestLocation().getBlockZ());
+            unformattedMessage = unformattedMessage.replace("[item enchants]", UtilMethods.getEnchantmentsString(shop.getItemStack()));
+            unformattedMessage = unformattedMessage.replace("[item lore]", UtilMethods.getLoreString(shop.getItemStack()));
             //dont replace [item] tag on first run through if its for a sign
             if(!forSign)
                 unformattedMessage = unformattedMessage.replace("[item]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack()));
@@ -119,6 +121,8 @@ public class ShopMessage {
                     unformattedMessage = unformattedMessage.replace("[barter item]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getSecondaryItemStack()));
                 unformattedMessage = unformattedMessage.replace("[barter item durability]", "" + shop.getSecondaryItemDurabilityPercent());
                 unformattedMessage = unformattedMessage.replace("[barter item type]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getSecondaryItemStack().getType()));
+                unformattedMessage = unformattedMessage.replace("[barter item enchants]", UtilMethods.getEnchantmentsString(shop.getSecondaryItemStack()));
+                unformattedMessage = unformattedMessage.replace("[barter item lore]", UtilMethods.getLoreString(shop.getSecondaryItemStack()));
             }
         }
         if(shop != null) {
@@ -302,7 +306,8 @@ public class ShopMessage {
             formattedLine = formatMessage(line, shop, null, false);
             formattedLine = ChatColor.translateAlternateColorCodes('&', formattedLine);
 
-            formattedLines.add(formattedLine);
+            if(!formattedLine.isEmpty() && !ChatColor.stripColor(formattedLine).isEmpty())
+                formattedLines.add(formattedLine);
         }
         return formattedLines;
     }

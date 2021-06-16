@@ -27,6 +27,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public abstract class AbstractShop {
@@ -44,6 +46,7 @@ public abstract class AbstractShop {
     protected String[] signLines;
     protected boolean signLinesRequireRefresh;
     protected boolean isPerformingTransaction;
+    protected ItemStack guiIcon;
 
     public AbstractShop(Location signLoc, UUID player, double pri, int amt, Boolean admin) {
         signLocation = signLoc;
@@ -201,6 +204,10 @@ public abstract class AbstractShop {
         return null;
     }
 
+    public ItemStack getGuiIcon(){
+        return guiIcon;
+    }
+
     //setter methods
 
     public void setItemStack(ItemStack is) {
@@ -214,6 +221,7 @@ public abstract class AbstractShop {
             }
         }
         //this.display.spawn();
+        setGuiIcon();
     }
 
     public void setSecondaryItemStack(ItemStack is) {
@@ -227,6 +235,7 @@ public abstract class AbstractShop {
             }
         }
         //this.display.spawn();
+        setGuiIcon();
     }
 
     public void setOwner(UUID newOwner){
@@ -239,6 +248,35 @@ public abstract class AbstractShop {
 
     public void setAmount(int amount){
         this.amount = amount;
+    }
+
+    //TODO make all of this text configurable from the GUI config file
+    //TODO use this to build GUIs more efficiently
+    public void setGuiIcon(){
+        guiIcon = this.getItemStack().clone();
+        guiIcon.setAmount(1);
+
+        List<String> lore = new ArrayList<>();
+        lore.add("Type: " + this.getType().toString().toUpperCase());
+        if(this.getType() == ShopType.BARTER)
+            lore.add("Price: "+(int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack()));
+        else if(this.getType() == ShopType.BUY)
+            lore.add("Pays: " + this.getPriceString());
+        else
+            lore.add("Price: " + this.getPriceString());
+        if(!this.isAdmin()) {
+            lore.add("Stock: " + this.getStock());
+        }
+        lore.add("Location: " + UtilMethods.getCleanLocation(this.getSignLocation(), true));
+
+        //TODO encorporate gambling shops and bartering shops better
+
+        String name = UtilMethods.getItemName(this.getItemStack()) + " (x" + this.getAmount() + ")";
+        ItemMeta iconMeta = guiIcon.getItemMeta();
+        iconMeta.setDisplayName(name);
+        iconMeta.setLore(lore);
+
+        guiIcon.setItemMeta(iconMeta);
     }
 
     public int getItemDurabilityPercent(){
@@ -288,6 +326,10 @@ public abstract class AbstractShop {
                     signBlock.setLine(3, lines[3]);
                 }
 
+                if(Shop.getPlugin().getGlowingSignText()){
+                    signBlock.setGlowingText(true);
+                }
+
                 signBlock.update(true);
             }
         }, 2L);
@@ -295,6 +337,11 @@ public abstract class AbstractShop {
 
     public void delete() {
         display.remove();
+
+        if(Shop.getPlugin().getDisplayLightLevel() > 0) {
+            Block displayBlock = this.getChestLocation().getBlock().getRelative(BlockFace.UP);
+            displayBlock.setType(Material.AIR);
+        }
 
         Block b = this.getSignLocation().getBlock();
         if (b.getBlockData() instanceof WallSign) {

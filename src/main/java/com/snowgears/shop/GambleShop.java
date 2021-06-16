@@ -111,6 +111,7 @@ public class GambleShop extends AbstractShop {
         this.shuffleGambleItem();
 
         this.isPerformingTransaction = false;
+        setGuiIcon();
         return TransactionError.NONE;
     }
 
