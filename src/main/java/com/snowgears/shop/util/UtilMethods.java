@@ -370,7 +370,7 @@ public class UtilMethods {
                 return "Respiration";
             case "PIERCING":
                 return "Piercing";
-            case "PROTECTION_ENVIRONMENTAL    ":
+            case "PROTECTION_ENVIRONMENTAL":
                 return "Protection";
             case "PROTECTION_EXPLOSIONS":
                 return "Blast Protection";

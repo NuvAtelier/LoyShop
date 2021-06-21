@@ -43,6 +43,9 @@ public class ItemNameUtil {
         if(item == null)
             return "";
 
+        if(item.getItemMeta() != null && item.getItemMeta().getDisplayName() != null && !item.getItemMeta().getDisplayName().isEmpty())
+            return item.getItemMeta().getDisplayName();
+
         if(item.getItemMeta() != null && item.getItemMeta() instanceof PotionMeta){
             String name = getBackupName(item.getType());
             PotionData data = ((PotionMeta) item.getItemMeta()).getBasePotionData();
@@ -54,9 +57,6 @@ public class ItemNameUtil {
             name += "}";
             return name;
         }
-
-        if(item.getItemMeta() != null && item.getItemMeta().getDisplayName() != null && !item.getItemMeta().getDisplayName().isEmpty())
-            return item.getItemMeta().getDisplayName();
 //
 //        String format = ""+item.getTypeId()+":"+item.getData().getData();
 //        String name = names.get(format);

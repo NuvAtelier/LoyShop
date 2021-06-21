@@ -2,6 +2,7 @@ package com.snowgears.shop.util;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.ArmorStand;
@@ -261,8 +262,12 @@ public class DisplayUtil {
         }
 
         try {
-            if (blockLocation.getBlock().getState() instanceof ShulkerBox || blockLocation.getBlock().getRelative(BlockFace.DOWN).getState() instanceof ShulkerBox) {
+            Block chestBlock = blockLocation.getBlock();
+            if (chestBlock.getState() instanceof ShulkerBox || chestBlock.getRelative(BlockFace.DOWN).getState() instanceof ShulkerBox) {
                 standLocation.add(0, 0.1, 0);
+            }
+            else if(chestBlock.getType() == Material.BARREL || chestBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL){
+                standLocation.add(0, 0.22, 0);
             }
         } catch (NoClassDefFoundError e) {}
 

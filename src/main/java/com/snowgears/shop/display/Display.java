@@ -231,6 +231,11 @@ public class Display {
             Location lowerTagLocation = getShop().getChestLocation().getBlock().getRelative(BlockFace.UP).getLocation();
             lowerTagLocation = lowerTagLocation.add(0.5, -.7, 0.5);
 
+            Block displayBlock = lowerTagLocation.getBlock();
+            if(displayBlock.getType() == Material.BARREL || displayBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL){
+                lowerTagLocation = lowerTagLocation.add(0, .25, 0);
+            }
+
             double verticalAddition = 0;
             //iterate through list backwards to build from bottom -> up
             for (int i = displayTags.size() - 1; i >= 0; i--) {
