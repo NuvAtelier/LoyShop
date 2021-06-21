@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static com.snowgears.shop.util.UtilMethods.isMCVersion17Plus;
+
 public abstract class AbstractShop {
 
     protected Location signLocation;
@@ -326,8 +328,13 @@ public abstract class AbstractShop {
                     signBlock.setLine(3, lines[3]);
                 }
 
-                if(Shop.getPlugin().getGlowingSignText()){
-                    signBlock.setGlowingText(true);
+                if(isMCVersion17Plus()) {
+                    if (Shop.getPlugin().getGlowingSignText()) {
+                        signBlock.setGlowingText(true);
+                    }
+                    else{
+                        signBlock.setGlowingText(false);
+                    }
                 }
 
                 signBlock.update(true);
@@ -338,7 +345,7 @@ public abstract class AbstractShop {
     public void delete() {
         display.remove();
 
-        if(Shop.getPlugin().getDisplayLightLevel() > 0) {
+        if(UtilMethods.isMCVersion17Plus() && Shop.getPlugin().getDisplayLightLevel() > 0) {
             Block displayBlock = this.getChestLocation().getBlock().getRelative(BlockFace.UP);
             displayBlock.setType(Material.AIR);
         }

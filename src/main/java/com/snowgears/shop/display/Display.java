@@ -190,7 +190,7 @@ public class Display {
                     if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
                         frameLocation = aboveShop.getRelative(shop.getFacing()).getLocation();
                     }
-                    if(Shop.getPlugin().getGlowingItemFrame()){
+                    if(UtilMethods.isMCVersion17Plus() && Shop.getPlugin().getGlowingItemFrame()){
                         GlowItemFrame frame = (GlowItemFrame) shop.getChestLocation().getWorld().spawn(frameLocation,
                                 GlowItemFrame.class,
                                 entity -> {

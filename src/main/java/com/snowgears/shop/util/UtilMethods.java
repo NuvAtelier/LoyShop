@@ -424,10 +424,9 @@ public class UtilMethods {
         nonIntrusiveMaterials.remove(Material.PLAYER_HEAD);
         nonIntrusiveMaterials.remove(Material.CREEPER_HEAD);
 
-        //only available in MC 1.17+
-        try {
+        if(isMCVersion17Plus()) {
             nonIntrusiveMaterials.add(Material.LIGHT);
-        } catch (NoSuchFieldError e) {}
+        }
     }
 
     public static BlockFace getDirectionOfChest(Block block){
@@ -435,6 +434,17 @@ public class UtilMethods {
             return ((Directional)block.getBlockData()).getFacing();
         }
         return null;
+    }
+
+    //returns if Minecraft version 1.17 or above
+    public static boolean isMCVersion17Plus(){
+        //LIGHT only available in MC 1.17+
+        try {
+            Material.LIGHT.isAir();
+            return true;
+        } catch (NoSuchFieldError e) {
+            return false;
+        }
     }
 
     //this takes a dirty (pre-cleaned) string and finds how much to multiply the final by

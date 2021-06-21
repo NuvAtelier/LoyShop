@@ -335,7 +335,7 @@ public class MiscListener implements Listener {
                     if (e.isCancelled())
                         return;
 
-                    if(plugin.getDisplayLightLevel() > 0) {
+                    if(UtilMethods.isMCVersion17Plus() && plugin.getDisplayLightLevel() > 0) {
                         Block displayBlock = shop.getChestLocation().getBlock().getRelative(BlockFace.UP);
                         displayBlock.setType(Material.LIGHT);
                         Light data = (Light) displayBlock.getBlockData();
