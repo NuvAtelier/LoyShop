@@ -485,8 +485,8 @@ public class ShopHandler {
                 Location signLoc = locationFromString(config.getString("shops." + shopOwner + "." + shopNumber + ".location"));
                 if(signLoc != null) {
                     try {
-                        Block b = signLoc.getBlock();
-                        if (b.getBlockData() instanceof WallSign) {
+                        //Block b = signLoc.getBlock();
+                        //if (b.getBlockData() instanceof WallSign) { //don't check for sign when loading due to it calling chunk loaders
 
                             UUID owner;
                             if (shopOwner.equals("admin"))
@@ -516,7 +516,7 @@ public class ShopHandler {
 
                             AbstractShop shop = AbstractShop.create(signLoc, owner, price, priceSell, amount, isAdmin, shopType);
 
-                            if (this.isChest(shop.getChestLocation().getBlock())) {
+                            //if (this.isChest(shop.getChestLocation().getBlock())) { //don't call chest check from loader either due to chunk loader being called
 
                                 shop.setItemStack(itemStack);
                                 if (shop.getType() == ShopType.BARTER) {
@@ -539,8 +539,8 @@ public class ShopHandler {
                                         }
                                     }
                                 }.runTaskLater(this.plugin, 2);
-                            }
-                        }
+                           // }
+                       // }
                     } catch (NullPointerException e) {}
                 }
             }

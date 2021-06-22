@@ -3,24 +3,31 @@
 #                      ECONOMY AND CURRENCY                           #
 # =================================================================== #
 
-# If you want to use virtual money, install the plugin Vault and set this to true #
-# Otherwise, shops will use physical items as the economy on the server #
-useVault: false
+# type :
+# ITEM - shops will use a specified item as the currency (default is Emerald). To change this item in-game, run the
+#        command '/shop setcurrency while holding the item in your hand you want to use as currency.
+# VAULT - shops will use Vault as the currency. (This requires Vault to be installed on the server)
+# EXPERIENCE - shops will use experience points as the currency
 
-# If useVault is set to true, this is the currency symbol that is displayed #
-vaultCurrencyName: "$"
-# If useVault is set to false, this is the name that is displayed #
-# TO CHANGE THE ACTUAL ITEM THAT IS USED, RUN THE COMMAND '/SHOP CURRENCY' IN-GAME #
-itemCurrencyName: "Emerald(s)"
+# name :
+# This is the name of the currency that shows up on signs. If you are using ITEM, you will want to change
+# this to the type of item being used. If you are using VAULT, you will want to change this to a currency symbol
+# like '$'. If you are using EXPERIENCE, you will want to name this "Experience" or something similar
 
-# This is the format that the currency will be displayed as on signs and in chat #
-currencyFormat: "[price] [name]"
+# format :
+# This is the order in which prices are displayed. For example, if you are using ITEM with Emeralds as the currency,
+# '[price] [name]' would show '5 Emerald(s)'. If you are using VAULT, this would show '5 $', so setting this as
+# '[name][price]' would show '$5'.
+currency:
+   type: ITEM
+   name: "Emerald(s)"
+   format: "[price] [name]"
 
 # These allow you to charge money to players for creating/destroying their shops #
 creationCost: 0
 destructionCost: 0
 
-# This returns the creation cost to the shop creator when the shop is destroyed.#
+# This returns the creation cost to the shop creator when the shop is destroyed #
 # Adds virtual funds if using vault currency and drops the item on the chest location if using physical currency #
 returnCreationCost: false
 

@@ -2,6 +2,7 @@ package com.snowgears.shop.handler;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.gui.ShopGuiWindow;
+import com.snowgears.shop.util.CurrencyType;
 import com.snowgears.shop.util.PlayerSettings;
 import com.snowgears.shop.util.ShopMessage;
 import org.bukkit.Bukkit;
@@ -127,7 +128,7 @@ public class CommandHandler extends BukkitCommand {
                 if (sender instanceof Player) {
                     Player player = (Player) sender;
                     if ((plugin.usePerms() && player.hasPermission("shop.operator")) || player.isOp()) {
-                        if(plugin.useVault()) {
+                        if(plugin.getCurrencyType() != CurrencyType.ITEM){
                             sendCommandMessage("error_novault", player);
                             return true;
                         }

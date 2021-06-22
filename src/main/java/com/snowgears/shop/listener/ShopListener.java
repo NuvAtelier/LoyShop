@@ -4,6 +4,8 @@ import com.snowgears.shop.AbstractShop;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.ShopType;
 import com.snowgears.shop.display.DisplayTagOption;
+import com.snowgears.shop.util.CurrencyType;
+import com.snowgears.shop.util.PlayerExperience;
 import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.WorldGuardHook;
 import org.bukkit.Material;
@@ -24,6 +26,7 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.permissions.PermissionAttachmentInfo;
@@ -319,11 +322,25 @@ public class ShopListener implements Listener {
 
         plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
             public void run() {
+                if(plugin.getCurrencyType() == CurrencyType.EXPERIENCE) {
+                    PlayerExperience exp = PlayerExperience.loadFromFile(player);
+                    if(exp != null){
+                        exp.apply();
+                    }
+                }
                 if(inv != null){
                     player.getEnderChest().setContents(inv.getContents());
                     plugin.getEnderChestHandler().saveInventory(player, inv);
                 }
             }
         }, 2L);
+    }
+
+    @EventHandler
+    public void onLogout(PlayerQuitEvent event){
+        if(plugin.getCurrencyType() == CurrencyType.EXPERIENCE) {
+            //this automatically saves to file
+            new PlayerExperience(event.getPlayer());
+        }
     }
 }

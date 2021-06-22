@@ -49,7 +49,6 @@ public class Shop extends JavaPlugin {
     private boolean usePerms;
     //private boolean enableMetrics;
     private boolean enableGUI;
-    private boolean useVault;
     private boolean hookWorldGuard;
     private boolean hookTowny;
     private String commandAlias;
@@ -68,8 +67,8 @@ public class Shop extends JavaPlugin {
     private boolean setGlowingSignText;
     private ItemStack gambleDisplayItem;
     private ItemStack itemCurrency = null;
-    private String itemCurrencyName = "";
-    private String vaultCurrencySymbol = "";
+    private CurrencyType currencyType;
+    private String currencyName = "";
     private String currencyFormat = "";
     private Economy econ = null;
     private boolean useEnderchests;
@@ -221,7 +220,12 @@ public class Shop extends JavaPlugin {
         playSounds = config.getBoolean("playSounds");
         playEffects = config.getBoolean("playEffects");
         setGlowingSignText = config.getBoolean("setGlowingSignText");
-        useVault = config.getBoolean("useVault");
+
+        try {
+            currencyType = CurrencyType.valueOf(config.getString("economy.type"));
+        } catch(Exception e){
+            currencyType = CurrencyType.ITEM;
+        }
         //TODO
 //        taxPercent = config.getDouble("taxPercent");
 
@@ -275,9 +279,8 @@ public class Shop extends JavaPlugin {
         YamlConfiguration gambleItemConfig = YamlConfiguration.loadConfiguration(gambleDisplayFile);
         gambleDisplayItem = gambleItemConfig.getItemStack("GAMBLE_DISPLAY");
 
-        itemCurrencyName = config.getString("itemCurrencyName");
-        vaultCurrencySymbol = config.getString("vaultCurrencyName");
-        currencyFormat = config.getString("currencyFormat");
+        currencyName = config.getString("currency.name");
+        currencyFormat = config.getString("currency.format");
 
         useEnderchests = config.getBoolean("enableEnderChests");
 
@@ -287,17 +290,17 @@ public class Shop extends JavaPlugin {
         destructionCost = config.getDouble("destructionCost");
         returnCreationCost = config.getBoolean("returnCreationCost");
 
-        worldBlackList = new ArrayList<String>();
+        worldBlackList = new ArrayList<>();
         for(String world : config.getConfigurationSection("worldBlacklist").getKeys(true)){
             worldBlackList.add(world);
         }
 
-        if (useVault) {
+        if (currencyType == CurrencyType.VAULT) {
             if (!setupEconomy()) {
                 log.severe("[Shop] Vault implementation not detected at startup! Currency may not work properly!");
-                log.info("[Shop] If you do not wish to use Vault with Shop, make sure to set 'useVault' in the config file to false.");
+                log.info("[Shop] If you do not wish to use Vault with Shop, make sure to set 'economy.type' in the config file to ITEM.");
             } else {
-                log.info("[Shop] Vault dependency found. Using the Vault economy (" + vaultCurrencySymbol + ") for currency on the server.");
+                log.info("[Shop] Vault dependency found. Using the Vault economy (" + currencyName + ") for currency on the server.");
             }
         } else {
             if (itemCurrency == null) {
@@ -387,8 +390,8 @@ public class Shop extends JavaPlugin {
         return usePerms;
     }
 
-    public boolean useVault() {
-        return useVault;
+    public CurrencyType getCurrencyType() {
+        return currencyType;
     }
 
     public boolean hookWorldGuard(){
@@ -502,12 +505,8 @@ public class Shop extends JavaPlugin {
         }
     }
 
-    public String getItemCurrencyName() {
-        return itemCurrencyName;
-    }
-
-    public String getVaultCurrencySymbol() {
-        return vaultCurrencySymbol;
+    public String getCurrencyName() {
+        return currencyName;
     }
 
     public String getCommandAlias(){
@@ -522,13 +521,10 @@ public class Shop extends JavaPlugin {
         String format = currencyFormat;
 
         if(format.contains("[name]")){
-            if(useVault())
-                format = format.replace("[name]", vaultCurrencySymbol);
-            else
-                format = format.replace("[name]", itemCurrencyName);
+            format = format.replace("[name]", currencyName);
         }
         if(format.contains("[price]")){
-            if(useVault()) {
+            if(currencyType == CurrencyType.VAULT) {
                 return format.replace("[price]", UtilMethods.formatLongToKString(price, true));
                 //return format.replace("[price]", new DecimalFormat("0.00").format(price).toString());
             }
@@ -550,13 +546,10 @@ public class Shop extends JavaPlugin {
         String format = currencyFormat;
 
         if(format.contains("[name]")){
-            if(useVault())
-                format = format.replace("[name]", vaultCurrencySymbol);
-            else
-                format = format.replace("[name]", itemCurrencyName);
+            format = format.replace("[name]", currencyName);
         }
         if(format.contains("[price]")){
-            if(useVault())
+            if(currencyType == CurrencyType.VAULT)
                 //return format.replace("[price]", new DecimalFormat("0.00").format(price)+"/"+new DecimalFormat("0.00").format(priceSell).toString());
             return format.replace("[price]", UtilMethods.formatLongToKString(price, true)+"/"+UtilMethods.formatLongToKString(priceSell, true));
             else if(pricePer)
@@ -566,13 +559,6 @@ public class Shop extends JavaPlugin {
                 return format.replace("[price]", ""+(int)price+"/"+(int)priceSell);
         }
         return format;
-    }
-
-    public String getCurrencyName(){
-        if(this.useVault)
-            return this.getVaultCurrencySymbol();
-        else
-            return this.getItemCurrencyName();
     }
 
     public double getTaxPercent(){

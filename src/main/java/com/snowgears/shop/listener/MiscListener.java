@@ -179,7 +179,7 @@ public class MiscListener implements Listener {
                 else if (event.getLine(3).toLowerCase().contains(ShopMessage.getCreationWord("COMBO")))
                     type = ShopType.COMBO;
 
-                if (plugin.useVault()) {
+                if (plugin.getCurrencyType() == CurrencyType.VAULT) {
                     try {
                         int multiplyValue = UtilMethods.getMultiplyValue(event.getLine(2));
                         String line3 = UtilMethods.cleanNumberText(event.getLine(2));
@@ -592,7 +592,7 @@ public class MiscListener implements Listener {
                 }
                 else{
                     if((!shop.isAdmin()) && plugin.returnCreationCost() && plugin.getCreationCost() > 0) {
-                        if (plugin.useVault()) {
+                        if (plugin.getCurrencyType() != CurrencyType.ITEM) {
                             EconomyUtils.addFunds(shop.getOwner(),player.getInventory(), plugin.getCreationCost());
                         } else {
                             ItemStack currencyDrop = plugin.getItemCurrency().clone();

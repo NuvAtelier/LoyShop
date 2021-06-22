@@ -201,7 +201,7 @@ command:
    itemrefresh_output: "&7The display items on all of the shops have been refreshed."
    reload: "&c/[plugin] reload &7- reload Shop plugin"
    reload_output: "&aSuccessfully reloaded Shop."
-   error_novault: "&cThe server is using Vault so no item currency could be set."
+   error_novault: "&cThe server is not using an item based currency so no item could be set."
    error_nohand: "&cYou must be holding a valid item to use that command."
    not_authorized: "&cYou are not authorized to use that command."
    notify_user: "&7Your notifications for your own transactions with shops are now [notify user]"
