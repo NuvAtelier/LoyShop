@@ -498,7 +498,7 @@ public class MiscListener implements Listener {
                         }
                     }
                     else {
-                        shop.getDisplay().spawn(true);
+                        shop.getDisplay().spawn(null);
                         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);
@@ -516,7 +516,7 @@ public class MiscListener implements Listener {
 
                         if(shop.getSecondaryItemStack() == null)
                             shop.setSecondaryItemStack(shopItem);
-                        shop.getDisplay().spawn(true);
+                        shop.getDisplay().spawn(null);
                         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);
@@ -546,7 +546,7 @@ public class MiscListener implements Listener {
                 AbstractShop shop = plugin.getShopHandler().getShop(b.getLocation());
                 if (shop != null) {
                     if (shop.getDisplay().getType() == DisplayType.ITEM)
-                        shop.getDisplay().spawn(true);
+                        shop.getDisplay().spawn(null);
                 }
             }
         }

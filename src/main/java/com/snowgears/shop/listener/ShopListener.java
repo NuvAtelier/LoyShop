@@ -158,8 +158,8 @@ public class ShopListener implements Listener {
                     if(!Tag.SIGNS.isTagged(player.getInventory().getItemInMainHand().getType())) {
                         shop.printSalesInfo(player);
                         event.setCancelled(true);
-                        if(plugin.displayNameTags() == DisplayTagOption.RIGHT_CLICK_CHEST){
-                            shop.getDisplay().showNameTags();
+                        if(plugin.getDisplayTagOption() == DisplayTagOption.RIGHT_CLICK_CHEST){
+                            shop.getDisplay().showDisplayTags(player);
                         }
                         return;
                     }
@@ -183,8 +183,8 @@ public class ShopListener implements Listener {
                     } else {
                         event.setCancelled(true);
                         shop.printSalesInfo(player);
-                        if(plugin.displayNameTags() == DisplayTagOption.RIGHT_CLICK_CHEST){
-                            shop.getDisplay().showNameTags();
+                        if(plugin.getDisplayTagOption() == DisplayTagOption.RIGHT_CLICK_CHEST){
+                            shop.getDisplay().showDisplayTags(player);
                         }
                         //player.sendMessage(ChatColor.RED + "You do not have access to open this shop.");
                     }
@@ -314,10 +314,8 @@ public class ShopListener implements Listener {
                 }
             }
         }
-        if(!plugin.useEnderChests())
-            return;
-
         final Player player = event.getPlayer();
+
         final Inventory inv = plugin.getEnderChestHandler().getInventory(player);
 
         plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
@@ -328,10 +326,12 @@ public class ShopListener implements Listener {
                         exp.apply();
                     }
                 }
-                if(inv != null){
+                if(plugin.useEnderChests() && inv != null){
                     player.getEnderChest().setContents(inv.getContents());
                     plugin.getEnderChestHandler().saveInventory(player, inv);
                 }
+
+                plugin.getShopHandler().refreshShopDisplays(player);
             }
         }, 2L);
     }

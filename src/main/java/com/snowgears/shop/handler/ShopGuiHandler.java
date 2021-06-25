@@ -95,7 +95,7 @@ public class ShopGuiHandler {
     public ItemStack getPlayerHeadIcon(UUID playerUUID){
         if(playerHeads.containsKey(playerUUID))
             return playerHeads.get(playerUUID);
-        System.out.println("Player heads did not contain the head");
+        //System.out.println("Player heads did not contain the head");
         return new ItemStack(Material.AIR); //TODO change this back to null once you see why the icons arent loaded on addShop()
         //return null;
     }

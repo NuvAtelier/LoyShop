@@ -1,10 +1,7 @@
 package com.snowgears.shop;
 
-import com.snowgears.shop.display.Display;
-import com.snowgears.shop.util.InventoryUtils;
-import com.snowgears.shop.util.ReflectionUtil;
-import com.snowgears.shop.util.ShopMessage;
-import com.snowgears.shop.util.UtilMethods;
+import com.snowgears.shop.display.AbstractDisplay;
+import com.snowgears.shop.util.*;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -40,7 +37,7 @@ public abstract class AbstractShop {
     protected UUID owner;
     protected ItemStack item;
     protected ItemStack secondaryItem;
-    protected Display display;
+    protected AbstractDisplay display;
     protected double price;
     protected int amount;
     protected boolean isAdmin;
@@ -58,15 +55,20 @@ public abstract class AbstractShop {
         isAdmin = admin;
         item = null;
 
-        display = new Display(this.signLocation);
+        display = DisplayUtil.getDisplayForNMSVersion(this.signLocation);
 
         if(isAdmin){
             owner = Shop.getPlugin().getShopHandler().getAdminUUID();
         }
 
         if(signLocation != null) {
-            WallSign sign = (WallSign)signLocation.getBlock().getBlockData();
-            chestLocation = signLocation.getBlock().getRelative(sign.getFacing().getOppositeFace()).getLocation();
+            try {
+                WallSign sign = (WallSign) signLocation.getBlock().getBlockData();
+                chestLocation = signLocation.getBlock().getRelative(sign.getFacing().getOppositeFace()).getLocation();
+            } catch(ClassCastException cce){
+                signLocation = null;
+                chestLocation = null;
+            }
         }
     }
 
@@ -168,7 +170,7 @@ public abstract class AbstractShop {
         return null;
     }
 
-    public Display getDisplay() {
+    public AbstractDisplay getDisplay() {
         return display;
     }
 
@@ -343,7 +345,7 @@ public abstract class AbstractShop {
     }
 
     public void delete() {
-        display.remove();
+        display.remove(null);
 
         if(UtilMethods.isMCVersion17Plus() && Shop.getPlugin().getDisplayLightLevel() > 0) {
             Block displayBlock = this.getChestLocation().getBlock().getRelative(BlockFace.UP);

@@ -1,5 +1,9 @@
 package com.snowgears.shop.util;
 
+import com.snowgears.shop.Shop;
+import com.snowgears.shop.display.AbstractDisplay;
+import com.snowgears.shop.display.packet.Display_1_16R3;
+import com.snowgears.shop.display.packet.Display_1_17R1;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -7,6 +11,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.EulerAngle;
 
@@ -24,19 +29,19 @@ public class DisplayUtil {
 
     //this spawns an armorstand at a location, with the item on it
     public static ArmorStand createDisplay(ItemStack itemStack, Location blockLocation, BlockFace facing){
-        ItemType itemType = getItemType(itemStack);
+        EquipmentSlot equipmentSlot = getEquipmentSlot(itemStack);
 
-        Location standLocation = getStandLocation(blockLocation, itemStack.getType(), facing, itemType);
+        Location standLocation = getStandLocation(blockLocation, itemStack.getType(), facing, equipmentSlot);
         ArmorStand stand = null;
 
-        switch (itemType){
+        switch (equipmentSlot){
             case HEAD:
                 stand = (ArmorStand) blockLocation.getWorld().spawnEntity(standLocation, EntityType.ARMOR_STAND);
                 stand.getEquipment().setHelmet(itemStack);
 
                 stand.setSmall(true);
                 break;
-            case BODY:
+            case CHEST:
                 stand = (ArmorStand) blockLocation.getWorld().spawnEntity(standLocation, EntityType.ARMOR_STAND);
                 stand.setSmall(true);
                 stand.getEquipment().setChestplate(itemStack);
@@ -75,37 +80,88 @@ public class DisplayUtil {
         return stand;
     }
 
-    public static ItemType getItemType(ItemStack itemStack){
+    public static ArmorStandData getArmorStandData(ItemStack itemStack, Location blockLocation, BlockFace facing, boolean isCase){
+        EquipmentSlot equipmentSlot = getEquipmentSlot(itemStack);
+        Location standLocation = getStandLocation(blockLocation, itemStack.getType(), facing, equipmentSlot);
+        standLocation.setY(standLocation.getY() - 0.7);
+
+        ArmorStandData armorStandData = new ArmorStandData();
+
+        switch (equipmentSlot){
+            case HEAD:
+            case CHEST:
+            case LEGS:
+            case FEET:
+                armorStandData.setSmall(true);
+                break;
+            case HAND:
+                armorStandData.setRightArmPose(getArmAngle(itemStack));
+                standLocation.setY(standLocation.getY() + 0.7);
+                try{
+                    if(itemStack.getType() == Material.SHIELD)
+                        armorStandData.setSmall(true);
+                } catch (NoSuchFieldError e) {}
+
+                break;
+        }
+
+        if(isCase) {
+            standLocation.setY(standLocation.getY() - 0.7);
+            armorStandData.setSmall(false);
+        }
+
+        armorStandData.setLocation(standLocation);
+        armorStandData.setEquipment(itemStack);
+        armorStandData.setEquipmentSlot(equipmentSlot);
+
+        boolean isShield = false;
+        try{
+            if(itemStack.getType() == Material.SHIELD)
+                isShield = true;
+        } catch (NoSuchFieldError e) {}
+
+        //make the stand face the correct direction when it spawns
+        armorStandData.setYaw(blockfaceToYaw(facing));
+        //fences and bows and shields are always 90 degrees off
+        if(isFence(itemStack.getType()) || itemStack.getType() == Material.BOW || isShield){ //used to have banner here too
+            armorStandData.setYaw(blockfaceToYaw(nextFace(facing)));
+        }
+
+        return armorStandData;
+    }
+
+    public static EquipmentSlot getEquipmentSlot(ItemStack itemStack){
 
         Material type = itemStack.getType();
         String sType = type.toString().toUpperCase();
 
         if(isHeldBlock(type)){
-            return ItemType.HAND;
+            return EquipmentSlot.HAND;
         }
         else if(sType.contains("_HELMET") || type == Material.PLAYER_HEAD || type.isBlock()){
-            return ItemType.HEAD;
+            return EquipmentSlot.HEAD;
         }
         else if(sType.contains("_CHESTPLATE") || type == Material.ELYTRA){
-            return ItemType.BODY;
+            return EquipmentSlot.CHEST;
         }
         else if(sType.contains("_LEGGINGS")){
-            return ItemType.LEGS;
+            return EquipmentSlot.LEGS;
         }
         else if(sType.contains("_BOOTS")){
-            return ItemType.FEET;
+            return EquipmentSlot.FEET;
         }
-        return ItemType.HAND;
+        return EquipmentSlot.HAND;
     }
 
-    public static Location getStandLocation(Location blockLocation, Material material, BlockFace facing, ItemType itemType){
+    public static Location getStandLocation(Location blockLocation, Material material, BlockFace facing, EquipmentSlot equipmentSlot){
 
         Location standLocation = null;
-        switch (itemType) {
+        switch (equipmentSlot) {
             case HEAD:
-                standLocation = blockLocation.clone().add(0.5, -.7, 0.5);
+                //standLocation = blockLocation.clone().add(0.5, -.7, 0.5);
+                standLocation = blockLocation.clone().add(0.5, 0, 0.5);
                 break;
-            case BODY:
+            case CHEST:
                 standLocation = blockLocation.clone().add(0.5, -0.3, 0.5);
                 if(material == Material.ELYTRA){
                     switch (facing){
@@ -267,7 +323,7 @@ public class DisplayUtil {
                 standLocation.add(0, 0.1, 0);
             }
             else if(chestBlock.getType() == Material.BARREL || chestBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL){
-                standLocation.add(0, 0.22, 0);
+                standLocation.add(0, 0.1, 0); //y was 0.22 for items before packets were used
             }
         } catch (NoClassDefFoundError e) {}
 
@@ -423,7 +479,13 @@ public class DisplayUtil {
         return direction;
     }
 
-    public static enum ItemType {
-        HEAD, BODY, LEGS, FEET, HAND;
+    public static AbstractDisplay getDisplayForNMSVersion(Location signLocation){
+        switch(Shop.getPlugin().getNmsBullshitHandler().getNmsVersion()){
+            //TODO return other versions here
+            case "1_16_R3":
+                return new Display_1_16R3(signLocation);
+                default:
+                    return new Display_1_17R1(signLocation);
+        }
     }
 }

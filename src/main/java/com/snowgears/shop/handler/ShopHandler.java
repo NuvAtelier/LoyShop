@@ -4,8 +4,8 @@ import com.snowgears.shop.AbstractShop;
 import com.snowgears.shop.ComboShop;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.ShopType;
-import com.snowgears.shop.display.Display;
 import com.snowgears.shop.display.DisplayType;
+import com.snowgears.shop.display.LegacyDisplay;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.*;
 import org.bukkit.block.*;
@@ -261,10 +261,16 @@ public class ShopHandler {
         return list;
     }
 
-    public void refreshShopDisplays() {
+    public void refreshShopDisplays(Player player) {
+        for (AbstractShop shop : allShops.values()) {
+            shop.getDisplay().spawn(player);
+        }
+    }
+
+    public void removeLegacyDisplays(){
         for (World world : plugin.getServer().getWorlds()) {
             for (Entity entity : world.getEntities()) {
-                if(Display.isDisplay(entity)){
+                if(LegacyDisplay.isDisplay(entity)){
                     entity.remove();
                 }
                 //make to sure to clear items from old version of plugin too
@@ -275,9 +281,6 @@ public class ShopHandler {
                     }
                 }
             }
-        }
-        for (AbstractShop shop : allShops.values()) {
-            shop.getDisplay().spawn(true);
         }
     }
 
@@ -468,7 +471,7 @@ public class ShopHandler {
         new BukkitRunnable() {
             @Override
             public void run() {
-                refreshShopDisplays();
+                refreshShopDisplays(null);
             }
         }.runTaskLater(this.plugin, 20);
     }
@@ -485,62 +488,58 @@ public class ShopHandler {
                 Location signLoc = locationFromString(config.getString("shops." + shopOwner + "." + shopNumber + ".location"));
                 if(signLoc != null) {
                     try {
-                        //Block b = signLoc.getBlock();
-                        //if (b.getBlockData() instanceof WallSign) { //don't check for sign when loading due to it calling chunk loaders
+                        UUID owner;
+                        if (shopOwner.equals("admin"))
+                            owner = this.getAdminUUID();
+                        else if(isLegacy)
+                            owner = uidFromString(shopOwner);
+                        else
+                            owner = UUID.fromString(shopOwner);
 
-                            UUID owner;
-                            if (shopOwner.equals("admin"))
-                                owner = this.getAdminUUID();
-                            else if(isLegacy)
-                                owner = uidFromString(shopOwner);
-                            else
-                                owner = UUID.fromString(shopOwner);
+                        String type = config.getString("shops." + shopOwner + "." + shopNumber + ".type");
+                        double price = Double.parseDouble(config.getString("shops." + shopOwner + "." + shopNumber + ".price"));
+                        double priceSell = 0;
+                        if (config.getString("shops." + shopOwner + "." + shopNumber + ".priceSell") != null) {
+                            priceSell = Double.parseDouble(config.getString("shops." + shopOwner + "." + shopNumber + ".priceSell"));
+                        }
+                        int amount = Integer.parseInt(config.getString("shops." + shopOwner + "." + shopNumber + ".amount"));
 
-                            String type = config.getString("shops." + shopOwner + "." + shopNumber + ".type");
-                            double price = Double.parseDouble(config.getString("shops." + shopOwner + "." + shopNumber + ".price"));
-                            double priceSell = 0;
-                            if (config.getString("shops." + shopOwner + "." + shopNumber + ".priceSell") != null) {
-                                priceSell = Double.parseDouble(config.getString("shops." + shopOwner + "." + shopNumber + ".priceSell"));
+                        boolean isAdmin = false;
+                        if (type.contains("admin"))
+                            isAdmin = true;
+                        ShopType shopType = typeFromString(type);
+
+                        ItemStack itemStack = config.getItemStack("shops." + shopOwner + "." + shopNumber + ".item");
+                        if (shopType == ShopType.GAMBLE) {
+                            itemStack = plugin.getGambleDisplayItem();
+                        }
+
+                        AbstractShop shop = AbstractShop.create(signLoc, owner, price, priceSell, amount, isAdmin, shopType);
+
+                        //there was a cast class exception with the wall sign
+                        if(shop.getChestLocation() != null) {
+                            shop.setItemStack(itemStack);
+                            if (shop.getType() == ShopType.BARTER) {
+                                ItemStack barterItemStack = config.getItemStack("shops." + shopOwner + "." + shopNumber + ".itemBarter");
+                                shop.setSecondaryItemStack(barterItemStack);
                             }
-                            int amount = Integer.parseInt(config.getString("shops." + shopOwner + "." + shopNumber + ".amount"));
 
-                            boolean isAdmin = false;
-                            if (type.contains("admin"))
-                                isAdmin = true;
-                            ShopType shopType = typeFromString(type);
+                            this.addShop(shop);
 
-                            ItemStack itemStack = config.getItemStack("shops." + shopOwner + "." + shopNumber + ".item");
-                            if (shopType == ShopType.GAMBLE) {
-                                itemStack = plugin.getGambleDisplayItem();
-                            }
+                            //final is necessary for use inside the BukkitRunnable class
+                            final AbstractShop finalShop = shop;
 
-                            AbstractShop shop = AbstractShop.create(signLoc, owner, price, priceSell, amount, isAdmin, shopType);
+                            final String displayType = config.getString("shops." + shopOwner + "." + shopNumber + ".displayType");
+                            new BukkitRunnable() {
+                                @Override
+                                public void run() {
 
-                            //if (this.isChest(shop.getChestLocation().getBlock())) { //don't call chest check from loader either due to chunk loader being called
-
-                                shop.setItemStack(itemStack);
-                                if (shop.getType() == ShopType.BARTER) {
-                                    ItemStack barterItemStack = config.getItemStack("shops." + shopOwner + "." + shopNumber + ".itemBarter");
-                                    shop.setSecondaryItemStack(barterItemStack);
-                                }
-
-                                this.addShop(shop);
-
-                                //final is necessary for use inside the BukkitRunnable class
-                                final AbstractShop finalShop = shop;
-
-                                final String displayType = config.getString("shops." + shopOwner + "." + shopNumber + ".displayType");
-                                new BukkitRunnable() {
-                                    @Override
-                                    public void run() {
-
-                                        if (finalShop != null && displayType != null) {
-                                            finalShop.getDisplay().setType(DisplayType.valueOf(displayType));
-                                        }
+                                    if (finalShop != null && displayType != null) {
+                                        finalShop.getDisplay().setType(DisplayType.valueOf(displayType));
                                     }
-                                }.runTaskLater(this.plugin, 2);
-                           // }
-                       // }
+                                }
+                            }.runTaskLater(this.plugin, 2);
+                        }
                     } catch (NullPointerException e) {}
                 }
             }
@@ -590,44 +589,5 @@ public class ShopHandler {
             }
         } catch (NoClassDefFoundError e) {}
         return shopMaterials.contains(b.getType());
-    }
-
-    public void saveDebugChunkTimings(){
-        try {
-
-            File fileDirectory = new File(plugin.getDataFolder(), "Data");
-            //UtilMethods.deleteDirectory(fileDirectory);
-            if (!fileDirectory.exists())
-                fileDirectory.mkdir();
-
-            File debugDirectory = new File(fileDirectory, "debug");
-            if (!debugDirectory.exists())
-                debugDirectory.mkdir();
-
-
-            long time = System.currentTimeMillis();
-            File currentFile = new File(debugDirectory + "/"+time+".yml");
-
-            if (!currentFile.exists()) // file doesn't exist
-                currentFile.createNewFile();
-
-            YamlConfiguration config = YamlConfiguration.loadConfiguration(currentFile);
-
-            HashMap<String, Integer> amounts = plugin.getDisplayListener().getDebugAverageChunkAmounts();
-            for (Map.Entry<String, Long> entry : plugin.getDisplayListener().getDebugAverageChunkTimes().entrySet()) {
-                int firstUnderscore = entry.getKey().indexOf('_');
-                String loadType = entry.getKey().substring(0, firstUnderscore);
-                int secondUnderscore = entry.getKey().indexOf("_", firstUnderscore+1);
-                String world = entry.getKey().substring(firstUnderscore+1, secondUnderscore);
-                //System.out.println(entry.getKey()+" - "+entry.getValue());
-                String chunk = entry.getKey().substring(secondUnderscore+1);
-
-                config.set(world+"."+chunk+"."+loadType+".average", entry.getValue());
-                config.set(world+"."+chunk+"."+loadType+".amount", amounts.get(entry.getKey()));
-            }
-            config.save(currentFile);
-        } catch (Exception e){
-            e.printStackTrace();
-        }
     }
 }

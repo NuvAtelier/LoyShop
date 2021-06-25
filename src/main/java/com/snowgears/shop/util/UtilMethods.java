@@ -236,6 +236,20 @@ public class UtilMethods {
             return (int) mins + ":" + (int) secs;
     }
 
+    public static Location pushLocationInDirection(Location location, BlockFace direction, double add){
+        switch (direction){
+            case NORTH:
+                location = location.add(0, 0, -add);
+            case EAST:
+                location = location.add(add, 0, 0);
+            case SOUTH:
+                location = location.add(0, 0, add);
+            case WEST:
+                location = location.add(-add, 0, 0);
+        }
+        return location;
+    }
+
     public static int getDurabilityPercent(ItemStack item) {
         if (item.getType().getMaxDurability() > 0) {
             double dur = ((double)(item.getType().getMaxDurability() - item.getDurability()) / (double)item.getType().getMaxDurability());

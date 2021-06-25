@@ -105,8 +105,8 @@ sign_text:
          4: "[owner]"
       normal_no_display:
          1: "[stock color]&l[barter shop]"
-         2: "[item]: [amount]"
-         3: "[barter item]: [price]"
+         2: "[item]: &a[amount]"
+         3: "[barter item]: &a[price]"
          4: "[owner]"
       admin:
          1: "&l[shop]"
@@ -115,8 +115,8 @@ sign_text:
          4: "&d[server name]"
       admin_no_display:
          1: "&l[barter shop]"
-         2: "[item]: [amount]"
-         3: "[barter item]: [price]"
+         2: "&a[item]: [amount]"
+         3: "[barter item]: &a[price]"
          4: "&d[server name]"
    GAMBLE:
       admin:

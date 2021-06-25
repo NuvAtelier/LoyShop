@@ -1,6 +1,5 @@
 package com.snowgears.shop;
 
-import com.snowgears.shop.display.Display;
 import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.gui.ShopGUIListener;
@@ -14,7 +13,6 @@ import net.milkbowl.vault.economy.Economy;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Entity;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -46,6 +44,8 @@ public class Shop extends JavaPlugin {
     private ItemNameUtil itemNameUtil;
     private PriceUtil priceUtil;
 
+    private NMSBullshitHandler nmsBullshitHandler;
+
     private boolean usePerms;
     //private boolean enableMetrics;
     private boolean enableGUI;
@@ -53,8 +53,8 @@ public class Shop extends JavaPlugin {
     private boolean hookTowny;
     private String commandAlias;
     private DisplayType displayType;
-    private DisplayTagOption displayNameTags;
-    private int displayNameTagsLifespan;
+    private DisplayTagOption displayTagOption;
+    private int displayTagLifespan;
     private DisplayType[] displayCycle;
     private boolean checkItemDurability;
     private boolean allowCreativeSelection;
@@ -131,6 +131,8 @@ public class Shop extends JavaPlugin {
             UtilMethods.copy(getResource("displayConfig.yml"), displayConfigFile);
         }
 
+        nmsBullshitHandler = new NMSBullshitHandler(this);
+
         //removed item names file after item ids are no longer used. may revisit later with new materials
 //        File itemNameFile = new File(getDataFolder(), "items.tsv");
 //        if (!itemNameFile.exists()) {
@@ -166,17 +168,17 @@ public class Shop extends JavaPlugin {
         } catch (Exception e){ displayType = DisplayType.ITEM; }
 
         try {
-            displayNameTags = DisplayTagOption.valueOf(config.getString("displayNameTags"));
-        } catch (Exception e){ displayNameTags = DisplayTagOption.NONE; }
+            displayTagOption = DisplayTagOption.valueOf(config.getString("displayNameTags"));
+        } catch (Exception e){ displayTagOption = DisplayTagOption.NONE; }
 
         try {
-            displayNameTagsLifespan = config.getInt("displayNameTagsLifespan");
+            displayTagLifespan = config.getInt("displayNameTagsLifespan");
             // Catch missing or negative config entry and default to 10
-            if (displayNameTagsLifespan <= 0) {
-                displayNameTagsLifespan = 10;
+            if (displayTagLifespan <= 0) {
+                displayTagLifespan = 10;
             }
         // This exception will only occur if text is entered in the config
-        } catch (Exception e){ displayNameTagsLifespan = 10; }
+        } catch (Exception e){ displayTagLifespan = 10; }
 
         try {
             List<String> cycle = config.getStringList("displayCycle");
@@ -327,10 +329,7 @@ public class Shop extends JavaPlugin {
 
     @Override
     public void onDisable(){
-//        if(useEnderChests())
-//            enderChestHandler.saveEnderChests();
-        //shopHandler.saveAllShops();
-        plugin.getShopHandler().saveDebugChunkTimings();
+
     }
 
     public void reload(){
@@ -406,12 +405,12 @@ public class Shop extends JavaPlugin {
         return displayType;
     }
 
-    public DisplayTagOption displayNameTags(){
-        return displayNameTags;
+    public DisplayTagOption getDisplayTagOption(){
+        return displayTagOption;
     }
 
     public int getDisplayTagLifespan(){
-        return displayNameTagsLifespan;
+        return displayTagLifespan;
     }
 
     public DisplayType[] getDisplayCycle(){
@@ -478,10 +477,6 @@ public class Shop extends JavaPlugin {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public boolean entityIsDisplay(Entity e){
-        return Display.isDisplay(e);
     }
 
     public void setGambleDisplayItem(ItemStack is){
@@ -600,5 +595,9 @@ public class Shop extends JavaPlugin {
 
     public ArrayList<String> getWorldBlacklist(){
         return worldBlackList;
+    }
+
+    public NMSBullshitHandler getNmsBullshitHandler() {
+        return nmsBullshitHandler;
     }
 }

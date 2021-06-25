@@ -18,7 +18,7 @@ public class ClearLaggListener implements Listener {
 //        Iterator<Entity> iterator = event.getEntityList().iterator();
 //        while (iterator.hasNext()) {
 //            Entity e = iterator.next();
-//            if (Display.isDisplay(e)) {
+//            if (LegacyDisplay.isDisplay(e)) {
 //                iterator.remove();
 //            }
 //        }
