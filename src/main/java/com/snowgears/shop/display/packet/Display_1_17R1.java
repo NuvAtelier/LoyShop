@@ -160,7 +160,7 @@ public class Display_1_17R1 extends AbstractDisplay {
         itemFrame.setItem(CraftItemStack.asNMSCopy(is));
         itemFrame.setDirection(getEnumDirection(facing));
 
-        PacketPlayOutSpawnEntity entitySpawnPacket = new PacketPlayOutSpawnEntity(itemFrame); //do i need to specify 71 as additional argument for item frame here?
+        PacketPlayOutSpawnEntity entitySpawnPacket = new PacketPlayOutSpawnEntity(itemFrame, itemFrame.getDirection().b());
         PacketPlayOutEntityMetadata entityMetadataPacket = new PacketPlayOutEntityMetadata(entityID, itemFrame.getDataWatcher(), true);
 
         sendPacket(player, entitySpawnPacket);

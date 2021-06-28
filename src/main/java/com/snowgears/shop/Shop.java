@@ -224,7 +224,7 @@ public class Shop extends JavaPlugin {
         setGlowingSignText = config.getBoolean("setGlowingSignText");
 
         try {
-            currencyType = CurrencyType.valueOf(config.getString("economy.type"));
+            currencyType = CurrencyType.valueOf(config.getString("currency.type"));
         } catch(Exception e){
             currencyType = CurrencyType.ITEM;
         }

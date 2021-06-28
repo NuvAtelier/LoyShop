@@ -1,5 +1,6 @@
 package com.snowgears.shop.util;
 
+import com.snowgears.shop.Shop;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -63,8 +64,8 @@ public class ReflectionUtil {
         }
 
         String clazzName = "net.minecraft.server." + getVersion() + nmsClassName;
-        Class<?> clazz;
 
+        Class<?> clazz;
         try {
             clazz = Class.forName(clazzName);
         } catch (Throwable t) {
@@ -74,6 +75,41 @@ public class ReflectionUtil {
 
         loadedNMSClasses.put(nmsClassName, clazz);
         return clazz;
+    }
+
+    public static Class<?> getDirectNMSClass(String nmsClassName) {
+        if (loadedNMSClasses.containsKey(nmsClassName)) {
+            return loadedNMSClasses.get(nmsClassName);
+        }
+
+        Class<?> clazz;
+        try {
+            clazz = Class.forName(nmsClassName);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            return loadedNMSClasses.put(nmsClassName, null);
+        }
+
+        loadedNMSClasses.put(nmsClassName, clazz);
+        return clazz;
+    }
+
+    public static Class<?> getNSMItemStackClass(){
+        if (Math.floor(Shop.getPlugin().getNmsBullshitHandler().getServerVersion()) >= 117.0D) {
+            return getDirectNMSClass("net.minecraft.world.item.ItemStack");
+        }
+        else{
+            return getNMSClass("ItemStack");
+        }
+    }
+
+    public static Class<?> getNMSNBTTagCompoundClass(){
+        if (Math.floor(Shop.getPlugin().getNmsBullshitHandler().getServerVersion()) >= 117.0D) {
+            return getDirectNMSClass("net.minecraft.nbt.NBTTagCompound");
+        }
+        else{
+            return getNMSClass("NBTTagCompound");
+        }
     }
 
     /**
@@ -215,8 +251,8 @@ public class ReflectionUtil {
         Method asNMSCopyMethod = ReflectionUtil.getMethod(craftItemStackClazz, "asNMSCopy", ItemStack.class);
 
         // NMS Method to serialize a net.minecraft.server.ItemStack to a valid Json string
-        Class<?> nmsItemStackClazz = ReflectionUtil.getNMSClass("ItemStack");
-        Class<?> nbtTagCompoundClazz = ReflectionUtil.getNMSClass("NBTTagCompound");
+        Class<?> nmsItemStackClazz = getNSMItemStackClass();
+        Class<?> nbtTagCompoundClazz = getNMSNBTTagCompoundClass();
         Method saveNmsItemStackMethod = ReflectionUtil.getMethod(nmsItemStackClazz, "save", nbtTagCompoundClazz);
 
         Object nmsNbtTagCompoundObj; // This will just be an empty NBTTagCompound instance to invoke the saveNms method

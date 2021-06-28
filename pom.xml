@@ -35,6 +35,22 @@
             <version>1.17-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot</artifactId>
+            <version>1.17-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot16</artifactId>
+            <version>1.16-R0.3-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/craftbukkit/spigot-1.16.5.jar</systemPath>
+        </dependency>
+
+
         <dependency>
             <groupId>net.milkbowl.vault</groupId>
             <artifactId>VaultAPI</artifactId>
