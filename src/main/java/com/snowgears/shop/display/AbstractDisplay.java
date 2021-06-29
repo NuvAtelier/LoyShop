@@ -135,20 +135,20 @@ public abstract class AbstractDisplay {
                     //do nothing
                     break;
                 case ITEM:
-                    spawnItemPacket(null, item, this.getItemDropLocation(false));
+                    spawnItemPacket(player, item, this.getItemDropLocation(false));
                     break;
                 case LARGE_ITEM:
                     ArmorStandData armorStandData = DisplayUtil.getArmorStandData(item, shop.getChestLocation().getBlock().getRelative(BlockFace.UP).getLocation(), shop.getFacing(), false);
-                    spawnArmorStandPacket(null, armorStandData, null);
+                    spawnArmorStandPacket(player, armorStandData, null);
                     break;
                 case GLASS_CASE:
                     //put the extra large glass casing down
                     Location caseLoc = shop.getChestLocation().getBlock().getRelative(BlockFace.UP).getLocation();
                     ArmorStandData caseStandData = DisplayUtil.getArmorStandData(new ItemStack(Material.GLASS), caseLoc, shop.getFacing(), true);
-                    spawnArmorStandPacket(null, caseStandData, null);
+                    spawnArmorStandPacket(player, caseStandData, null);
 
                     //drop the display item in the glass case
-                    spawnItemPacket(null, item, this.getItemDropLocation(false));
+                    spawnItemPacket(player, item, this.getItemDropLocation(false));
                     break;
                 case ITEM_FRAME:
                     Block aboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP);
@@ -158,10 +158,10 @@ public abstract class AbstractDisplay {
                         frameLocation = aboveShop.getRelative(shop.getFacing()).getLocation();
                     }
                     if(UtilMethods.isMCVersion17Plus() && Shop.getPlugin().getGlowingItemFrame()){
-                        spawnItemFramePacket(null, shop.getItemStack(), frameLocation, shop.getFacing(), true);
+                        spawnItemFramePacket(player, shop.getItemStack(), frameLocation, shop.getFacing(), true);
                     }
                     else {
-                        spawnItemFramePacket(null, shop.getItemStack(), frameLocation, shop.getFacing(), false);
+                        spawnItemFramePacket(player, shop.getItemStack(), frameLocation, shop.getFacing(), false);
                     }
                     break;
             }

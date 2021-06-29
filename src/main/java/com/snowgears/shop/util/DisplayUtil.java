@@ -163,11 +163,10 @@ public class DisplayUtil {
         Location standLocation = null;
         switch (equipmentSlot) {
             case HEAD:
-                //standLocation = blockLocation.clone().add(0.5, -.7, 0.5);
                 standLocation = blockLocation.clone().add(0.5, 0, 0.5);
                 break;
             case CHEST:
-                standLocation = blockLocation.clone().add(0.5, -0.3, 0.5);
+                standLocation = blockLocation.clone().add(0.5, 0.4, 0.5);
                 if(material == Material.ELYTRA){
                     switch (facing){
                         case NORTH:
@@ -186,10 +185,10 @@ public class DisplayUtil {
                 }
                 break;
             case LEGS:
-                standLocation = blockLocation.clone().add(0.5, -0.1 ,0.5);
+                standLocation = blockLocation.clone().add(0.5, 0.7 ,0.5);
                 break;
             case FEET:
-                standLocation = blockLocation.clone().add(0.5, 0.05 ,0.5);
+                standLocation = blockLocation.clone().add(0.5, 0.8 ,0.5);
                 break;
             case HAND:
                 standLocation = blockLocation;

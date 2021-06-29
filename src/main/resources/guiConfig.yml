@@ -126,7 +126,7 @@ icons:
             - "&7Set the server currency"
             - "&7to the item in your hand."
       set_gamble:
-         name: "Set Gamble LegacyDisplay"
+         name: "Set Gamble Display"
          lore:
             - "&7Set the gamble displays"
             - "&7to the item in your hand."
