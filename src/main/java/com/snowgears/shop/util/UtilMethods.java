@@ -461,6 +461,17 @@ public class UtilMethods {
         }
     }
 
+    //returns if Minecraft version 1.14 or above
+    public static boolean isMCVersion14Plus(){
+        //LIGHT only available in MC 1.17+
+        try {
+            Material.BARREL.isAir();
+            return true;
+        } catch (NoSuchFieldError e) {
+            return false;
+        }
+    }
+
     //this takes a dirty (pre-cleaned) string and finds how much to multiply the final by
     //this utility allows the input of numbers like 1.2k (1200)
     public static int getMultiplyValue(String text){

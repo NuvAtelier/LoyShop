@@ -54,21 +54,21 @@ display_tag_text:
    SELL:
       normal:
          - "[item]&7(x[item amount])"
-         - "[item enchants]"
+         - "&b[item enchants]"
          - "&7<right click sign to have shop sell the item to you>"
    BUY:
       normal:
          - "[item]&7(x[item amount])"
-         - "[item enchants]"
+         - "&b[item enchants]"
          - "&7<right click sign to have shop buy the item from you>"
    BARTER:
       normal:
          - "[lshift]&aYou get:"
          - "[lshift][item]&7(x[item amount])"
-         - "[item enchants]"
+         - "&b[item enchants]"
          - "[rshift]&6You trade:"
          - "[rshift][barter item]&7(x[barter item amount])"
-         - "[barter item enchants]"
+         - "&b[barter item enchants]"
          - "&7<right click sign to barter items with shop>"
    GAMBLE:
       normal:
@@ -77,7 +77,7 @@ display_tag_text:
    COMBO:
       normal:
          - "[item]&7(x[item amount])"
-         - "[item enchants]"
+         - "&b[item enchants]"
          - "&7<click &aLEFT &7side of sign for shop to &aBUY &7item from you>"
          - "[item]&7(x[item amount]) for &a[price]"
          - "&7<click &6RIGHT &7side of sign for shop to &6SELL &7item to you>"

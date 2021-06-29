@@ -43,7 +43,7 @@ public class TransactionListener implements Listener {
 
         try {
             if (event.getHand() == EquipmentSlot.OFF_HAND) {
-                return; // off hand packet, ignore.
+                return; // off hand version, ignore.
             }
         } catch (NoSuchMethodError error) {}
         Player player = event.getPlayer();

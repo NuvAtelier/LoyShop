@@ -401,7 +401,7 @@ public class MiscListener implements Listener {
         }
         try {
             if (event.getHand() == EquipmentSlot.OFF_HAND) {
-                return; // off hand packet, ignore.
+                return; // off hand version, ignore.
             }
         } catch (NoSuchMethodError error) {}
         final Player player = event.getPlayer();
@@ -726,7 +726,7 @@ public class MiscListener implements Listener {
 //    public void onBlockPlaceAttempt(PlayerInteractEvent event) {
 //        try {
 //            if (event.getHand() == EquipmentSlot.OFF_HAND) {
-//                return; // off hand packet, ignore.
+//                return; // off hand version, ignore.
 //            }
 //        } catch (NoSuchMethodError error) {}
 //

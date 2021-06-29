@@ -2,17 +2,22 @@ package com.snowgears.shop.util;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.AbstractDisplay;
-import com.snowgears.shop.display.packet.Display_1_16R3;
-import com.snowgears.shop.display.packet.Display_1_17R1;
+import com.snowgears.shop.display.version.*;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.EulerAngle;
 
 public class DisplayUtil {
@@ -230,7 +235,7 @@ public class DisplayUtil {
                             break;
                     }
                 }
-                else if(material == Material.CROSSBOW){
+                else if(UtilMethods.isMCVersion14Plus() && material == Material.CROSSBOW){
                     switch (facing){
                         case NORTH:
                             standLocation = blockLocation.clone().add(0.25, -1.6, 0.44);
@@ -322,7 +327,7 @@ public class DisplayUtil {
             if (chestBlock.getState() instanceof ShulkerBox || chestBlock.getRelative(BlockFace.DOWN).getState() instanceof ShulkerBox) {
                 standLocation.add(0, 0.1, 0);
             }
-            else if(chestBlock.getType() == Material.BARREL || chestBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL){
+            else if(UtilMethods.isMCVersion14Plus() && (chestBlock.getType() == Material.BARREL || chestBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL)){
                 standLocation.add(0, 0.1, 0); //y was 0.22 for items before packets were used
             }
         } catch (NoClassDefFoundError e) {}
@@ -347,7 +352,7 @@ public class DisplayUtil {
         else if(material == Material.BOW){
             return bowAngle;
         }
-        else if(material == Material.CROSSBOW){
+        else if(UtilMethods.isMCVersion14Plus() && material == Material.CROSSBOW){
             return crossBowAngle;
         }
         else if(material == Material.FISHING_ROD || material == Material.CARROT_ON_A_STICK){
@@ -481,11 +486,59 @@ public class DisplayUtil {
 
     public static AbstractDisplay getDisplayForNMSVersion(Location signLocation){
         switch(Shop.getPlugin().getNmsBullshitHandler().getNmsVersion()){
-            //TODO return other versions here
+            case "1_13_R1":
+                return new Display_1_13R1(signLocation);
+            case "1_13_R2":
+                return new Display_1_13R2(signLocation);
+            case "1_14_R1":
+                return new Display_1_14R1(signLocation);
+            case "1_15_R1":
+                return new Display_1_15R1(signLocation);
+            case "1_16_R1":
+                return new Display_1_16R1(signLocation);
+            case "1_16_R2":
+                return new Display_1_16R2(signLocation);
             case "1_16_R3":
                 return new Display_1_16R3(signLocation);
                 default:
                     return new Display_1_17R1(signLocation);
         }
+    }
+
+    public static boolean isDisplay(Entity entity){
+        boolean foundLegacy = isDisplayLegacy(entity);
+        if(foundLegacy)
+            return true;
+        if(UtilMethods.isMCVersion14Plus()) {
+            PersistentDataContainer persistentData = entity.getPersistentDataContainer();
+            if (persistentData != null) {
+                try {
+                    int dataDisplay = persistentData.get(new NamespacedKey(Shop.getPlugin(), "display"), PersistentDataType.INTEGER);
+                    return (dataDisplay == 1);
+                } catch (NullPointerException e) {
+                    return false;
+                }
+            }
+            return false;
+        }
+        return false;
+    }
+
+    private static boolean isDisplayLegacy(Entity entity){
+        try {
+            if (entity.getType() == EntityType.DROPPED_ITEM) {
+                ItemMeta itemMeta = ((Item) entity).getItemStack().getItemMeta();
+                if (itemMeta != null && UtilMethods.containsLocation(itemMeta.getDisplayName())) {
+                    return true;
+                }
+            } else if (entity.getType() == EntityType.ARMOR_STAND) {
+                if (UtilMethods.containsLocation(entity.getCustomName())) {
+                    return true;
+                }
+            }
+        } catch (NoSuchFieldError error){
+            //do nothing
+        }
+        return false;
     }
 }

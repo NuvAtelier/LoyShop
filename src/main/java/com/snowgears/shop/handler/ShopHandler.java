@@ -5,7 +5,7 @@ import com.snowgears.shop.ComboShop;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.ShopType;
 import com.snowgears.shop.display.DisplayType;
-import com.snowgears.shop.display.LegacyDisplay;
+import com.snowgears.shop.util.DisplayUtil;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.*;
 import org.bukkit.block.*;
@@ -32,7 +32,7 @@ public class ShopHandler {
 
     private HashMap<UUID, List<Location>> playerShops = new HashMap<>();
     private HashMap<Location, AbstractShop> allShops = new HashMap<>();
-    private ArrayList<Material> shopMaterials = new ArrayList<Material>();
+    private ArrayList<Material> shopMaterials = new ArrayList<>();
     private UUID adminUUID;
     private BlockFace[] directions = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
 
@@ -267,10 +267,16 @@ public class ShopHandler {
         }
     }
 
+    public void removeAllDisplays(Player player) {
+        for (AbstractShop shop : allShops.values()) {
+            shop.getDisplay().remove(player);
+        }
+    }
+
     public void removeLegacyDisplays(){
         for (World world : plugin.getServer().getWorlds()) {
             for (Entity entity : world.getEntities()) {
-                if(LegacyDisplay.isDisplay(entity)){
+                if(DisplayUtil.isDisplay(entity)){
                     entity.remove();
                 }
                 //make to sure to clear items from old version of plugin too

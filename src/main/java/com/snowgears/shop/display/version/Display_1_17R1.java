@@ -1,4 +1,4 @@
-package com.snowgears.shop.display.packet;
+package com.snowgears.shop.display.version;
 
 import com.mojang.datafixers.util.Pair;
 import com.snowgears.shop.Shop;
@@ -15,10 +15,10 @@ import net.minecraft.server.network.PlayerConnection;
 import net.minecraft.world.entity.EnumItemSlot;
 import net.minecraft.world.entity.decoration.EntityArmorStand;
 import net.minecraft.world.entity.decoration.EntityItemFrame;
+import net.minecraft.world.entity.decoration.GlowItemFrame;
 import net.minecraft.world.entity.item.EntityItem;
 import net.minecraft.world.level.World;
 import net.minecraft.world.phys.Vec3D;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
@@ -147,12 +147,18 @@ public class Display_1_17R1 extends AbstractDisplay {
 
     @Override
     protected void spawnItemFramePacket(Player player, ItemStack is, Location location, BlockFace facing, boolean isGlowing){
-
         WorldServer worldServer = ((CraftWorld) location.getWorld()).getHandle();
 
         BlockPosition blockPosition = new BlockPosition(location.getX(), location.getY(), location.getZ());
 
-        EntityItemFrame itemFrame = new EntityItemFrame(worldServer, blockPosition, getEnumDirection(facing));
+        EntityItemFrame itemFrame;
+
+        if(isGlowing){
+            itemFrame = new GlowItemFrame(worldServer, blockPosition, getEnumDirection(facing));
+        }
+        else{
+            itemFrame = new EntityItemFrame(worldServer, blockPosition, getEnumDirection(facing));
+        }
 
         int entityID = itemFrame.getId();
         this.entityIDs.add(entityID);
@@ -170,13 +176,15 @@ public class Display_1_17R1 extends AbstractDisplay {
 
     private void sendPacket(Player player, Packet packet){
         if (player != null) {
-            PlayerConnection connection = getPlayerConnection(player);
-            if(connection != null) {
-                connection.sendPacket(packet);
+            if(isSameWorld(player)) {
+                PlayerConnection connection = getPlayerConnection(player);
+                if (connection != null) {
+                    connection.sendPacket(packet);
+                }
             }
         }
         else {
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            for (Player onlinePlayer : this.shopSignLocation.getWorld().getPlayers()) {
                 PlayerConnection connection = getPlayerConnection(onlinePlayer);
                 if(connection != null) {
                     connection.sendPacket(packet);

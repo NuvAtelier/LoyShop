@@ -5,7 +5,7 @@ import com.snowgears.shop.Shop;
 public class NMSBullshitHandler {
 
     private Shop plugin;
-    //for use with packet and nms stuff
+    //for use with version and nms stuff
     private String nmsVersionString;
     private double serverVersion;
 

@@ -29,11 +29,12 @@ public class DisplayListener implements Listener {
 
     public Shop plugin = Shop.getPlugin();
     private ArrayList<ItemStack> allServerRecipeResults = new ArrayList<>();
+    private int repeatingViewTask;
 
     public void startRepeatingDisplayViewTask() {
         if (plugin.getDisplayTagOption() == DisplayTagOption.VIEW_SIGN) {
             //run task every 15 ticks
-            Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            repeatingViewTask = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
                     if (player != null) {
                         try {
@@ -41,7 +42,6 @@ public class DisplayListener implements Listener {
                             if (block.getBlockData() instanceof WallSign) {
                                 AbstractShop shopObj = plugin.getShopHandler().getShop(block.getLocation());
                                 if (shopObj != null) {
-                                    //System.out.println("[Shop] calling show tags from main task");
                                     shopObj.getDisplay().showDisplayTags(player);
                                 }
                             }
@@ -136,5 +136,9 @@ public class DisplayListener implements Listener {
                 shop.setGuiIcon();
             }
         } catch (NoClassDefFoundError e) {}
+    }
+
+    public void cancelRepeatingViewTask(){
+        Bukkit.getScheduler().cancelTask(repeatingViewTask);
     }
 }

@@ -138,6 +138,8 @@ public class ShopGuiHandler {
             return shop.getGuiIcon();
         }
         else if(iconEnum == GuiIcon.LIST_PLAYER || iconEnum == GuiIcon.LIST_PLAYER_ADMIN){
+            if(player == null)
+                return new ItemStack(Material.PLAYER_HEAD);
             return getPlayerHeadIcon(player.getUniqueId());
         }
 

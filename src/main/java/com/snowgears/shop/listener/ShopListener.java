@@ -23,10 +23,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerLoginEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.permissions.PermissionAttachmentInfo;
@@ -75,7 +72,7 @@ public class ShopListener implements Listener {
     public void onDisplayChange(PlayerInteractEvent event){
         try {
             if (event.getHand() == EquipmentSlot.OFF_HAND) {
-                return; // off hand packet, ignore.
+                return; // off hand version, ignore.
             }
         } catch (NoSuchMethodError error) {}
 
@@ -116,7 +113,7 @@ public class ShopListener implements Listener {
             if (plugin.getShopHandler().isChest(event.getClickedBlock())) {
                 try {
                     if (event.getHand() == EquipmentSlot.OFF_HAND) {
-                        return; // off hand packet, ignore.
+                        return; // off hand version, ignore.
                     }
                 } catch (NoSuchMethodError error) {}
 
@@ -341,6 +338,17 @@ public class ShopListener implements Listener {
         if(plugin.getCurrencyType() == CurrencyType.EXPERIENCE) {
             //this automatically saves to file
             new PlayerExperience(event.getPlayer());
+        }
+    }
+
+    @EventHandler (ignoreCancelled = true)
+    public void onTeleport(PlayerTeleportEvent event){
+        if(!event.getTo().getWorld().getUID().equals(event.getFrom().getWorld().getUID())) {
+            plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+                public void run() {
+                    plugin.getShopHandler().refreshShopDisplays(event.getPlayer());
+                }
+            }, 5L);
         }
     }
 }

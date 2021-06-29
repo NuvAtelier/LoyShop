@@ -46,21 +46,26 @@ public abstract class AbstractDisplay {
         return chunk.getX() == chunkX && chunk.getZ() == chunkZ && chunk.getWorld().toString().equals(shopSignLocation.getWorld().toString());
     }
 
-    //spawns a floating item packet for a specific player
-    //if player is null, all online players will get the packet
+    //spawns a floating item version for a specific player
+    //if player is null, all online players will get the version
     protected abstract void spawnItemPacket(Player player, ItemStack is, Location location);
 
-    //spawns an armor stand packet for a specific player
-    //if player is null, all online players will get the packet
+    //spawns an armor stand version for a specific player
+    //if player is null, all online players will get the version
     protected abstract void spawnArmorStandPacket(Player player, ArmorStandData armorStandData, String text);
 
-    //spawns an item frame packet for a specific player
-    //if player is null, all online players will get the packet
+    //spawns an item frame version for a specific player
+    //if player is null, all online players will get the version
     protected abstract void spawnItemFramePacket(Player player, ItemStack is, Location location, BlockFace facing, boolean isGlowing);
 
     public abstract void removeDisplayEntities(Player player, boolean onlyDisplayTags);
 
     public void spawn(Player player) {
+        if(player != null){
+            //don't spawn the display if the player is in a different world
+            if(!player.getWorld().getUID().equals(this.shopSignLocation.getWorld().getUID()))
+                return;
+        }
         remove(player);
 
         AbstractShop shop = this.getShop();
@@ -173,14 +178,16 @@ public abstract class AbstractDisplay {
             ArrayList<String> displayTags = ShopMessage.getDisplayTags(getShop(), getShop().getType());
 
             Location lowerTagLocation = getShop().getChestLocation().getBlock().getRelative(BlockFace.UP).getLocation();
-            lowerTagLocation = lowerTagLocation.add(0.5, 0.2, 0.5);
+            lowerTagLocation = lowerTagLocation.add(0.5, 0.5, 0.5);
 
             //push the tag slightly closer to the front of the shop so it doesnt collide with the display and hide the text
             lowerTagLocation = UtilMethods.pushLocationInDirection(lowerTagLocation, this.getShop().getFacing(), 0.2);
 
             Block displayBlock = lowerTagLocation.getBlock();
-            if(displayBlock.getType() == Material.BARREL || displayBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL){
-                lowerTagLocation = lowerTagLocation.add(0, .25, 0);
+            if(UtilMethods.isMCVersion14Plus()) {
+                if (displayBlock.getType() == Material.BARREL || displayBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL) {
+                    lowerTagLocation = lowerTagLocation.add(0, .25, 0);
+                }
             }
 
             double verticalAddition = 0;
@@ -329,12 +336,12 @@ public abstract class AbstractDisplay {
         removeDisplayEntities(player, false);
         removeDisplayEntities(player, true);
 
-        if(player == null)
-            entityIDs.clear();
-        if(displayTagEntityIDs != null) {
-            if(player == null)
-                displayTagEntityIDs.clear();
-        }
+        //if(player == null)
+        //    entityIDs.clear();
+        //if(displayTagEntityIDs != null) {
+        //    if(player == null)
+        //        displayTagEntityIDs.clear();
+        //}
     }
 
     private Location getItemDropLocation(boolean isBarterItem) {
@@ -497,4 +504,9 @@ public abstract class AbstractDisplay {
         }
         return entityIterator;
     }
+
+    protected boolean isSameWorld(Player player){
+        return player.getWorld().getUID().equals(this.shopSignLocation.getWorld().getUID());
+    }
+
 }

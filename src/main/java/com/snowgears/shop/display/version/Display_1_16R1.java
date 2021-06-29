@@ -1,15 +1,14 @@
-package com.snowgears.shop.display.packet;
+package com.snowgears.shop.display.version;
 
 import com.mojang.datafixers.util.Pair;
 import com.snowgears.shop.display.AbstractDisplay;
 import com.snowgears.shop.util.ArmorStandData;
-import net.minecraft.server.v1_16_R3.*;
-import org.bukkit.Bukkit;
+import net.minecraft.server.v1_16_R1.*;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.v1_16_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_16_R3.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_16_R1.CraftWorld;
+import org.bukkit.craftbukkit.v1_16_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_16_R1.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -18,16 +17,16 @@ import org.bukkit.util.EulerAngle;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class Display_1_16R3 extends AbstractDisplay {
+public class Display_1_16R1 extends AbstractDisplay {
 
-    public Display_1_16R3(Location shopSignLocation) {
+    public Display_1_16R1(Location shopSignLocation) {
         super(shopSignLocation);
     }
 
     @Override
     protected void spawnItemPacket(Player player, ItemStack is, Location location) {
 
-        net.minecraft.server.v1_16_R3.ItemStack nmsItemStack = CraftItemStack.asNMSCopy(is);
+        net.minecraft.server.v1_16_R1.ItemStack nmsItemStack = CraftItemStack.asNMSCopy(is);
         EntityItem entityItem = new EntityItem(((CraftWorld)location.getWorld()).getHandle(), location.getX(), location.getY(), location.getZ(), nmsItemStack);
         int entityID = entityItem.getId();
         this.entityIDs.add(entityID);
@@ -136,11 +135,13 @@ public class Display_1_16R3 extends AbstractDisplay {
 
     private void sendPacket(Player player, Packet packet){
         if (player != null) {
-            EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
-            entityPlayer.playerConnection.sendPacket(packet);
+            if(isSameWorld(player)) {
+                EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
+                entityPlayer.playerConnection.sendPacket(packet);
+            }
         }
         else {
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            for (Player onlinePlayer : this.shopSignLocation.getWorld().getPlayers()) {
                 EntityPlayer entityPlayer = ((CraftPlayer) onlinePlayer).getHandle();
                 entityPlayer.playerConnection.sendPacket(packet);
             }

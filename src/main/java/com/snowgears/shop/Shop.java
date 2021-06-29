@@ -175,7 +175,7 @@ public class Shop extends JavaPlugin {
             displayTagLifespan = config.getInt("displayNameTagsLifespan");
             // Catch missing or negative config entry and default to 10
             if (displayTagLifespan <= 0) {
-                displayTagLifespan = 10;
+                displayTagLifespan = 1;
             }
         // This exception will only occur if text is entered in the config
         } catch (Exception e){ displayTagLifespan = 10; }
@@ -329,7 +329,7 @@ public class Shop extends JavaPlugin {
 
     @Override
     public void onDisable(){
-
+        displayListener.cancelRepeatingViewTask();
     }
 
     public void reload(){
@@ -339,9 +339,10 @@ public class Shop extends JavaPlugin {
         HandlerList.unregisterAll(miscListener);
         HandlerList.unregisterAll(creativeSelectionListener);
         HandlerList.unregisterAll(guiListener);
-        //if(clearLaggListener != null)
-        //    HandlerList.unregisterAll(clearLaggListener);
 
+        plugin.getShopHandler().removeAllDisplays(null);
+
+        onDisable();
         onEnable();
     }
 
