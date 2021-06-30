@@ -56,7 +56,7 @@ public class Display_1_14R1 extends AbstractDisplay {
         Location location = armorStandData.getLocation();
         WorldServer worldServer = ((CraftWorld) location.getWorld()).getHandle();
 
-        EntityArmorStand armorStand = new EntityArmorStand(EntityTypes.ARMOR_STAND, worldServer);
+        EntityArmorStand armorStand = new EntityArmorStand(worldServer, location.getX(), location.getY(), location.getZ());
         armorStand.setLocation(location.getX(), location.getY(), location.getZ(), (float)armorStandData.getYaw(), 0);
 
         if(text != null) {

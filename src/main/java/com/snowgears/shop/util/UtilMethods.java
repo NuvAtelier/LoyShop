@@ -420,14 +420,18 @@ public class UtilMethods {
             if(!m.isSolid())
                 nonIntrusiveMaterials.add(m);
         }
-        nonIntrusiveMaterials.add(Material.WARPED_WALL_SIGN);
-        nonIntrusiveMaterials.add(Material.ACACIA_WALL_SIGN);
-        nonIntrusiveMaterials.add(Material.BIRCH_WALL_SIGN);
-        nonIntrusiveMaterials.add(Material.CRIMSON_WALL_SIGN);
-        nonIntrusiveMaterials.add(Material.DARK_OAK_WALL_SIGN);
-        nonIntrusiveMaterials.add(Material.JUNGLE_WALL_SIGN);
-        nonIntrusiveMaterials.add(Material.OAK_WALL_SIGN);
-        nonIntrusiveMaterials.add(Material.SPRUCE_WALL_SIGN);
+        try{
+            nonIntrusiveMaterials.add(Material.WARPED_WALL_SIGN);
+            nonIntrusiveMaterials.add(Material.ACACIA_WALL_SIGN);
+            nonIntrusiveMaterials.add(Material.BIRCH_WALL_SIGN);
+            nonIntrusiveMaterials.add(Material.CRIMSON_WALL_SIGN);
+            nonIntrusiveMaterials.add(Material.DARK_OAK_WALL_SIGN);
+            nonIntrusiveMaterials.add(Material.JUNGLE_WALL_SIGN);
+            nonIntrusiveMaterials.add(Material.OAK_WALL_SIGN);
+            nonIntrusiveMaterials.add(Material.SPRUCE_WALL_SIGN);
+        } catch(NoSuchFieldError e){
+            nonIntrusiveMaterials.add(Material.LEGACY_WALL_SIGN);
+        }
         nonIntrusiveMaterials.remove(Material.WATER);
         nonIntrusiveMaterials.remove(Material.LAVA);
         nonIntrusiveMaterials.remove(Material.FIRE);
@@ -438,9 +442,7 @@ public class UtilMethods {
         nonIntrusiveMaterials.remove(Material.PLAYER_HEAD);
         nonIntrusiveMaterials.remove(Material.CREEPER_HEAD);
 
-        if(isMCVersion17Plus()) {
-            nonIntrusiveMaterials.add(Material.LIGHT);
-        }
+        try{ nonIntrusiveMaterials.add(Material.LIGHT); } catch(NoSuchFieldError e){}
     }
 
     public static BlockFace getDirectionOfChest(Block block){
@@ -454,22 +456,24 @@ public class UtilMethods {
     public static boolean isMCVersion17Plus(){
         //LIGHT only available in MC 1.17+
         try {
-            Material.LIGHT.isAir();
-            return true;
+            if(Material.LIGHT != null)
+                return true;
         } catch (NoSuchFieldError e) {
             return false;
         }
+        return false;
     }
 
     //returns if Minecraft version 1.14 or above
     public static boolean isMCVersion14Plus(){
         //LIGHT only available in MC 1.17+
         try {
-            Material.BARREL.isAir();
-            return true;
+            if(Material.BARREL != null)
+                return true;
         } catch (NoSuchFieldError e) {
             return false;
         }
+        return false;
     }
 
     //this takes a dirty (pre-cleaned) string and finds how much to multiply the final by

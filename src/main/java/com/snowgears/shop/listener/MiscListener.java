@@ -466,13 +466,15 @@ public class MiscListener implements Listener {
 
                 ItemStack shopItem = player.getInventory().getItemInMainHand();
 
-                //stop the edge case of shulker boxes being able to be used in shulker chests
-                if(Tag.SHULKER_BOXES.isTagged(shopItem.getType())){
-                    if(shop.getChestLocation().getBlock().getState() instanceof ShulkerBox){
-                        event.setCancelled(true);
-                        return;
+                try {
+                    //stop the edge case of shulker boxes being able to be used in shulker chests
+                    if (Tag.SHULKER_BOXES.isTagged(shopItem.getType())) {
+                        if (shop.getChestLocation().getBlock().getState() instanceof ShulkerBox) {
+                            event.setCancelled(true);
+                            return;
+                        }
                     }
-                }
+                } catch (NoSuchFieldError e) {}
 
                 if (shop.getItemStack() == null) {
 
