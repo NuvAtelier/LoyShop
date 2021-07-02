@@ -6,6 +6,7 @@ import com.snowgears.shop.util.InventoryUtils;
 import com.snowgears.shop.util.ShopMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -16,8 +17,8 @@ public class ComboShop extends AbstractShop {
     private double priceBuy;
     private double priceSell;
 
-    public ComboShop(Location signLoc, UUID player, double pri, double priSell, int amt, Boolean admin) {
-        super(signLoc, player, pri, amt, admin);
+    public ComboShop(Location signLoc, UUID player, double pri, double priSell, int amt, Boolean admin, BlockFace facing) {
+        super(signLoc, player, pri, amt, admin, facing);
 
         this.type = ShopType.COMBO;
         this.signLines = ShopMessage.getSignLines(this, this.type);

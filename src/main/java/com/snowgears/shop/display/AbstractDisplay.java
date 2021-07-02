@@ -46,16 +46,16 @@ public abstract class AbstractDisplay {
         return chunk.getX() == chunkX && chunk.getZ() == chunkZ && chunk.getWorld().toString().equals(shopSignLocation.getWorld().toString());
     }
 
-    //spawns a floating item version for a specific player
-    //if player is null, all online players will get the version
+    //spawns a floating item packet for a specific player
+    //if player is null, all online players will get the packet
     protected abstract void spawnItemPacket(Player player, ItemStack is, Location location);
 
-    //spawns an armor stand version for a specific player
-    //if player is null, all online players will get the version
+    //spawns an armor stand packet for a specific player
+    //if player is null, all online players will get the packet
     protected abstract void spawnArmorStandPacket(Player player, ArmorStandData armorStandData, String text);
 
-    //spawns an item frame version for a specific player
-    //if player is null, all online players will get the version
+    //spawns an item frame packet for a specific player
+    //if player is null, all online players will get the packet
     protected abstract void spawnItemFramePacket(Player player, ItemStack is, Location location, BlockFace facing, boolean isGlowing);
 
     public abstract void removeDisplayEntities(Player player, boolean onlyDisplayTags);
@@ -235,19 +235,20 @@ public abstract class AbstractDisplay {
         return Shop.getPlugin().getShopHandler().getShop(this.shopSignLocation);
     }
 
-    public void setType(DisplayType type){
+    public void setType(DisplayType type, boolean checkBlock){
         DisplayType oldType = this.type;
 
-        if((oldType == DisplayType.NONE && type != DisplayType.ITEM_FRAME) || (oldType == DisplayType.ITEM_FRAME && type != DisplayType.NONE)){
-            //make sure there is room above the shop for the display
-            Block aboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP);
-            if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
-                return;
+        if(checkBlock) {
+            if ((oldType == DisplayType.NONE && type != DisplayType.ITEM_FRAME) || (oldType == DisplayType.ITEM_FRAME && type != DisplayType.NONE)) {
+                //make sure there is room above the shop for the display
+                Block aboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP);
+                if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
+                    return;
+                }
             }
         }
 
         this.type = type;
-        this.spawn(null);
     }
 
     public void cycleType(){
@@ -327,7 +328,8 @@ public abstract class AbstractDisplay {
             }
         }
 
-        this.setType(cycle[index]);
+        this.setType(cycle[index], true);
+        this.spawn(null);
 
         Shop.getPlugin().getShopHandler().saveShops(getShop().getOwnerUUID());
     }
@@ -440,7 +442,7 @@ public abstract class AbstractDisplay {
     }
 
     protected void kickoffViewSignTask(Player player) {
-        //remove all armor stand name tag entities after x seconds (10 default)
+        //remove all armor stand name tag entities after x seconds
         new BukkitRunnable() {
             @Override
             public void run() {

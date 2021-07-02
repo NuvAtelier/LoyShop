@@ -15,7 +15,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -34,6 +33,7 @@ public abstract class AbstractShop {
 
     protected Location signLocation;
     protected Location chestLocation;
+    protected BlockFace facing;
     protected UUID owner;
     protected ItemStack item;
     protected ItemStack secondaryItem;
@@ -47,46 +47,96 @@ public abstract class AbstractShop {
     protected boolean isPerformingTransaction;
     protected ItemStack guiIcon;
 
-    public AbstractShop(Location signLoc, UUID player, double pri, int amt, Boolean admin) {
-        signLocation = signLoc;
-        owner = player;
-        price = pri;
-        amount = amt;
-        isAdmin = admin;
-        item = null;
+    public AbstractShop(Location signLoc, UUID player, double pri, int amt, Boolean admin, BlockFace facing) {
+        this.signLocation = signLoc;
+        this.owner = player;
+        this.price = pri;
+        this.amount = amt;
+        this.isAdmin = admin;
+        this.item = null;
+        this.facing = facing;
 
         display = DisplayUtil.getDisplayForNMSVersion(this.signLocation);
 
-        if(isAdmin){
+        if(isAdmin)
             owner = Shop.getPlugin().getShopHandler().getAdminUUID();
-        }
-
-        if(signLocation != null) {
-            try {
-                WallSign sign = (WallSign) signLocation.getBlock().getBlockData();
-                chestLocation = signLocation.getBlock().getRelative(sign.getFacing().getOppositeFace()).getLocation();
-            } catch(ClassCastException cce){
-                signLocation = null;
-                chestLocation = null;
-            }
-        }
     }
 
-    public static AbstractShop create(Location signLoc, UUID player, double pri, double priCombo, int amt, Boolean admin, ShopType shopType) {
+    //TODO move all this calculation to an load() method something to call later
+//    public AbstractShop(Location signLoc, UUID player, double pri, int amt, Boolean admin, BlockFace facing) {
+//        signLocation = signLoc;
+//        owner = player;
+//        price = pri;
+//        amount = amt;
+//        isAdmin = admin;
+//        item = null;
+//
+//        if(facing == null){
+//            if(signLocation != null) {
+//                try {
+//                    facing = ((WallSign) signLocation.getBlock().getBlockData()).getFacing();
+//                } catch(ClassCastException cce){}
+//            }
+//        }
+//        this.facing = facing;
+//
+//        display = DisplayUtil.getDisplayForNMSVersion(this.signLocation);
+//
+//        if(isAdmin){
+//            owner = Shop.getPlugin().getShopHandler().getAdminUUID();
+//        }
+//
+//        if(signLocation != null) {
+//            try {
+//                WallSign sign = (WallSign) signLocation.getBlock().getBlockData();
+//                chestLocation = signLocation.getBlock().getRelative(sign.getFacing().getOppositeFace()).getLocation();
+//            } catch(ClassCastException cce){
+//                signLocation = null;
+//                chestLocation = null;
+//            }
+//        }
+//    }
+
+    public static AbstractShop create(Location signLoc, UUID player, double pri, double priCombo, int amt, Boolean admin, ShopType shopType, BlockFace facing) {
 
         switch(shopType){
             case SELL:
-                return new SellShop(signLoc, player, pri, amt, admin);
+                return new SellShop(signLoc, player, pri, amt, admin, facing);
             case BUY:
-                return new BuyShop(signLoc, player, pri, amt, admin);
+                return new BuyShop(signLoc, player, pri, amt, admin, facing);
             case BARTER:
-                return new BarterShop(signLoc, player, pri, amt, admin);
+                return new BarterShop(signLoc, player, pri, amt, admin, facing);
             case GAMBLE:
-                return new GambleShop(signLoc, player, pri, amt, admin);
+                return new GambleShop(signLoc, player, pri, amt, admin, facing);
             case COMBO:
-                return new ComboShop(signLoc, player, pri, priCombo, amt, admin);
+                return new ComboShop(signLoc, player, pri, priCombo, amt, admin, facing);
         }
         return null;
+    }
+
+    //this calls BlockData which loads the chunk the shop is in by doing so
+    public boolean load() {
+        if (facing == null) {
+            if (signLocation != null) {
+                try {
+                    facing = ((WallSign) signLocation.getBlock().getBlockData()).getFacing();
+                } catch (ClassCastException cce) {
+                    //this shop has no sign on it. return false
+                    return false;
+                }
+            } else {
+                //this shop has no sign location defined
+                return false;
+            }
+        }
+        try {
+            chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
+        } catch (ClassCastException cce) {
+            signLocation = null;
+            chestLocation = null;
+            return false;
+        }
+        return true;
     }
 
     //abstract methods that must be implemented in each shop subclass
@@ -200,12 +250,7 @@ public abstract class AbstractShop {
     }
 
     public BlockFace getFacing(){
-        if(signLocation.getBlock().getBlockData() instanceof WallSign) {
-            BlockData signData =  signLocation.getBlock().getBlockData();
-            if(signData instanceof Directional)
-                return ((Directional) signData).getFacing();
-        }
-        return null;
+        return facing;
     }
 
     public ItemStack getGuiIcon(){
@@ -257,6 +302,8 @@ public abstract class AbstractShop {
     //TODO make all of this text configurable from the GUI config file
     //TODO use this to build GUIs more efficiently
     public void setGuiIcon(){
+        if(this.getItemStack() == null)
+            return;
         guiIcon = this.getItemStack().clone();
         guiIcon.setAmount(1);
 

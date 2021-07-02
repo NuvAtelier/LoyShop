@@ -8,7 +8,10 @@ import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.util.DisplayUtil;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.*;
-import org.bukkit.block.*;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Chest;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
@@ -22,7 +25,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
-import java.util.Comparator;
 import java.util.*;
 
 
@@ -32,21 +34,18 @@ public class ShopHandler {
 
     private HashMap<UUID, List<Location>> playerShops = new HashMap<>();
     private HashMap<Location, AbstractShop> allShops = new HashMap<>();
-    private ArrayList<Material> shopMaterials = new ArrayList<>();
+    private ArrayList<Material> chestMaterials = new ArrayList<>();
     private UUID adminUUID;
     private BlockFace[] directions = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
 
     private ArrayList<UUID> playersSavingShops = new ArrayList<>();
 
+    private int BATCH_LOAD_SIZE = 10;
+
     public ShopHandler(Shop instance) {
         plugin = instance;
-
-        shopMaterials.add(Material.CHEST);
-        shopMaterials.add(Material.TRAPPED_CHEST);
-        if(plugin.useEnderChests())
-            shopMaterials.add(Material.ENDER_CHEST);
-
         adminUUID = UUID.randomUUID();
+        initChestMaterials();
 
         new BukkitRunnable() {
             @Override
@@ -352,6 +351,7 @@ public class ShopHandler {
                 //don't save shops that are not initialized with items
                 if (shop.isInitialized()) {
                     config.set("shops." + owner + "." + shopNumber + ".location", locationToString(shop.getSignLocation()));
+                    config.set("shops." + owner + "." + shopNumber + ".facing", shop.getFacing().toString());
                     config.set("shops." + owner + "." + shopNumber + ".price", shop.getPrice());
                     if(shop.getType() == ShopType.COMBO){
                         config.set("shops." + owner + "." + shopNumber + ".priceSell", ((ComboShop)shop).getPriceSell());
@@ -488,19 +488,30 @@ public class ShopHandler {
             return;
         Set<String> allShopOwners = config.getConfigurationSection("shops").getKeys(false);
 
+        ArrayList<AbstractShop> batchShopList = null;
+
         for (String shopOwner : allShopOwners) {
+            boolean needsSaveUpdate = false;
+            UUID owner = null;
+
             Set<String> allShopNumbers = config.getConfigurationSection("shops." + shopOwner).getKeys(false);
             for (String shopNumber : allShopNumbers) {
                 Location signLoc = locationFromString(config.getString("shops." + shopOwner + "." + shopNumber + ".location"));
                 if(signLoc != null) {
                     try {
-                        UUID owner;
                         if (shopOwner.equals("admin"))
                             owner = this.getAdminUUID();
                         else if(isLegacy)
                             owner = uidFromString(shopOwner);
                         else
                             owner = UUID.fromString(shopOwner);
+
+                        BlockFace facing = null;
+                        String facingStr = config.getString("shops." + shopOwner + "." + shopNumber + ".facing");
+                        if(facingStr != null)
+                            facing = BlockFace.valueOf(facingStr);
+                        else
+                            needsSaveUpdate = true;
 
                         String type = config.getString("shops." + shopOwner + "." + shopNumber + ".type");
                         double price = Double.parseDouble(config.getString("shops." + shopOwner + "." + shopNumber + ".price"));
@@ -520,36 +531,55 @@ public class ShopHandler {
                             itemStack = plugin.getGambleDisplayItem();
                         }
 
-                        AbstractShop shop = AbstractShop.create(signLoc, owner, price, priceSell, amount, isAdmin, shopType);
+                        //this inits a new shop but wont calculate anything yet
+                        AbstractShop shop = AbstractShop.create(signLoc, owner, price, priceSell, amount, isAdmin, shopType, facing);
+                        shop.setItemStack(itemStack);
+                        if (shop.getType() == ShopType.BARTER) {
+                            ItemStack barterItemStack = config.getItemStack("shops." + shopOwner + "." + shopNumber + ".itemBarter");
+                            shop.setSecondaryItemStack(barterItemStack);
+                        }
+                        String displayType = config.getString("shops." + shopOwner + "." + shopNumber + ".displayType");
+                        if(displayType != null)
+                            shop.getDisplay().setType(DisplayType.valueOf(displayType), false);
 
-                        //there was a cast class exception with the wall sign
-                        if(shop.getChestLocation() != null) {
-                            shop.setItemStack(itemStack);
-                            if (shop.getType() == ShopType.BARTER) {
-                                ItemStack barterItemStack = config.getItemStack("shops." + shopOwner + "." + shopNumber + ".itemBarter");
-                                shop.setSecondaryItemStack(barterItemStack);
-                            }
+                        //here is where you can load shops in by batches
+                        if(batchShopList == null){
+                            batchShopList = new ArrayList<>(BATCH_LOAD_SIZE);
+                        }
+                        batchShopList.add(shop);
 
-                            this.addShop(shop);
-
-                            //final is necessary for use inside the BukkitRunnable class
-                            final AbstractShop finalShop = shop;
-
-                            final String displayType = config.getString("shops." + shopOwner + "." + shopNumber + ".displayType");
-                            new BukkitRunnable() {
-                                @Override
-                                public void run() {
-
-                                    if (finalShop != null && displayType != null) {
-                                        finalShop.getDisplay().setType(DisplayType.valueOf(displayType));
-                                    }
-                                }
-                            }.runTaskLater(this.plugin, 2);
+                        if(batchShopList.size() == BATCH_LOAD_SIZE){
+                            loadBatchShopTask(batchShopList);
+                            batchShopList = null;
                         }
                     } catch (NullPointerException e) {}
                 }
             }
+            if(needsSaveUpdate && owner != null){
+                final UUID ownerFinal = owner;
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        saveShops(ownerFinal);
+                    }
+                }.runTaskLater(this.plugin, 10);
+            }
         }
+    }
+
+    private void loadBatchShopTask(ArrayList<AbstractShop> shopList){
+        ArrayList<AbstractShop> clonedList = (ArrayList<AbstractShop>) shopList.clone();
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for(AbstractShop shop : clonedList){
+                    if(shop.load()){
+                        addShop(shop);
+                    }
+                }
+                clonedList.clear();
+            }
+        }.runTaskLater(this.plugin, 1);
     }
 
     public UUID getAdminUUID(){
@@ -585,15 +615,36 @@ public class ShopHandler {
             return ShopType.GAMBLE;
     }
 
+//    public boolean isChest(Block b){
+//        try{
+//            if(b.getState() instanceof ShulkerBox){
+//                return true;
+//            }
+//            if(b.getState() instanceof Barrel){
+//                return true;
+//            }
+//        } catch (NoClassDefFoundError e) {}
+//        return chestMaterials.contains(b.getType());
+//    }
+
     public boolean isChest(Block b){
+        return chestMaterials.contains(b.getType());
+    }
+
+    public void initChestMaterials(){
+        chestMaterials.add(Material.CHEST);
+        chestMaterials.add(Material.TRAPPED_CHEST);
+        if(plugin.useEnderChests())
+            chestMaterials.add(Material.ENDER_CHEST);
+
         try{
-            if(b.getState() instanceof ShulkerBox){
-                return true;
+            for(Material m : Tag.SHULKER_BOXES.getValues()){
+                chestMaterials.add(m);
             }
-            if(b.getState() instanceof Barrel){
-                return true;
-            }
-        } catch (NoClassDefFoundError e) {}
-        return shopMaterials.contains(b.getType());
+        } catch (NoClassDefFoundError e) {} catch (NoSuchFieldError e) {}
+
+        try{
+            chestMaterials.add(Material.BARREL);
+        } catch (NoSuchFieldError e) {}
     }
 }

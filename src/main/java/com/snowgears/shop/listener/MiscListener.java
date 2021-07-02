@@ -105,7 +105,7 @@ public class MiscListener implements Listener {
                 if (plugin.usePerms() && !player.isOp() && !player.hasPermission("shop.operator")) {
                     if (numberOfShops >= buildPermissionNumber) {
                         event.setCancelled(true);
-                        AbstractShop tempShop = new SellShop(null, player.getUniqueId(), 0, 0, false);
+                        AbstractShop tempShop = new SellShop(null, player.getUniqueId(), 0, 0, false, signDirection);
                         player.sendMessage(ShopMessage.getMessage("permission", "buildLimit", tempShop, player));
                         return;
                     }
@@ -236,19 +236,19 @@ public class MiscListener implements Listener {
                 AbstractShop tempShop;
                 switch(type) {
                     case SELL:
-                        tempShop=new SellShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin);
+                        tempShop=new SellShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin, signDirection);
                         break;
                     case BUY:
-                        tempShop=new BuyShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin);
+                        tempShop=new BuyShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin, signDirection);
                         break;
                     case BARTER:
-                        tempShop=new BarterShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin);
+                        tempShop=new BarterShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin, signDirection);
                         break;
                     case GAMBLE:
-                        tempShop=new GambleShop(b.getLocation(), player.getUniqueId(), price, amount, true);
+                        tempShop=new GambleShop(b.getLocation(), player.getUniqueId(), price, amount, true, signDirection);
                         break;
                     case COMBO:
-                        tempShop=new ComboShop(b.getLocation(), player.getUniqueId(), price, 0, amount, isAdmin);
+                        tempShop=new ComboShop(b.getLocation(), player.getUniqueId(), price, 0, amount, isAdmin, signDirection);
                         break;
                     default:
                         return;
@@ -327,7 +327,7 @@ public class MiscListener implements Listener {
                     }
                     signBlock.update();
 
-                    final AbstractShop shop = AbstractShop.create(signBlock.getLocation(), player.getUniqueId(), price, priceCombo, amount, isAdmin, type);
+                    final AbstractShop shop = AbstractShop.create(signBlock.getLocation(), player.getUniqueId(), price, priceCombo, amount, isAdmin, type, signDirection);
 
                     PlayerCreateShopEvent e = new PlayerCreateShopEvent(player, shop);
                     plugin.getServer().getPluginManager().callEvent(e);
@@ -347,7 +347,8 @@ public class MiscListener implements Listener {
                         shop.setItemStack(plugin.getGambleDisplayItem());
                         shop.setAmount(1);
                         plugin.getShopHandler().addShop(shop);
-                        shop.getDisplay().setType(DisplayType.LARGE_ITEM);
+                        shop.getDisplay().setType(DisplayType.LARGE_ITEM, true);
+                        shop.getDisplay().spawn(null);
 
                         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                         if(message != null && !message.isEmpty())
@@ -437,7 +438,8 @@ public class MiscListener implements Listener {
                     Block aboveShop = shop.getChestLocation().getBlock().getRelative(BlockFace.UP);
                     if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
                         if(plugin.forceDisplayToNoneIfBlocked()){
-                            shop.getDisplay().setType(DisplayType.NONE);
+                            shop.getDisplay().setType(DisplayType.NONE, true);
+                            shop.getDisplay().spawn(null);
                         }
                         else {
                             String message = ShopMessage.getMessage("interactionIssue", "displayRoom", null, player);

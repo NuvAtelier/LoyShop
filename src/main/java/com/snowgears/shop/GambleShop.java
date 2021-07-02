@@ -7,6 +7,7 @@ import com.snowgears.shop.util.InventoryUtils;
 import com.snowgears.shop.util.ShopMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -17,8 +18,8 @@ public class GambleShop extends AbstractShop {
 
     private ItemStack gambleItem;
 
-    public GambleShop(Location signLoc, UUID player, double pri, int amt, Boolean admin) {
-        super(signLoc, player, pri, amt, admin);
+    public GambleShop(Location signLoc, UUID player, double pri, int amt, Boolean admin, BlockFace facing) {
+        super(signLoc, player, pri, amt, admin, facing);
 
         this.type = ShopType.GAMBLE;
         this.signLines = ShopMessage.getSignLines(this, this.type);
@@ -110,26 +111,34 @@ public class GambleShop extends AbstractShop {
 
         this.shuffleGambleItem();
 
-        this.isPerformingTransaction = false;
+        //set isPerformaingTransaction after shuffling is done
+        //this.isPerformingTransaction = false;
         setGuiIcon();
         return TransactionError.NONE;
     }
 
     public void shuffleGambleItem(){
+
         this.setItemStack(gambleItem);
         this.setAmount(gambleItem.getAmount());
         final DisplayType initialDisplayType = this.getDisplay().getType();
-        this.getDisplay().setType(DisplayType.ITEM);
+        this.getDisplay().setType(DisplayType.ITEM, false);
         this.gambleItem = Shop.getPlugin().getDisplayListener().getRandomItem(this);
+        this.getDisplay().spawn(null); //TODO maybe only show what item player got to the player themselves???
 
         new BukkitRunnable() {
             @Override
             public void run() {
                 setItemStack(Shop.getPlugin().getGambleDisplayItem());
-                if(initialDisplayType == null)
-                    display.setType(Shop.getPlugin().getDisplayType());
-                else
-                    display.setType(initialDisplayType);
+                if(initialDisplayType == null) {
+                    display.setType(Shop.getPlugin().getDisplayType(), false);
+                    getDisplay().spawn(null); //TODO maybe only show what item player got to the player themselves???
+                }
+                else {
+                    display.setType(initialDisplayType, false);
+                    getDisplay().spawn(null); //TODO maybe only show what item player got to the player themselves???
+                }
+                isPerformingTransaction = false;
             }
         }.runTaskLater(Shop.getPlugin(), 20);
     }

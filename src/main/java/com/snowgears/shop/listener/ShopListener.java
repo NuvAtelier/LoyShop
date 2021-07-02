@@ -213,7 +213,7 @@ public class ShopListener implements Listener {
         while (blockIterator.hasNext()) {
 
             Block block = blockIterator.next();
-            if (block.getBlockData() instanceof WallSign) {
+            if (Tag.WALL_SIGNS.isTagged(block.getType())) {
                 shop = plugin.getShopHandler().getShop(block.getLocation());
             } else if (plugin.getShopHandler().isChest(block)) {
                 shop = plugin.getShopHandler().getShopByChest(block);

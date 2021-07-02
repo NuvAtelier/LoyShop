@@ -6,6 +6,7 @@ import com.snowgears.shop.util.InventoryUtils;
 import com.snowgears.shop.util.ShopMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -13,8 +14,8 @@ import java.util.UUID;
 
 public class BuyShop extends AbstractShop {
 
-    public BuyShop(Location signLoc, UUID player, double pri, int amt, Boolean admin) {
-        super(signLoc, player, pri, amt, admin);
+    public BuyShop(Location signLoc, UUID player, double pri, int amt, Boolean admin, BlockFace facing) {
+        super(signLoc, player, pri, amt, admin, facing);
 
         this.type = ShopType.BUY;
         this.signLines = ShopMessage.getSignLines(this, this.type);
