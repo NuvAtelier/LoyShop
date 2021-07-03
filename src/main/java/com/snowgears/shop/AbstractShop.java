@@ -276,8 +276,7 @@ public abstract class AbstractShop {
                 item.setItemMeta(itemMeta);
             }
         }
-        //if(this.type != ShopType.GAMBLE)
-            setGuiIcon();
+        setGuiIcon();
     }
 
     public void setSecondaryItemStack(ItemStack is) {
@@ -321,8 +320,7 @@ public abstract class AbstractShop {
         }
 
         List<String> lore = new ArrayList<>();
-        if(this.type != ShopType.GAMBLE)
-            lore.add("Type: " + this.getType().toString().toUpperCase());
+        lore.add("Type: " + this.getType().toString().toUpperCase());
         if(this.getType() == ShopType.BARTER)
             lore.add("Price: "+(int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack()));
         else if(this.getType() == ShopType.BUY)

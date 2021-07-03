@@ -313,8 +313,9 @@ public class Shop extends JavaPlugin {
         }
 
         commandHandler = new CommandHandler(this, "shop.use", commandAlias, "Base command for the Shop plugin", "/shop", Arrays.asList(commandAlias));
-        shopHandler = new ShopHandler(plugin);
         guiHandler = new ShopGuiHandler(plugin);
+        shopHandler = new ShopHandler(plugin);
+        guiHandler.loadIconsAndTitles();
         enderChestHandler = new EnderChestHandler(plugin);
 
         getServer().getPluginManager().registerEvents(displayListener, this);

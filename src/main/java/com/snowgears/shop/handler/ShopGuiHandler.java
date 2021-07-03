@@ -21,7 +21,7 @@ import java.util.*;
 public class ShopGuiHandler {
 
     public enum GuiIcon {
-        MENUBAR_BACK, MENUBAR_SEARCH, MENUBAR_LAST_PAGE, MENUBAR_NEXT_PAGE,
+        MENUBAR_BACK, HOME_SEARCH, MENUBAR_LAST_PAGE, MENUBAR_NEXT_PAGE,
         HOME_LIST_OWN_SHOPS, HOME_LIST_PLAYERS, HOME_SETTINGS, HOME_COMMANDS,
         LIST_SHOP, LIST_PLAYER, LIST_PLAYER_ADMIN,
         SETTINGS_NOTIFY_OWNER_ON, SETTINGS_NOTIFY_OWNER_OFF, SETTINGS_NOTIFY_USER_ON, SETTINGS_NOTIFY_USER_OFF, SETTINGS_NOTIFY_STOCK_ON, SETTINGS_NOTIFY_STOCK_OFF,
@@ -44,7 +44,6 @@ public class ShopGuiHandler {
 
     public ShopGuiHandler(Shop instance){
         plugin = instance;
-        loadIconsAndTitles();
     }
 
     public ShopGuiWindow getWindow(Player player){
@@ -64,6 +63,8 @@ public class ShopGuiHandler {
 
     //TODO make this text configurable
     public void reloadPlayerHeadIcon(UUID playerUUID){
+        if(playerUUID == null)
+            return;
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
 
         ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
@@ -167,7 +168,7 @@ public class ShopGuiHandler {
         return "Window";
     }
 
-    private void loadIconsAndTitles(){
+    public void loadIconsAndTitles(){
         File configFile = new File(plugin.getDataFolder(), "guiConfig.yml");
         if (!configFile.exists()) {
             configFile.getParentFile().mkdirs();
@@ -190,7 +191,6 @@ public class ShopGuiHandler {
             String iconString = iconEnum.toString().toLowerCase();
             String parentKey = iconString.substring(0, iconString.indexOf('_'));
             String childKey = iconString.substring(iconString.indexOf('_')+1);
-
 
             String type = config.getString("icons."+parentKey+"."+childKey+".type");
             String name = config.getString("icons."+parentKey+"."+childKey+".name");

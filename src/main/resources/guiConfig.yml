@@ -64,6 +64,11 @@ icons:
          lore:
             - "&7List all players"
             - "&7with shops on the server."
+      search:
+         type: "COMPASS"
+         name: "Search"
+         lore:
+            - "&7Find a shop by an item"
       settings:
          type: "GOLDEN_AXE"
          name: "Settings"

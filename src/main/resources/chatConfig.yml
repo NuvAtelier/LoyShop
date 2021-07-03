@@ -186,6 +186,18 @@ creativeSelection:
       - "&6Open your inventory and select the item you want to receive."
       - "&eTo select the item, pick it up and drop it outside of the inventory window."
 
+guiSearchSelection:
+   enter:
+      - "_____________________________________________________"
+      - "&7You are now in locked creative mode so you can choose an item to search for."
+      - "&fTo select the item, pick it up and drop it outside of the inventory window."
+      - "&6Open your inventory and select the item you want to search for."
+      - "_____________________________________________________"
+   prompt:
+      - "&cYou cannot move in locked creative mode."
+      - "&6Open your inventory and select the item you want to search for."
+      - "&eTo select the item, pick it up and drop it outside of the inventory window."
+
 command:
    list: "&b/[plugin] list &7- list your shops on the server"
    list_output_total: "There are &6[total shops]&f shops registered on the server."

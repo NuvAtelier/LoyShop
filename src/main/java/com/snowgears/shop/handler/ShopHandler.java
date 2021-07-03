@@ -222,6 +222,15 @@ public class ShopHandler {
         return shops;
     }
 
+    public List<AbstractShop> getShopsByItem(ItemStack itemStack){
+        List<AbstractShop> shops = new ArrayList<>();
+        for(AbstractShop shop : allShops.values()){
+            if(shop.getItemStack().getType() == itemStack.getType())
+                shops.add(shop);
+        }
+        return shops;
+    }
+
     public List<OfflinePlayer> getShopOwners(){
         ArrayList<OfflinePlayer> owners = new ArrayList<>();
         for(UUID player : playerShops.keySet()) {

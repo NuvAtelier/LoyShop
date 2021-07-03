@@ -5,6 +5,7 @@ import com.snowgears.shop.AbstractShop;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.util.PlayerSettings;
+import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -73,6 +74,7 @@ public class ShopGUIListener implements Listener {
                     if(window instanceof HomeWindow){
                         ItemStack listShopsIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_LIST_OWN_SHOPS, null, null);
                         ItemStack listPlayersIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_LIST_PLAYERS, null, null);
+                        ItemStack searchIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SEARCH, null, null);
                         ItemStack settingsIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SETTINGS, null, null);
                         ItemStack commandsIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_COMMANDS, null, null);
 
@@ -86,6 +88,16 @@ public class ShopGUIListener implements Listener {
                             ListPlayersWindow playersWindow = new ListPlayersWindow(player.getUniqueId());
                             playersWindow.setPrevWindow(window);
                             plugin.getGuiHandler().setWindow(player, playersWindow);
+                            return;
+                        }
+                        else if(clicked.getType() == searchIcon.getType()){
+                            player.closeInventory();
+                            plugin.getCreativeSelectionListener().addPlayerData(player, player.getLocation(), true);
+
+                            for(String message : ShopMessage.getSelectionLines("guiSearchSelection", true)){
+                                if(message != null && !message.isEmpty())
+                                    player.sendMessage(message);
+                            }
                             return;
                         }
                         else if(clicked.getType() == settingsIcon.getType()){
@@ -126,7 +138,7 @@ public class ShopGUIListener implements Listener {
                             return;
                         }
                     }
-                    else if(window instanceof ListShopsWindow){
+                    else if(window instanceof ListShopsWindow || window instanceof ListSearchResultsWindow){
                         List<String> lore = clicked.getItemMeta().getLore();
                         if(lore != null){
                             for(String line : lore){

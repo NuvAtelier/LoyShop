@@ -17,18 +17,21 @@ public class PlayerData {
     private UUID playerUUID;
     private Location shopSignLocation;
     private GameMode oldGameMode;
+    private boolean guiSearch;
 
-    public PlayerData(Player player, Location shopSignLocation) {
+    public PlayerData(Player player, Location shopSignLocation, boolean guiSearch) {
         this.playerUUID = player.getUniqueId();
         this.shopSignLocation = shopSignLocation;
         this.oldGameMode = player.getGameMode();
+        this.guiSearch = guiSearch;
         saveToFile();
     }
 
-    private PlayerData(UUID playerUUID, GameMode oldGameMode, Location shopSignLocation) {
+    private PlayerData(UUID playerUUID, GameMode oldGameMode, Location shopSignLocation, boolean guiSearch) {
         this.playerUUID = playerUUID;
         this.oldGameMode = oldGameMode;
         this.shopSignLocation = shopSignLocation;
+        this.guiSearch = guiSearch;
     }
 
     private void saveToFile(){
@@ -48,6 +51,7 @@ public class PlayerData {
             config.set("player.UUID", this.playerUUID.toString());
             config.set("player.gamemode", this.oldGameMode.toString());
             config.set("player.shopSignLocation", locationToString(this.shopSignLocation));
+            config.set("player.guiSearch", guiSearch);
 
             config.save(playerDataFile);
         } catch(Exception e){
@@ -73,8 +77,9 @@ public class PlayerData {
             UUID uuid = UUID.fromString(config.getString("player.UUID"));
             GameMode gamemode = GameMode.valueOf(config.getString("player.gamemode"));
             Location signLoc = locationFromString(config.getString("player.shopSignLocation"));
+            boolean guiSearch = config.getBoolean("player.guiSearch");
 
-            PlayerData data = new PlayerData(uuid, gamemode, signLoc);
+            PlayerData data = new PlayerData(uuid, gamemode, signLoc, guiSearch);
             return data;
         }
         return null;
@@ -127,5 +132,9 @@ public class PlayerData {
 
     public GameMode getOldGameMode() {
         return oldGameMode;
+    }
+
+    public boolean isGuiSearch(){
+        return guiSearch;
     }
 }

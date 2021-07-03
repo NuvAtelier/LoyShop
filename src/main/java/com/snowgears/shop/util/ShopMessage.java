@@ -312,7 +312,7 @@ public class ShopMessage {
         return formattedLines;
     }
 
-    public static List<String> getCreativeSelectionLines(boolean prompt){
+    public static List<String> getSelectionLines(String section, boolean prompt){
         List<String> messages = new ArrayList<>();
 
         String subKey = "enter";
@@ -322,7 +322,7 @@ public class ShopMessage {
         int count = 1;
         String message = "-1";
         while (!message.isEmpty()) {
-            message = getMessage("creativeSelection", subKey + count, null, null);
+            message = getMessage(section, subKey + count, null, null);
             if (!message.isEmpty())
                 messages.add(message);
             count++;
@@ -398,6 +398,17 @@ public class ShopMessage {
         count = 1;
         for(String s : chatConfig.getStringList("creativeSelection.prompt")){
             messageMap.put("creativeSelection_prompt"+count, s);
+            count++;
+        }
+
+        count = 1;
+        for(String s : chatConfig.getStringList("guiSearchSelection.enter")){
+            messageMap.put("guiSearchSelection_enter"+count, s);
+            count++;
+        }
+        count = 1;
+        for(String s : chatConfig.getStringList("guiSearchSelection.prompt")){
+            messageMap.put("guiSearchSelection_prompt"+count, s);
             count++;
         }
 

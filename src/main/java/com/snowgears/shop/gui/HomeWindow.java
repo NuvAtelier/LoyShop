@@ -20,17 +20,30 @@ public class HomeWindow extends ShopGuiWindow {
     @Override
     protected void initInvContents(){
 
+        int listShopIconSlot = 20;
+        int listPlayersIconSlot = 21;
+        int searchIconSlot = 22;
+        int settingsIconSlot = 24;
+
         ItemStack listShopsIcon = Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_LIST_OWN_SHOPS, null, null);
-        page.setItem(21, listShopsIcon);
-
-
         ItemStack listPlayersIcon = Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_LIST_PLAYERS, null, null);
-        page.setItem(22, listPlayersIcon);
-
-
+        ItemStack searchIcon = Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SEARCH, null, null);
         ItemStack settingsIcon = Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SETTINGS, null, null);
-        page.setItem(23, settingsIcon);
 
+        //if search icon is not allowed, rearrange other icons so they look nice
+        if(!Shop.getPlugin().allowCreativeSelection()){
+            listShopIconSlot = 21;
+            listPlayersIconSlot = 22;
+            settingsIconSlot = 23;
+        }
+
+        page.setItem(listShopIconSlot, listShopsIcon);
+        page.setItem(listPlayersIconSlot, listPlayersIcon);
+        //only put search icon on page if creative selection is allowed
+        if(Shop.getPlugin().allowCreativeSelection()){
+            page.setItem(searchIconSlot, searchIcon);
+        }
+        page.setItem(settingsIconSlot, settingsIcon);
 
         //list the commands if they have operator permission
         Player p = this.getPlayer();

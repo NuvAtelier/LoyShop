@@ -5,6 +5,8 @@ import com.snowgears.shop.AbstractShop;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.ShopType;
 import com.snowgears.shop.event.PlayerInitializeShopEvent;
+import com.snowgears.shop.gui.HomeWindow;
+import com.snowgears.shop.gui.ListSearchResultsWindow;
 import com.snowgears.shop.util.PlayerData;
 import com.snowgears.shop.util.ShopMessage;
 import org.bukkit.Bukkit;
@@ -83,7 +85,7 @@ public class CreativeSelectionListener implements Listener {
                     } else {
                         if ((shop.getType() == ShopType.BARTER && shop.getItemStack() != null && shop.getSecondaryItemStack() == null)
                                 || shop.getType() == ShopType.BUY) {
-                            this.addPlayerData(player, clicked.getLocation());
+                            this.addPlayerData(player, clicked.getLocation(), false);
                         }
                     }
                 }
@@ -101,10 +103,7 @@ public class CreativeSelectionListener implements Listener {
                     || event.getFrom().getBlockX() != event.getTo().getBlockX()
                     || event.getFrom().getBlockY() != event.getTo().getBlockY()) {
                 player.teleport(event.getFrom());
-                for(String message : ShopMessage.getCreativeSelectionLines(true)){
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                }
+                sendPlayerLockedMessages(player, playerDataMap.get(player.getUniqueId()));
             }
         }
     }
@@ -115,10 +114,7 @@ public class CreativeSelectionListener implements Listener {
         if (playerDataMap.get(player.getUniqueId()) != null) {
             if (event.getFrom().distanceSquared(event.getTo()) > 4) {
                 event.setCancelled(true);
-                for(String message : ShopMessage.getCreativeSelectionLines(true)){
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                }
+                sendPlayerLockedMessages(player, playerDataMap.get(player.getUniqueId()));
             }
         }
     }
@@ -157,60 +153,68 @@ public class CreativeSelectionListener implements Listener {
         if (playerData != null) {
             //player dropped item outside the inventory
             if (event.getSlot() == -999 && event.getCursor() != null) {
-                AbstractShop shop = playerData.getShop();
-                if (shop != null) {
-                    if (shop.getType() == ShopType.BUY) {
+                if (!playerData.isGuiSearch()) {
+                    AbstractShop shop = playerData.getShop();
+                    if (shop != null) {
+                        if (shop.getType() == ShopType.BUY) {
 
-                        PlayerInitializeShopEvent e = new PlayerInitializeShopEvent(player, shop);
-                        Bukkit.getServer().getPluginManager().callEvent(e);
+                            PlayerInitializeShopEvent e = new PlayerInitializeShopEvent(player, shop);
+                            Bukkit.getServer().getPluginManager().callEvent(e);
 
-                        if(e.isCancelled())
-                            return;
+                            if (e.isCancelled())
+                                return;
 
-                        shop.setItemStack(event.getCursor());
-                        shop.getDisplay().spawn(null);
-                        String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
-                        if(message != null && !message.isEmpty())
-                            player.sendMessage(message);
-                        plugin.getTransactionListener().sendEffects(true, player, shop);
-                        plugin.getShopHandler().saveShops(shop.getOwnerUUID());
+                            shop.setItemStack(event.getCursor());
+                            shop.getDisplay().spawn(null);
+                            String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
+                            if (message != null && !message.isEmpty())
+                                player.sendMessage(message);
+                            plugin.getTransactionListener().sendEffects(true, player, shop);
+                            plugin.getShopHandler().saveShops(shop.getOwnerUUID());
 
-                    } else if (shop.getType() == ShopType.BARTER) {
+                        } else if (shop.getType() == ShopType.BARTER) {
 
-                        PlayerInitializeShopEvent e = new PlayerInitializeShopEvent(player, shop);
-                        Bukkit.getServer().getPluginManager().callEvent(e);
+                            PlayerInitializeShopEvent e = new PlayerInitializeShopEvent(player, shop);
+                            Bukkit.getServer().getPluginManager().callEvent(e);
 
-                        if(e.isCancelled())
-                            return;
+                            if (e.isCancelled())
+                                return;
 
-                        shop.setSecondaryItemStack(event.getCursor());
-                        shop.getDisplay().spawn(null);
-                        String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
-                        if(message != null && !message.isEmpty())
-                            player.sendMessage(message);
-                        plugin.getTransactionListener().sendEffects(true, player, shop);
-                        plugin.getShopHandler().saveShops(shop.getOwnerUUID());
+                            shop.setSecondaryItemStack(event.getCursor());
+                            shop.getDisplay().spawn(null);
+                            String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
+                            if (message != null && !message.isEmpty())
+                                player.sendMessage(message);
+                            plugin.getTransactionListener().sendEffects(true, player, shop);
+                            plugin.getShopHandler().saveShops(shop.getOwnerUUID());
+                        }
+                        removePlayerData(player);
                     }
-                    removePlayerData(player);
                 }
+                //player data is a GUI Search
+                else{
+                    player.closeInventory();
+                    removePlayerData(player);
+
+                    ListSearchResultsWindow searchResultsWindow = new ListSearchResultsWindow(player.getUniqueId(), event.getCursor());
+                    searchResultsWindow.setPrevWindow(new HomeWindow(player.getUniqueId()));
+                    plugin.getGuiHandler().setWindow(player, searchResultsWindow);
+                }
+                event.setResult(Event.Result.DENY);
+                event.setCancelled(true);
             }
-            event.setResult(Event.Result.DENY);
-            event.setCancelled(true);
         }
     }
 
-    public void addPlayerData(Player player, Location shopSignLocation) {
+    public void addPlayerData(Player player, Location shopSignLocation, boolean guiSearch) {
         //System.out.println("Add Player Data called.");
         if(playerDataMap.containsKey(player.getUniqueId()))
             return;
         //System.out.println("Creating new player data.");
-        PlayerData data = new PlayerData(player, shopSignLocation);
+        PlayerData data = new PlayerData(player, shopSignLocation, guiSearch);
         playerDataMap.put(player.getUniqueId(), data);
 
-        for(String message : ShopMessage.getCreativeSelectionLines(false)){
-            if(message != null && !message.isEmpty())
-                player.sendMessage(message);
-        }
+        sendPlayerLockedMessages(player, data);
         player.setGameMode(GameMode.CREATIVE);
     }
 
@@ -238,5 +242,20 @@ public class CreativeSelectionListener implements Listener {
                 }
             }
         }, 20);
+    }
+
+    private void sendPlayerLockedMessages(Player player, PlayerData playerData){
+        if(playerData.isGuiSearch()){
+            for (String message : ShopMessage.getSelectionLines("guiSearchSelection", false)) {
+                if (message != null && !message.isEmpty())
+                    player.sendMessage(message);
+            }
+        }
+        else {
+            for (String message : ShopMessage.getSelectionLines("creativeSelection", false)) {
+                if (message != null && !message.isEmpty())
+                    player.sendMessage(message);
+            }
+        }
     }
 }
