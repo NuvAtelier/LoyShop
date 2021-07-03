@@ -52,6 +52,7 @@ public class ListPlayersWindow extends ShopGuiWindow {
     }
 
     private ItemStack createIcon(UUID ownerUUID){
+        System.out.println("[Shop] creating icon for "+ownerUUID);
         if(Shop.getPlugin().getShopHandler().getAdminUUID().equals(ownerUUID)) {
             return Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, ownerUUID, null);
         }

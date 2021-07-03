@@ -19,7 +19,7 @@ public class ListShopsWindow extends ShopGuiWindow {
         super(player);
 
         if(Shop.getPlugin().getShopHandler().getAdminUUID().equals(playerToList)) {
-            ItemStack is = Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, null, null);
+            ItemStack is = Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, Shop.getPlugin().getShopHandler().getAdminUUID(), null);
             this.title = is.getItemMeta().getDisplayName();
         }
         else

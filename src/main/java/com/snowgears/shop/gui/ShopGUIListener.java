@@ -102,17 +102,17 @@ public class ShopGUIListener implements Listener {
                         }
                     }
                     else if(window instanceof ListPlayersWindow){
-                        ItemStack playerIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER, null, null); //for some reason this is returning null
-                        ItemStack adminPlayerIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, null, null);
+                        //ItemStack playerIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER, null, null); //for some reason this is returning null
+                        //ItemStack adminPlayerIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, null, null);
 
-                        if(clicked.getType() == playerIcon.getType() || clicked.getType() == adminPlayerIcon.getType()){
+                        if(clicked.getType() == Material.PLAYER_HEAD){
                             String name = clicked.getItemMeta().getDisplayName();
                             UUID uuid = null;
-                            if(name.equals(adminPlayerIcon.getItemMeta().getDisplayName())){
+                            if(name.equals("Admin")) {
                                 uuid = Shop.getPlugin().getShopHandler().getAdminUUID();
                             }
                             else {
-                                OfflinePlayer p = Bukkit.getOfflinePlayer(player.getUniqueId());
+                                OfflinePlayer p = Bukkit.getOfflinePlayer(name);
                                 if(p != null)
                                     uuid = p.getUniqueId();
                             }

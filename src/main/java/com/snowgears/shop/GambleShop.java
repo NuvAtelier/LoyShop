@@ -5,6 +5,7 @@ import com.snowgears.shop.event.PlayerExchangeShopEvent;
 import com.snowgears.shop.util.EconomyUtils;
 import com.snowgears.shop.util.InventoryUtils;
 import com.snowgears.shop.util.ShopMessage;
+import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
@@ -14,6 +15,8 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class GambleShop extends AbstractShop {

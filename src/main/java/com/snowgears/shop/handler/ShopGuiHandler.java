@@ -64,22 +64,22 @@ public class ShopGuiHandler {
 
     //TODO make this text configurable
     public void reloadPlayerHeadIcon(UUID playerUUID){
-        if(playerHeads.containsKey(playerUUID))
-            return;
-
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
 
         ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta skMeta = (SkullMeta) playerHead.getItemMeta();
-        if(offlinePlayer != null) {
+        if(!playerUUID.equals(plugin.getShopHandler().getAdminUUID())) {
+            System.out.println("[Shop] player was not null. Adding owning player to icon skin");
+            if(offlinePlayer == null)
+                return;
             skMeta.setOwningPlayer(offlinePlayer);
             skMeta.setDisplayName(offlinePlayer.getName());
         }
-        else if(playerUUID.equals(plugin.getShopHandler().getAdminUUID())){ //admin UUID thats not an actual player
+        else { //admin UUID thats not an actual player
+            System.out.println("[Shop] player was null. Adding admin name");
             skMeta.setDisplayName("Admin");
         }
-        else
-            return;
+
         playerHead.setItemMeta(skMeta);
 
         List<String> lore = new ArrayList<>();
@@ -93,6 +93,7 @@ public class ShopGuiHandler {
     }
 
     public ItemStack getPlayerHeadIcon(UUID playerUUID){
+        System.out.println("[Shop] getting player head icon for "+playerUUID);
         if(playerHeads.containsKey(playerUUID))
             return playerHeads.get(playerUUID);
         //System.out.println("Player heads did not contain the head");

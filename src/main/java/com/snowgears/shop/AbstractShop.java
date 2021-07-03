@@ -276,7 +276,7 @@ public abstract class AbstractShop {
                 item.setItemMeta(itemMeta);
             }
         }
-        if(this.type != ShopType.GAMBLE)
+        //if(this.type != ShopType.GAMBLE)
             setGuiIcon();
     }
 
@@ -309,10 +309,16 @@ public abstract class AbstractShop {
     //TODO make all of this text configurable from the GUI config file
     //TODO use this to build GUIs more efficiently
     public void setGuiIcon(){
-        if(this.getItemStack() == null)
-            return;
-        guiIcon = this.getItemStack().clone();
-        guiIcon.setAmount(1);
+        if(this.type != ShopType.GAMBLE) {
+            if (this.getItemStack() == null)
+                return;
+            guiIcon = this.getItemStack().clone();
+            guiIcon.setAmount(1);
+        }
+        else{
+            guiIcon = Shop.getPlugin().getGambleDisplayItem().clone();
+            guiIcon.setAmount(1);
+        }
 
         List<String> lore = new ArrayList<>();
         if(this.type != ShopType.GAMBLE)
