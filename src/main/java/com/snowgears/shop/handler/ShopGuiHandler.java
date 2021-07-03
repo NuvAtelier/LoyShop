@@ -64,6 +64,9 @@ public class ShopGuiHandler {
 
     //TODO make this text configurable
     public void reloadPlayerHeadIcon(UUID playerUUID){
+        if(playerHeads.containsKey(playerUUID))
+            return;
+
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
 
         ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
@@ -83,12 +86,9 @@ public class ShopGuiHandler {
 
         lore.add("Shops: "+Shop.getPlugin().getShopHandler().getShops(playerUUID).size());
 
-        SkullMeta meta = (SkullMeta) playerHead.getItemMeta();
-        meta.setOwningPlayer(offlinePlayer);
-        meta.setDisplayName(offlinePlayer.getName());
-        meta.setLore(lore);
+        skMeta.setLore(lore);
 
-        playerHead.setItemMeta(meta);
+        playerHead.setItemMeta(skMeta);
         playerHeads.put(playerUUID, playerHead);
     }
 
@@ -133,14 +133,12 @@ public class ShopGuiHandler {
         playerSettings.put(player.getUniqueId(), settings);
     }
 
-    public ItemStack getIcon(GuiIcon iconEnum, OfflinePlayer player, AbstractShop shop){
+    public ItemStack getIcon(GuiIcon iconEnum, UUID playerUUID, AbstractShop shop){
         if(iconEnum == GuiIcon.LIST_SHOP){
             return shop.getGuiIcon();
         }
         else if(iconEnum == GuiIcon.LIST_PLAYER || iconEnum == GuiIcon.LIST_PLAYER_ADMIN){
-            if(player == null)
-                return new ItemStack(Material.PLAYER_HEAD);
-            return getPlayerHeadIcon(player.getUniqueId());
+            return getPlayerHeadIcon(playerUUID);
         }
 
         if(guiIcons.containsKey(iconEnum))
@@ -211,7 +209,7 @@ public class ShopGuiHandler {
                 icon = new ItemStack(Material.valueOf(type.toUpperCase()));
             }
             else if(childKey.equals("set_gamble")){
-                icon = plugin.getGambleDisplayItem();
+                icon = plugin.getGambleDisplayItem().clone();
             }
             else if(parentKey.equals("list")){
                 if(childKey.equals("player")) {

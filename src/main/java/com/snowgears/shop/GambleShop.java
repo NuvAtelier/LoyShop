@@ -10,6 +10,8 @@ import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.UUID;
@@ -21,6 +23,7 @@ public class GambleShop extends AbstractShop {
     public GambleShop(Location signLoc, UUID player, double pri, int amt, Boolean admin, BlockFace facing) {
         super(signLoc, player, pri, amt, admin, facing);
 
+        this.isAdmin = true;
         this.type = ShopType.GAMBLE;
         this.signLines = ShopMessage.getSignLines(this, this.type);
         this.gambleItem = Shop.getPlugin().getDisplayListener().getRandomItem(this);
@@ -77,6 +80,7 @@ public class GambleShop extends AbstractShop {
 
         if(issue == null) {
             if (isCheck) {
+                //System.out.println("[Shop] checking inventory of player. "+gambleItem.getType().toString()+" (x"+gambleItem.getAmount()+")");
                 //check if player has enough room to accept items
                 boolean hasRoom = InventoryUtils.hasRoom(player.getInventory(), gambleItem, player);
                 if (!hasRoom)
@@ -113,13 +117,13 @@ public class GambleShop extends AbstractShop {
 
         //set isPerformaingTransaction after shuffling is done
         //this.isPerformingTransaction = false;
-        setGuiIcon();
+        //setGuiIcon();
         return TransactionError.NONE;
     }
 
     public void shuffleGambleItem(){
 
-        this.setItemStack(gambleItem);
+        this.setItemStack(gambleItem.clone());
         this.setAmount(gambleItem.getAmount());
         final DisplayType initialDisplayType = this.getDisplay().getType();
         this.getDisplay().setType(DisplayType.ITEM, false);

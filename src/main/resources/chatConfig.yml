@@ -69,7 +69,7 @@ transaction:
       user: "&7You bartered &f[barter item amount] &7of your &f[barter item](s) &7for &f[item amount] &7of [owner]s &f[item](s)&7."
       owner: "&7[user] bartered &f[barter item amount] &7of their &f[barter item](s) &7for &f[item amount] &7of your &f[item](s)&7."
    GAMBLE:
-      user: "&7You gambled &a[price] &7and received &f[gamble item]&7(x[gamble item amount])."
+      user: "&7You gambled &a[price] &7and received &f[item]&7(x[item amount])."
 
 transaction_issue:
    SELL:

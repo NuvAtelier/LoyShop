@@ -233,36 +233,18 @@ public class MiscListener implements Listener {
                 }
 
                 String playerMessage = null;
-                AbstractShop tempShop;
-                switch(type) {
-                    case SELL:
-                        tempShop=new SellShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin, signDirection);
-                        break;
-                    case BUY:
-                        tempShop=new BuyShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin, signDirection);
-                        break;
-                    case BARTER:
-                        tempShop=new BarterShop(b.getLocation(), player.getUniqueId(), price, amount, isAdmin, signDirection);
-                        break;
-                    case GAMBLE:
-                        tempShop=new GambleShop(b.getLocation(), player.getUniqueId(), price, amount, true, signDirection);
-                        break;
-                    case COMBO:
-                        tempShop=new ComboShop(b.getLocation(), player.getUniqueId(), price, 0, amount, isAdmin, signDirection);
-                        break;
-                    default:
-                        return;
-                }
+                final AbstractShop shop = AbstractShop.create(signBlock.getLocation(), player.getUniqueId(), price, priceCombo, amount, isAdmin, type, signDirection);
 
                 if (plugin.usePerms()) {
                     if (!(player.hasPermission("shop.create." + type.toString().toLowerCase()) || player.hasPermission("shop.create")))
-                        playerMessage = ShopMessage.getMessage("permission", "create", tempShop, player);
+                        playerMessage = ShopMessage.getMessage("permission", "create", shop, player);
                 }
 
                 if (type == ShopType.GAMBLE) {
                     isAdmin = true;
+                    shop.setAdmin(true);
                     if ((plugin.usePerms() && !player.hasPermission("shop.operator")) || (!plugin.usePerms() && !player.isOp())) {
-                        playerMessage = ShopMessage.getMessage("permission", "create", tempShop, player);
+                        playerMessage = ShopMessage.getMessage("permission", "create", shop, player);
                     }
                 }
 
@@ -270,7 +252,7 @@ public class MiscListener implements Listener {
                 double cost = plugin.getCreationCost();
                 if (cost > 0) {
                     if (!EconomyUtils.hasSufficientFunds(player, player.getInventory(), cost)) {
-                        playerMessage = ShopMessage.getMessage("interactionIssue", "createInsufficientFunds", tempShop, player);
+                        playerMessage = ShopMessage.getMessage("interactionIssue", "createInsufficientFunds", shop, player);
                     }
                 }
 
@@ -327,7 +309,8 @@ public class MiscListener implements Listener {
                     }
                     signBlock.update();
 
-                    final AbstractShop shop = AbstractShop.create(signBlock.getLocation(), player.getUniqueId(), price, priceCombo, amount, isAdmin, type, signDirection);
+                    shop.setAdmin(isAdmin);
+                    shop.load();
 
                     PlayerCreateShopEvent e = new PlayerCreateShopEvent(player, shop);
                     plugin.getServer().getPluginManager().callEvent(e);

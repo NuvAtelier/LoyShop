@@ -35,7 +35,7 @@ public class ListPlayersWindow extends ShopGuiWindow {
         boolean added = true;
 
         for (int i=startIndex; i< owners.size(); i++) {
-            icon = createIcon(owners.get(i));
+            icon = createIcon(owners.get(i).getUniqueId());
 
             if(!this.addIcon(icon)){
                 added = false;
@@ -51,11 +51,11 @@ public class ListPlayersWindow extends ShopGuiWindow {
         }
     }
 
-    private ItemStack createIcon(OfflinePlayer owner){
-        if(Shop.getPlugin().getShopHandler().getAdminUUID().equals(owner.getUniqueId())) {
-            return Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, owner, null);
+    private ItemStack createIcon(UUID ownerUUID){
+        if(Shop.getPlugin().getShopHandler().getAdminUUID().equals(ownerUUID)) {
+            return Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, ownerUUID, null);
         }
-        return Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER, owner, null);
+        return Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER, ownerUUID, null);
     }
 
     @Override

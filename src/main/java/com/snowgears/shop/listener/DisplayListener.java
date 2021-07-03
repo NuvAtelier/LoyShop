@@ -63,7 +63,10 @@ public class DisplayListener implements Listener {
                 HashMap<ItemStack, Boolean> recipes = new HashMap();
                 Iterator<Recipe> recipeIterator = plugin.getServer().recipeIterator();
                 while(recipeIterator.hasNext()) {
-                    recipes.put(recipeIterator.next().getResult(), true);
+                    ItemStack result = recipeIterator.next().getResult();
+                    //System.out.println("[Shop] adding recipe for gamble. "+result.getType().toString()+" (x"+result.getAmount()+")");
+                    if(result.getAmount() != 0)
+                        recipes.put(result, true);
                 }
                 allServerRecipeResults.addAll(recipes.keySet());
                 Collections.shuffle(allServerRecipeResults);
@@ -72,12 +75,9 @@ public class DisplayListener implements Listener {
     }
 
     public ItemStack getRandomItem(AbstractShop shop){
-        try {
-            if (shop == null || !plugin.getShopHandler().isChest(shop.getChestLocation().getBlock()))
-                return new ItemStack(Material.AIR);
-        } catch (NullPointerException e){
+        if (shop == null)
             return new ItemStack(Material.AIR);
-        }
+
 
         if(InventoryUtils.isEmpty(shop.getInventory())) {
             int index = new Random().nextInt(allServerRecipeResults.size());

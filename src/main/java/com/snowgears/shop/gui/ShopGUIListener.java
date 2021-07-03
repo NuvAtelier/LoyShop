@@ -131,7 +131,7 @@ public class ShopGUIListener implements Listener {
                         if(lore != null){
                             for(String line : lore){
                                 if(line.startsWith("Location: ")){
-                                    line = line.substring(10, line.length());
+                                    line = line.substring(10);
                                     Location loc = UtilMethods.getLocation(line);
                                     AbstractShop shop = plugin.getShopHandler().getShop(loc);
 

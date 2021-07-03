@@ -41,6 +41,8 @@ public class ShopHandler {
     private ArrayList<UUID> playersSavingShops = new ArrayList<>();
 
     private int BATCH_LOAD_SIZE = 10;
+    private int tempBatchVar = 0; //TODO delete this after debugging
+    private ArrayList<AbstractShop> batchShopList = null;
 
     public ShopHandler(Shop instance) {
         plugin = instance;
@@ -304,6 +306,7 @@ public class ShopHandler {
     }
 
     private void saveShopsDriver(UUID player){
+        System.out.println("[Shop] saving shops for player - "+player.toString());
         try {
 
             File fileDirectory = new File(plugin.getDataFolder(), "Data");
@@ -474,6 +477,10 @@ public class ShopHandler {
         if(convertLegacySaves)
             convertLegacyShopSaves();
 
+        //load any remaining shops in batch load job
+        if(batchShopList != null)
+            loadBatchShopTask(batchShopList);
+
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -488,11 +495,10 @@ public class ShopHandler {
             return;
         Set<String> allShopOwners = config.getConfigurationSection("shops").getKeys(false);
 
-        ArrayList<AbstractShop> batchShopList = null;
-
         for (String shopOwner : allShopOwners) {
             boolean needsSaveUpdate = false;
             UUID owner = null;
+            System.out.println("[Shop] loading shops for player - "+shopOwner);
 
             Set<String> allShopNumbers = config.getConfigurationSection("shops." + shopOwner).getKeys(false);
             for (String shopNumber : allShopNumbers) {
@@ -544,11 +550,14 @@ public class ShopHandler {
 
                         //here is where you can load shops in by batches
                         if(batchShopList == null){
+                            System.out.println("[Shop] old batch done. creating arraylist for new batch.");
                             batchShopList = new ArrayList<>(BATCH_LOAD_SIZE);
                         }
+                        System.out.println("[Shop] adding shop to current batch.");
                         batchShopList.add(shop);
 
-                        if(batchShopList.size() == BATCH_LOAD_SIZE){
+                        if(batchShopList.size() >= BATCH_LOAD_SIZE){
+                            System.out.println("[Shop] batch now full. dumping arraylist to loader.");
                             loadBatchShopTask(batchShopList);
                             batchShopList = null;
                         }
@@ -560,9 +569,10 @@ public class ShopHandler {
                 new BukkitRunnable() {
                     @Override
                     public void run() {
+                        System.out.println("[Shop] facing was missing. need to resave shops for player - "+ownerFinal);
                         saveShops(ownerFinal);
                     }
-                }.runTaskLater(this.plugin, 10);
+                }.runTaskLater(this.plugin, 2400); //2 minute delay in saving shops again
             }
         }
     }
@@ -577,7 +587,10 @@ public class ShopHandler {
                         addShop(shop);
                     }
                 }
+                int count = clonedList.size();
                 clonedList.clear();
+                System.out.println("[Shop] calculated load for batch "+tempBatchVar+". Shops loaded: "+count);
+                tempBatchVar++;
             }
         }.runTaskLater(this.plugin, 1);
     }

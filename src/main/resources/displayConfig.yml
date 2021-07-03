@@ -72,7 +72,7 @@ display_tag_text:
          - "&7<right click sign to barter items with shop>"
    GAMBLE:
       normal:
-         - "Random Item"
+         - "[gamble item]"
          - "&7<right click sign to gamble for a random item>"
    COMBO:
       normal:

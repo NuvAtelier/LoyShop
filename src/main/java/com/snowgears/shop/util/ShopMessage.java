@@ -109,7 +109,7 @@ public class ShopMessage {
 
             if(shop.getType() == ShopType.GAMBLE) {
                 unformattedMessage = unformattedMessage.replace("[gamble item amount]", "" + shop.getAmount());
-                unformattedMessage = unformattedMessage.replace("[gamble item]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack()));
+                unformattedMessage = unformattedMessage.replace("[gamble item]", "" + Shop.getPlugin().getItemNameUtil().getName(Shop.getPlugin().getGambleDisplayItem()));
             }
         }
 

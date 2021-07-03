@@ -131,7 +131,7 @@ public abstract class AbstractShop {
         }
         try {
             chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
-        } catch (ClassCastException cce) {
+        } catch (NullPointerException e) {
             signLocation = null;
             chestLocation = null;
             return false;
@@ -241,6 +241,13 @@ public abstract class AbstractShop {
         return isAdmin;
     }
 
+    //only use this method if the shop has not been added to the main handler maps yet
+    public void setAdmin(boolean isAdmin){
+        this.isAdmin = isAdmin;
+        if(isAdmin)
+            this.owner = Shop.getPlugin().getShopHandler().getAdminUUID();
+    }
+
     public ShopType getType() {
         return type;
     }
@@ -269,8 +276,8 @@ public abstract class AbstractShop {
                 item.setItemMeta(itemMeta);
             }
         }
-        //this.display.spawn();
-        setGuiIcon();
+        if(this.type != ShopType.GAMBLE)
+            setGuiIcon();
     }
 
     public void setSecondaryItemStack(ItemStack is) {
@@ -308,7 +315,8 @@ public abstract class AbstractShop {
         guiIcon.setAmount(1);
 
         List<String> lore = new ArrayList<>();
-        lore.add("Type: " + this.getType().toString().toUpperCase());
+        if(this.type != ShopType.GAMBLE)
+            lore.add("Type: " + this.getType().toString().toUpperCase());
         if(this.getType() == ShopType.BARTER)
             lore.add("Price: "+(int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack()));
         else if(this.getType() == ShopType.BUY)
@@ -361,7 +369,13 @@ public abstract class AbstractShop {
         Shop.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(Shop.getPlugin(), new Runnable() {
             public void run() {
 
-                Sign signBlock = (Sign) signLocation.getBlock().getState();
+                Sign signBlock;
+                try {
+                    signBlock = (Sign) signLocation.getBlock().getState();
+                } catch (ClassCastException e){
+                    Shop.getPlugin().getShopHandler().removeShop(AbstractShop.this);
+                    return;
+                }
 
                 String[] lines = signLines.clone();
 
