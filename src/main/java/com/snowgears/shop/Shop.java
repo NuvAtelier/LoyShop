@@ -19,6 +19,7 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -130,6 +131,32 @@ public class Shop extends JavaPlugin {
             displayConfigFile.getParentFile().mkdirs();
             UtilMethods.copy(getResource("displayConfig.yml"), displayConfigFile);
         }
+
+        try {
+            ConfigUpdater.update(plugin, "config.yml", configFile, new ArrayList<>());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            ConfigUpdater.update(plugin, "chatConfig.yml", chatConfigFile, new ArrayList<>());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            ConfigUpdater.update(plugin, "signConfig.yml", signConfigFile, new ArrayList<>());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            ConfigUpdater.update(plugin, "displayConfig.yml", displayConfigFile, new ArrayList<>());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        reloadConfig();
 
         nmsBullshitHandler = new NMSBullshitHandler(this);
 
