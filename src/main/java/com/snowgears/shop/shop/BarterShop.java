@@ -1,5 +1,7 @@
-package com.snowgears.shop;
+package com.snowgears.shop.shop;
 
+import com.snowgears.shop.Shop;
+import com.snowgears.shop.util.TransactionError;
 import com.snowgears.shop.event.PlayerExchangeShopEvent;
 import com.snowgears.shop.util.InventoryUtils;
 import com.snowgears.shop.util.ShopMessage;
@@ -8,16 +10,30 @@ import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.UUID;
 
 public class BarterShop extends AbstractShop {
 
+    private ItemStack originalItem;
+    private BarterType barterType;
+
     public BarterShop(Location signLoc, UUID player, double pri, int amt, Boolean admin, BlockFace facing) {
         super(signLoc, player, pri, amt, admin, facing);
 
         this.type = ShopType.BARTER;
+        this.barterType = BarterType.ITEM;
         this.signLines = ShopMessage.getSignLines(this, this.type);
+    }
+
+    @Override
+    public void setItemStack(ItemStack is) {
+        super.setItemStack(is);
+        if(originalItem == null){
+            originalItem = is.clone();
+        }
     }
 
     //TODO incorporate # of orders at a time into this transaction
@@ -124,4 +140,18 @@ public class BarterShop extends AbstractShop {
         return (item != null && secondaryItem != null);
     }
 
+    public enum BarterType{
+        ITEM, GAMBLE, EXPERIENCE;
+    }
+
+//    public void cycleBarterType(){
+//        switch (currencyType){
+//            case ITEM:
+//
+//        }
+//    }
+
+    public void setBarterType(){
+
+    }
 }

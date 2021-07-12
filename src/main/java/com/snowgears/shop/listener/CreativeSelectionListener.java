@@ -1,9 +1,9 @@
 package com.snowgears.shop.listener;
 
 
-import com.snowgears.shop.AbstractShop;
+import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
-import com.snowgears.shop.ShopType;
+import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.event.PlayerInitializeShopEvent;
 import com.snowgears.shop.gui.HomeWindow;
 import com.snowgears.shop.gui.ListSearchResultsWindow;

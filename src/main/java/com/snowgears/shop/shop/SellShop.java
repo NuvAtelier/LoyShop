@@ -1,5 +1,6 @@
-package com.snowgears.shop;
+package com.snowgears.shop.shop;
 
+import com.snowgears.shop.util.TransactionError;
 import com.snowgears.shop.event.PlayerExchangeShopEvent;
 import com.snowgears.shop.util.EconomyUtils;
 import com.snowgears.shop.util.InventoryUtils;

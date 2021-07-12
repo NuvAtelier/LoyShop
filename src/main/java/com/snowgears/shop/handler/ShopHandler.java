@@ -1,9 +1,9 @@
 package com.snowgears.shop.handler;
 
-import com.snowgears.shop.AbstractShop;
-import com.snowgears.shop.ComboShop;
+import com.snowgears.shop.shop.AbstractShop;
+import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.Shop;
-import com.snowgears.shop.ShopType;
+import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.util.DisplayUtil;
 import com.snowgears.shop.util.UtilMethods;
@@ -23,6 +23,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.util.*;
@@ -34,15 +35,16 @@ public class ShopHandler {
 
     private HashMap<UUID, List<Location>> playerShops = new HashMap<>();
     private HashMap<Location, AbstractShop> allShops = new HashMap<>();
+
+    //all loading of shops happens async at onEnable()
+    //shops that still need to calculate their facing direction based on sign are considered "unloaded"
+    //we will be loading these shops at time of chunkload and resaving them so they are saved with the 'facing' variable
+    private HashMap<String, List<Location>> unloadedShopsByChunk = new HashMap<>();
     private ArrayList<Material> chestMaterials = new ArrayList<>();
     private UUID adminUUID;
     private BlockFace[] directions = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
 
     private ArrayList<UUID> playersSavingShops = new ArrayList<>();
-
-    private int BATCH_LOAD_SIZE = 10;
-    private int tempBatchVar = 0; //TODO delete this after debugging
-    private ArrayList<AbstractShop> batchShopList = null;
 
     public ShopHandler(Shop instance) {
         plugin = instance;
@@ -84,7 +86,7 @@ public class ShopHandler {
                             shop = this.getShop(leftChest.getBlock().getRelative(direction).getLocation());
                             if (shop != null) {
                                 //make sure the shop sign you found is actually attached to the correct shop
-                                if (shop.getChestLocation().equals(leftChest.getLocation()) || shop.getChestLocation().equals(rightChest.getLocation()))
+                                if (leftChest.equals(shop.getChestLocation()) || rightChest.equals(shop.getChestLocation()))
                                     return shop;
                             }
                             shop = this.getShop(rightChest.getBlock().getRelative(direction).getLocation());
@@ -102,7 +104,7 @@ public class ShopHandler {
                     shop = this.getShop(shopChest.getRelative(direction).getLocation());
                     if (shop != null) {
                         //make sure the shop sign you found is actually attached to the correct shop
-                        if (shop.getChestLocation().equals(shopChest.getLocation()))
+                        if (shopChest.getLocation().equals(shop.getChestLocation()))
                             return shop;
                     }
                 }
@@ -212,6 +214,41 @@ public class ShopHandler {
         return false;
     }
 
+    public void processUnloadedShopsInChunk(Chunk chunk){
+        String key = chunk.getX()+"_"+chunk.getZ();
+        if(unloadedShopsByChunk.containsKey(key)){
+            System.out.println("[Shop] chunk contained unloaded shops.");
+            List<UUID> playerUUIDs = new ArrayList<>();
+            List<Location> shopLocations = getUnloadedShopsByChunk(chunk);
+            for(Location shopLocation : shopLocations) {
+                AbstractShop shop = getShop(shopLocation);
+                if(shop != null){
+                    shop.load();
+                    shop.getDisplay().spawn(null);
+                    if(!playerUUIDs.contains(shop.getOwnerUUID())){
+                        playerUUIDs.add(shop.getOwnerUUID());
+                    }
+                }
+            }
+            unloadedShopsByChunk.remove(key);
+
+            //resave all shops for the player with the facing variable missing
+            for(UUID playerUUID : playerUUIDs){
+                saveShops(playerUUID);
+            }
+        }
+    }
+
+    public void addUnloadedShopToChunkList(AbstractShop shop){
+        Chunk chunk = shop.getSignLocation().getChunk();
+        List<Location> shopLocations = getUnloadedShopsByChunk(chunk);
+        if(!shopLocations.contains(shop.getSignLocation())) {
+            shopLocations.add(shop.getSignLocation());
+            String key = chunk.getX()+"_"+chunk.getZ();
+            unloadedShopsByChunk.put(key, shopLocations);
+        }
+    }
+
     public List<AbstractShop> getShops(UUID player){
         List<AbstractShop> shops = new ArrayList<>();
         for(Location shopSign : getShopLocations(player)){
@@ -249,6 +286,17 @@ public class ShopHandler {
         return shopLocations;
     }
 
+    private List<Location> getUnloadedShopsByChunk(Chunk chunk){
+        List<Location> unloadedShopsInChunk;
+        String key = chunk.getX()+"_"+chunk.getZ();
+        if(unloadedShopsByChunk.containsKey(key)) {
+            unloadedShopsInChunk = unloadedShopsByChunk.get(key);
+        }
+        else
+            unloadedShopsInChunk = new ArrayList<>();
+        return unloadedShopsInChunk;
+    }
+
     public int getNumberOfShops() {
         return allShops.size();
     }
@@ -273,7 +321,9 @@ public class ShopHandler {
 
     public void refreshShopDisplays(Player player) {
         for (AbstractShop shop : allShops.values()) {
-            shop.getDisplay().spawn(player);
+            //check that the shop is loaded first
+            if(shop.getChestLocation() != null)
+                shop.getDisplay().spawn(player);
         }
     }
 
@@ -439,63 +489,65 @@ public class ShopHandler {
     }
 
     public void loadShops() {
-        boolean convertLegacySaves = false;
-        File fileDirectory = new File(plugin.getDataFolder(), "Data");
-        if (!fileDirectory.exists())
-            return;
-
-        // load all the yml files from the data directory
-        for (File file : fileDirectory.listFiles()) {
-            if (file.isFile()) {
-                if (file.getName().endsWith(".yml")
-                        && !file.getName().contains("enderchests")
-                        && !file.getName().contains("itemCurrency")
-                        && !file.getName().contains("gambleDisplay")) {
-                    YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-                    boolean isLegacyConfig = false;
-                    UUID playerUUID = null;
-                    String fileNameNoExt = null;
-                    try {
-                        int dotIndex = file.getName().lastIndexOf('.');
-                        fileNameNoExt = file.getName().substring(0, dotIndex); //remove .yml
-
-                        //all files are saved as UUID.yml except for admin shops which are admin.yml
-                        if (!fileNameNoExt.equals("admin")) {
-                            playerUUID = UUID.fromString(fileNameNoExt);
-                            //file names are in UUID format. Load from new save files -> ownerUUID.yml
-                        }
-                        else{
-                            playerUUID = this.adminUUID;
-                        }
-                    } catch (IllegalArgumentException iae) {
-                        //file names are not in UUID format. Load from legacy save files -> ownerName + " (" + ownerUUID + ").yml
-                        isLegacyConfig = true;
-                        convertLegacySaves = true;
-                        playerUUID = this.uidFromString(fileNameNoExt);
-                    }
-                    loadShopsFromConfig(config, isLegacyConfig);
-                    if(isLegacyConfig){
-                        //save new file
-                        saveShops(playerUUID);
-                        //delete old file
-                        file.delete();
-                    }
-                }
-            }
-        }
-        if(convertLegacySaves)
-            convertLegacyShopSaves();
-
-        //load any remaining shops in batch load job
-        if(batchShopList != null)
-            loadBatchShopTask(batchShopList);
-
-        new BukkitRunnable() {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
             @Override
             public void run() {
-                refreshShopDisplays(null);
+                boolean convertLegacySaves = false;
+                File fileDirectory = new File(plugin.getDataFolder(), "Data");
+                if (!fileDirectory.exists())
+                    return;
+
+                // load all the yml files from the data directory
+                for (File file : fileDirectory.listFiles()) {
+                    if (file.isFile()) {
+                        if (file.getName().endsWith(".yml")
+                                && !file.getName().contains("enderchests")
+                                && !file.getName().contains("itemCurrency")
+                                && !file.getName().contains("gambleDisplay")) {
+                            YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+                            boolean isLegacyConfig = false;
+                            UUID playerUUID = null;
+                            String fileNameNoExt = null;
+                            try {
+                                int dotIndex = file.getName().lastIndexOf('.');
+                                fileNameNoExt = file.getName().substring(0, dotIndex); //remove .yml
+
+                                //all files are saved as UUID.yml except for admin shops which are admin.yml
+                                if (!fileNameNoExt.equals("admin")) {
+                                    playerUUID = UUID.fromString(fileNameNoExt);
+                                    //file names are in UUID format. Load from new save files -> ownerUUID.yml
+                                }
+                                else{
+                                    playerUUID = adminUUID;
+                                }
+                            } catch (IllegalArgumentException iae) {
+                                //file names are not in UUID format. Load from legacy save files -> ownerName + " (" + ownerUUID + ").yml
+                                isLegacyConfig = true;
+                                convertLegacySaves = true;
+                                playerUUID = uidFromString(fileNameNoExt);
+                            }
+                            loadShopsFromConfig(config, isLegacyConfig);
+                            if(isLegacyConfig){
+                                //save new file
+                                saveShops(playerUUID);
+                                //delete old file
+                                file.delete();
+                            }
+                        }
+                    }
+                }
+                if(convertLegacySaves)
+                    convertLegacyShopSaves();
+
+                //dont refresh displays at load time anymore. they are now loaded in client side on login
+//                new BukkitRunnable() {
+//                    @Override
+//                    public void run() {
+//                        refreshShopDisplays(null);
+//                    }
+//                }.runTaskLater(plugin, 20);
             }
-        }.runTaskLater(this.plugin, 20);
+        });
     }
 
 
@@ -505,7 +557,6 @@ public class ShopHandler {
         Set<String> allShopOwners = config.getConfigurationSection("shops").getKeys(false);
 
         for (String shopOwner : allShopOwners) {
-            boolean needsSaveUpdate = false;
             UUID owner = null;
             System.out.println("[Shop] loading shops for player - "+shopOwner);
 
@@ -525,8 +576,6 @@ public class ShopHandler {
                         String facingStr = config.getString("shops." + shopOwner + "." + shopNumber + ".facing");
                         if(facingStr != null)
                             facing = BlockFace.valueOf(facingStr);
-                        else
-                            needsSaveUpdate = true;
 
                         String type = config.getString("shops." + shopOwner + "." + shopNumber + ".type");
                         double price = Double.parseDouble(config.getString("shops." + shopOwner + "." + shopNumber + ".price"));
@@ -557,51 +606,47 @@ public class ShopHandler {
                         if(displayType != null)
                             shop.getDisplay().setType(DisplayType.valueOf(displayType), false);
 
-                        //here is where you can load shops in by batches
-                        if(batchShopList == null){
-                            System.out.println("[Shop] old batch done. creating arraylist for new batch.");
-                            batchShopList = new ArrayList<>(BATCH_LOAD_SIZE);
+                        //if facing is null, shop direction needs to be calculated on chunkloadevent
+                        if(facing == null){
+                            //System.out.println("[Shop] facing was null");
+                            //if chunk its in is already loaded, calculate it here
+                            if(shop.getSignLocation().getChunk().isLoaded()) {
+                                //System.out.println("[Shop] chunk was already loaded");
+                                //run this task synchronously
+                                Bukkit.getScheduler().runTask(plugin, new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        boolean signDefined = shop.load();
+                                        if(signDefined)
+                                            addShop(shop);
+                                    }
+                                });
+                            }
+                            //if the chunk is not already loaded, add it to a list to calculate it at chunkloadevent later
+                            else {
+                                System.out.println("[Shop] chunk not already loaded. Adding to unloadedList");
+                                addUnloadedShopToChunkList(shop);
+                                addShop(shop);
+                            }
                         }
-                        System.out.println("[Shop] adding shop to current batch.");
-                        batchShopList.add(shop);
+                        //if facing is already defined, go ahead and load the shop without checking if the chunk is loaded (because we wont need blockdata to define the sign)
+                        else{
+                            //System.out.println("[Shop] facing defined already");
+                            //run this task synchronously
+                            Bukkit.getScheduler().runTask(plugin, new Runnable() {
+                                @Override
+                                public void run() {
+                                    boolean signDefined = shop.load();
+                                    if(signDefined)
+                                        addShop(shop);
+                                }
+                            });
+                        }
 
-                        if(batchShopList.size() >= BATCH_LOAD_SIZE){
-                            System.out.println("[Shop] batch now full. dumping arraylist to loader.");
-                            loadBatchShopTask(batchShopList);
-                            batchShopList = null;
-                        }
                     } catch (NullPointerException e) {}
                 }
             }
-            if(needsSaveUpdate && owner != null){
-                final UUID ownerFinal = owner;
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        System.out.println("[Shop] facing was missing. need to resave shops for player - "+ownerFinal);
-                        saveShops(ownerFinal);
-                    }
-                }.runTaskLater(this.plugin, 2400); //2 minute delay in saving shops again
-            }
         }
-    }
-
-    private void loadBatchShopTask(ArrayList<AbstractShop> shopList){
-        ArrayList<AbstractShop> clonedList = (ArrayList<AbstractShop>) shopList.clone();
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                for(AbstractShop shop : clonedList){
-                    if(shop.load()){
-                        addShop(shop);
-                    }
-                }
-                int count = clonedList.size();
-                clonedList.clear();
-                System.out.println("[Shop] calculated load for batch "+tempBatchVar+". Shops loaded: "+count);
-                tempBatchVar++;
-            }
-        }.runTaskLater(this.plugin, 1);
     }
 
     public UUID getAdminUUID(){

@@ -1,6 +1,6 @@
 package com.snowgears.shop.listener;
 
-import com.snowgears.shop.AbstractShop;
+import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.display.DisplayType;

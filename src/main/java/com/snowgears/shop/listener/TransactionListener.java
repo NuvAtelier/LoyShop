@@ -1,10 +1,10 @@
 
 package com.snowgears.shop.listener;
 
-import com.snowgears.shop.AbstractShop;
+import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
-import com.snowgears.shop.ShopType;
-import com.snowgears.shop.TransactionError;
+import com.snowgears.shop.shop.ShopType;
+import com.snowgears.shop.util.TransactionError;
 import com.snowgears.shop.util.PlayerSettings;
 import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.UtilMethods;

@@ -1,6 +1,6 @@
 package com.snowgears.shop.handler;
 
-import com.snowgears.shop.AbstractShop;
+import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.gui.*;
 import com.snowgears.shop.util.PlayerSettings;
@@ -70,14 +70,14 @@ public class ShopGuiHandler {
         ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta skMeta = (SkullMeta) playerHead.getItemMeta();
         if(!playerUUID.equals(plugin.getShopHandler().getAdminUUID())) {
-            System.out.println("[Shop] player was not null. Adding owning player to icon skin");
+            //System.out.println("[Shop] player was not null. Adding owning player to icon skin");
             if(offlinePlayer == null)
                 return;
             skMeta.setOwningPlayer(offlinePlayer);
             skMeta.setDisplayName(offlinePlayer.getName());
         }
         else { //admin UUID thats not an actual player
-            System.out.println("[Shop] player was null. Adding admin name");
+            //System.out.println("[Shop] player was null. Adding admin name");
             skMeta.setDisplayName("Admin");
         }
 
@@ -94,7 +94,7 @@ public class ShopGuiHandler {
     }
 
     public ItemStack getPlayerHeadIcon(UUID playerUUID){
-        System.out.println("[Shop] getting player head icon for "+playerUUID);
+        //System.out.println("[Shop] getting player head icon for "+playerUUID);
         if(playerHeads.containsKey(playerUUID))
             return playerHeads.get(playerUUID);
         //System.out.println("Player heads did not contain the head");

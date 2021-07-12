@@ -1,5 +1,7 @@
-package com.snowgears.shop;
+package com.snowgears.shop.shop;
 
+import com.snowgears.shop.Shop;
+import com.snowgears.shop.util.TransactionError;
 import com.snowgears.shop.display.AbstractDisplay;
 import com.snowgears.shop.util.*;
 import net.md_5.bungee.api.ChatColor;
@@ -116,10 +118,13 @@ public abstract class AbstractShop {
 
     //this calls BlockData which loads the chunk the shop is in by doing so
     public boolean load() {
-        if (facing == null) {
+        //System.out.println("[Shop] loaded shop owned by "+getOwnerUUID()+" at "+UtilMethods.getCleanLocation(signLocation, false));
+        //if (facing == null) {
             if (signLocation != null) {
                 try {
                     facing = ((WallSign) signLocation.getBlock().getBlockData()).getFacing();
+                    chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
+                    return true;
                 } catch (ClassCastException cce) {
                     //this shop has no sign on it. return false
                     return false;
@@ -128,15 +133,14 @@ public abstract class AbstractShop {
                 //this shop has no sign location defined
                 return false;
             }
-        }
-        try {
-            chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
-        } catch (NullPointerException e) {
-            signLocation = null;
-            chestLocation = null;
-            return false;
-        }
-        return true;
+        //}
+//        try {
+//            chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
+//        } catch (NullPointerException e) {
+//            signLocation = null;
+//            chestLocation = null;
+//            return false;
+//        }
     }
 
     //abstract methods that must be implemented in each shop subclass
@@ -307,6 +311,7 @@ public abstract class AbstractShop {
 
     //TODO make all of this text configurable from the GUI config file
     //TODO use this to build GUIs more efficiently
+    //TODO may have to call runTask when setting this from main loader
     public void setGuiIcon(){
         if(this.type != ShopType.GAMBLE) {
             if (this.getItemStack() == null)
@@ -435,12 +440,17 @@ public abstract class AbstractShop {
         if(player == null)
             return;
 
-        BlockFace face = this.getFacing();
-        Location loc = this.getSignLocation().getBlock().getRelative(face).getLocation().add(0.5, 0, 0.5);
-        loc.setYaw(UtilMethods.faceToYaw(face.getOppositeFace()));
-        loc.setPitch(25.0f);
+        if(chestLocation == null) {
+            Location loc = this.getSignLocation().getBlock().getRelative(BlockFace.UP).getLocation().add(0.5, 0, 0.5);
+            player.teleport(loc);
+        }
+        else {
+            Location loc = this.getSignLocation().getBlock().getRelative(facing).getLocation().add(0.5, 0, 0.5);
+            loc.setYaw(UtilMethods.faceToYaw(facing.getOppositeFace()));
+            loc.setPitch(25.0f);
 
-        player.teleport(loc);
+            player.teleport(loc);
+        }
     }
 
     //TODO you may have to override this in other shop types like COMBO or GAMBLE
@@ -451,7 +461,8 @@ public abstract class AbstractShop {
         if(message != null && !message.isEmpty())
             formatAndSendFancyMessage(message, player);
 
-        if (this.getType() == ShopType.BARTER) {
+        //is a barter shop of some kind
+        if (this.getSecondaryItemStack() != null) {
             message = ShopMessage.getUnformattedMessage(this.getType().toString(), "descriptionBarterItem");
             if(message != null && !message.isEmpty())
                 formatAndSendFancyMessage(message, player);

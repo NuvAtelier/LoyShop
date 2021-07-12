@@ -1,8 +1,8 @@
 package com.snowgears.shop.listener;
 
-import com.snowgears.shop.AbstractShop;
+import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
-import com.snowgears.shop.ShopType;
+import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.util.CurrencyType;
 import com.snowgears.shop.util.PlayerExperience;
@@ -24,6 +24,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.permissions.PermissionAttachmentInfo;
@@ -350,5 +351,10 @@ public class ShopListener implements Listener {
                 }
             }, 5L);
         }
+    }
+
+    @EventHandler
+    public void onChunkLoad(ChunkLoadEvent event){
+        plugin.getShopHandler().processUnloadedShopsInChunk(event.getChunk());
     }
 }

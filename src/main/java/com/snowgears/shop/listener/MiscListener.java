@@ -6,6 +6,9 @@ import com.snowgears.shop.event.PlayerCreateShopEvent;
 import com.snowgears.shop.event.PlayerDestroyShopEvent;
 import com.snowgears.shop.event.PlayerInitializeShopEvent;
 import com.snowgears.shop.event.PlayerResizeShopEvent;
+import com.snowgears.shop.shop.AbstractShop;
+import com.snowgears.shop.shop.SellShop;
+import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -287,7 +290,7 @@ public class MiscListener implements Listener {
                     existingShop = plugin.getShopHandler().getShopByChest(chest);
                     if (existingShop != null) {
                         //if the block they are adding a sign to is already a shop, do not let them
-                        if (existingShop.getChestLocation().equals(chest.getLocation())) {
+                        if (chest.getLocation().equals(existingShop.getChestLocation())) {
                             String message = ShopMessage.getMessage("interactionIssue", "createOtherPlayer", null, player);
                             if(message != null && !message.isEmpty())
                                 player.sendMessage(message);
@@ -619,8 +622,11 @@ public class MiscListener implements Listener {
         } else if (plugin.getShopHandler().isChest(b)) {
 
             AbstractShop shop = plugin.getShopHandler().getShopByChest(b);
-            if (shop == null)
+            if (shop == null) {
+                System.out.println("[Shop] shop by chest was null. returning.");
                 return;
+            }
+            System.out.println("[Shop] shop by chest was not null.");
 
             InventoryHolder ih = ((InventoryHolder)b.getState()).getInventory().getHolder();
 

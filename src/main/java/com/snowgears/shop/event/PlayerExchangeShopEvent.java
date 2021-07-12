@@ -1,7 +1,7 @@
 package com.snowgears.shop.event;
 
-import com.snowgears.shop.AbstractShop;
-import com.snowgears.shop.ShopType;
+import com.snowgears.shop.shop.AbstractShop;
+import com.snowgears.shop.shop.ShopType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;

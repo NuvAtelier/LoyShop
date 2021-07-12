@@ -1,6 +1,6 @@
 package com.snowgears.shop.util;
 
-import com.snowgears.shop.AbstractShop;
+import com.snowgears.shop.shop.AbstractShop;
 
 import java.util.Comparator;
 

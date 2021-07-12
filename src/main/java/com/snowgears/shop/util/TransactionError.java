@@ -1,4 +1,4 @@
-package com.snowgears.shop;
+package com.snowgears.shop.util;
 
 public enum TransactionError {
 

@@ -201,7 +201,12 @@ public class Display_1_17R1 extends AbstractDisplay {
 
         while(entityIterator.hasNext()) {
             int displayEntityID = entityIterator.next();
-            PacketPlayOutEntityDestroy destroyEntityPacket = new PacketPlayOutEntityDestroy(displayEntityID);
+            PacketPlayOutEntityDestroy destroyEntityPacket;
+            try{
+                destroyEntityPacket = new PacketPlayOutEntityDestroy(displayEntityID);
+            } catch(NoSuchMethodError e){
+                throw new RuntimeException("[Shop] Shop does not support 1.17.0. Upgrade to 1.17.1.!", e);
+            }
             sendPacket(player, destroyEntityPacket);
             entityIterator.remove();
         }

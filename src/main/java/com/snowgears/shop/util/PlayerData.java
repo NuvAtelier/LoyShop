@@ -1,7 +1,7 @@
 package com.snowgears.shop.util;
 
 
-import com.snowgears.shop.AbstractShop;
+import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
