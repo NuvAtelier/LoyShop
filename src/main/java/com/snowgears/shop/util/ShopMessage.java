@@ -5,16 +5,14 @@ import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 public class ShopMessage {
@@ -236,6 +234,15 @@ public class ShopMessage {
         }
 
         unformattedMessage = ChatColor.translateAlternateColorCodes('&', unformattedMessage);
+        return unformattedMessage;
+    }
+
+    public static String partialFormatMessageUUID(String unformattedMessage, UUID playerUUID){
+        if(playerUUID.equals(Shop.getPlugin().getShopHandler().getAdminUUID()))
+            unformattedMessage = unformattedMessage.replace("[owner]", "" + creationWords.get("ADMIN"));
+        else
+            unformattedMessage = unformattedMessage.replace("[owner]", "" + Bukkit.getOfflinePlayer(playerUUID).getName());
+        unformattedMessage = unformattedMessage.replace("[user amount]", "" + Shop.getPlugin().getShopHandler().getNumberOfShops(playerUUID));
         return unformattedMessage;
     }
 

@@ -5,6 +5,7 @@ import com.snowgears.shop.gui.*;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.ConfigUpdater;
 import com.snowgears.shop.util.PlayerSettings;
+import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -15,6 +16,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +30,7 @@ public class ShopGuiHandler {
         HOME_LIST_OWN_SHOPS, HOME_LIST_PLAYERS, HOME_SETTINGS, HOME_COMMANDS,
         LIST_SHOP, LIST_PLAYER, LIST_PLAYER_ADMIN,
         SETTINGS_NOTIFY_OWNER_ON, SETTINGS_NOTIFY_OWNER_OFF, SETTINGS_NOTIFY_USER_ON, SETTINGS_NOTIFY_USER_OFF, SETTINGS_NOTIFY_STOCK_ON, SETTINGS_NOTIFY_STOCK_OFF,
-        COMMANDS_CURRENCY, COMMANDS_SET_CURRENCY, COMMANDS_SET_GAMBLE, COMMANDS_REFRESH_DISPLAYS, COMMANDS_RELOAD, ALL_SHOP_ICON
+        COMMANDS_CURRENCY, COMMANDS_SET_CURRENCY, COMMANDS_SET_GAMBLE, COMMANDS_REFRESH_DISPLAYS, COMMANDS_RELOAD, ALL_SHOP_ICON, ALL_PLAYER_ICON
     }
 
     public enum GuiTitle {
@@ -76,22 +79,27 @@ public class ShopGuiHandler {
             if(offlinePlayer == null)
                 return;
             skMeta.setOwningPlayer(offlinePlayer);
-            skMeta.setDisplayName(offlinePlayer.getName());
-        }
-        else { //admin UUID thats not an actual player
-            //System.out.println("[Shop] player was null. Adding admin name");
-            skMeta.setDisplayName("Admin");
         }
 
-        playerHead.setItemMeta(skMeta);
+        //get the placeholder icon with all of the unformatted fields
+        ItemStack placeHolderIcon = Shop.getPlugin().getGuiHandler().getIcon(GuiIcon.ALL_PLAYER_ICON, playerUUID, null);
 
+        String name = ShopMessage.partialFormatMessageUUID(placeHolderIcon.getItemMeta().getDisplayName(), playerUUID);
+        name = ShopMessage.formatMessage(name, null, null, false);
         List<String> lore = new ArrayList<>();
+        for(String loreLine : placeHolderIcon.getItemMeta().getLore()){
+            loreLine = ShopMessage.partialFormatMessageUUID(loreLine, playerUUID);
+            lore.add(ShopMessage.formatMessage(loreLine, null, null, false));
+        }
 
-        lore.add("Shops: "+Shop.getPlugin().getShopHandler().getShops(playerUUID).size());
-
+        skMeta.setDisplayName(name);
         skMeta.setLore(lore);
 
+        PersistentDataContainer container = skMeta.getPersistentDataContainer();
+        container.set(Shop.getPlugin().getPlayerUUIDNameSpacedKey(), PersistentDataType.STRING, playerUUID.toString());
+
         playerHead.setItemMeta(skMeta);
+
         playerHeads.put(playerUUID, playerHead);
     }
 
@@ -199,7 +207,7 @@ public class ShopGuiHandler {
         for(GuiIcon iconEnum : GuiIcon.values()) {
 
             boolean translateColors = true;
-            if(iconEnum == GuiIcon.ALL_SHOP_ICON)
+            if(iconEnum == GuiIcon.ALL_SHOP_ICON || iconEnum == GuiIcon.ALL_PLAYER_ICON)
                 translateColors = false;
 
             String iconString = iconEnum.toString().toLowerCase();
@@ -237,6 +245,9 @@ public class ShopGuiHandler {
             }
             else if(childKey.equals("shop_icon")){
                 icon = new ItemStack(Material.DIRT); // just a placeholder. will replace with the item shop is selling later
+            }
+            else if(childKey.equals("player_icon")){
+                icon = new ItemStack(Material.PLAYER_HEAD); // just a placeholder. will replace with the player head of shop later
             }
 
             if(icon != null) {

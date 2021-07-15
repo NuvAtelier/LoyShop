@@ -307,6 +307,10 @@ public class ShopHandler {
         return getShopLocations(player.getUniqueId()).size();
     }
 
+    public int getNumberOfShops(UUID playerUUID) {
+        return getShopLocations(playerUUID).size();
+    }
+
     private ArrayList<AbstractShop> orderedShopList() {
         ArrayList<AbstractShop> list = new ArrayList<AbstractShop>(allShops.values());
         Collections.sort(list, new Comparator<AbstractShop>() {

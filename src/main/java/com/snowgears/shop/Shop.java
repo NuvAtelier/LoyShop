@@ -81,6 +81,7 @@ public class Shop extends JavaPlugin {
     private double taxPercent;
     private ArrayList<String> worldBlackList;
     private NamespacedKey signLocationNameSpacedKey;
+    private NamespacedKey playerUUIDNameSpacedKey;
 
     private YamlConfiguration config;
 
@@ -159,6 +160,7 @@ public class Shop extends JavaPlugin {
 
         reloadConfig();
         signLocationNameSpacedKey = new NamespacedKey(this, "signLocation");
+        playerUUIDNameSpacedKey = new NamespacedKey(this, "playerUUID");
 
         config = YamlConfiguration.loadConfiguration(configFile);
 
@@ -630,5 +632,9 @@ public class Shop extends JavaPlugin {
 
     public NamespacedKey getSignLocationNameSpacedKey(){
         return signLocationNameSpacedKey;
+    }
+
+    public NamespacedKey getPlayerUUIDNameSpacedKey(){
+        return playerUUIDNameSpacedKey;
     }
 }

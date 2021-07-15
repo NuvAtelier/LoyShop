@@ -10,16 +10,13 @@ import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.List;
 import java.util.UUID;
 
 public class ShopGUIListener implements Listener {
@@ -120,19 +117,13 @@ public class ShopGUIListener implements Listener {
                         //ItemStack adminPlayerIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, null, null);
 
                         if(clicked.getType() == Material.PLAYER_HEAD){
-                            String name = clicked.getItemMeta().getDisplayName();
-                            UUID uuid = null;
-                            if(name.equals("Admin")) {
-                                uuid = Shop.getPlugin().getShopHandler().getAdminUUID();
-                            }
-                            else {
-                                OfflinePlayer p = Bukkit.getOfflinePlayer(name);
-                                if(p != null)
-                                    uuid = p.getUniqueId();
-                            }
-
-                            if(uuid == null)
+                            String playerUUIDString = clicked.getItemMeta().getPersistentDataContainer().get(plugin.getPlayerUUIDNameSpacedKey(), PersistentDataType.STRING);
+                            UUID uuid;
+                            try {
+                                uuid = UUID.fromString(playerUUIDString);
+                            }catch(IllegalArgumentException e){
                                 return;
+                            }
 
                             ListShopsWindow shopsWindow = new ListShopsWindow(player.getUniqueId(), uuid);
                             shopsWindow.setPrevWindow(window);

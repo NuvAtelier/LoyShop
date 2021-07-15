@@ -39,6 +39,10 @@ icons:
             - "&7Barter: &f[barter item] &7(x[barter item amount])"
             - "&7Price: &a[price]"
             - "[stock color]Stocked"
+      player_icon:
+         name: "[owner]"
+         lore:
+            - "&7Shops: &b[user amount]"
    menubar:
       back:
          type: "BARRIER"
