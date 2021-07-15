@@ -27,9 +27,18 @@ titles:
    home: "Shop Menu"
    list_players: "All Player Shops"
    settings: "Your Settings"
+   list_search_results: "Search Results"
    commands: "Commands"
 
 icons:
+   all:
+      shop_icon:
+         name: "[item] &7(x[item amount])"
+         lore:
+            - "&7Type: &b[shop type]"
+            - "&7Barter: &f[barter item] &7(x[barter item amount])"
+            - "&7Price: &a[price]"
+            - "[stock color]Stocked"
    menubar:
       back:
          type: "BARRIER"

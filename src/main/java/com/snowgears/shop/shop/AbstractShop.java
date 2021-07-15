@@ -2,16 +2,14 @@ package com.snowgears.shop.shop;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.AbstractDisplay;
+import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.util.*;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -23,6 +21,8 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,29 +117,20 @@ public abstract class AbstractShop {
 
     //this calls BlockData which loads the chunk the shop is in by doing so
     public boolean load() {
-        //System.out.println("[Shop] loaded shop owned by "+getOwnerUUID()+" at "+UtilMethods.getCleanLocation(signLocation, false));
-        //if (facing == null) {
-            if (signLocation != null) {
-                try {
-                    facing = ((WallSign) signLocation.getBlock().getBlockData()).getFacing();
-                    chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
-                    return true;
-                } catch (ClassCastException cce) {
-                    //this shop has no sign on it. return false
-                    return false;
-                }
-            } else {
-                //this shop has no sign location defined
+        if (signLocation != null) {
+            try {
+                facing = ((WallSign) signLocation.getBlock().getBlockData()).getFacing();
+                chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
+                this.setGuiIcon();
+                return true;
+            } catch (ClassCastException cce) {
+                //this shop has no sign on it. return false
                 return false;
             }
-        //}
-//        try {
-//            chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
-//        } catch (NullPointerException e) {
-//            signLocation = null;
-//            chestLocation = null;
-//            return false;
-//        }
+        } else {
+            //this shop has no sign location defined
+            return false;
+        }
     }
 
     //abstract methods that must be implemented in each shop subclass
@@ -232,6 +223,9 @@ public abstract class AbstractShop {
     }
 
     public String getPriceString() {
+        if(this.type == ShopType.BARTER && this.isInitialized()){
+            return (int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack());
+        }
         return Shop.getPlugin().getPriceString(this.price, false);
     }
 
@@ -323,25 +317,24 @@ public abstract class AbstractShop {
             guiIcon.setAmount(1);
         }
 
+        //get the placeholder icon with all of the unformatted fields
+        ItemStack placeHolderIcon = Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.ALL_SHOP_ICON, null, null);
+
+        String name = ShopMessage.formatMessage(placeHolderIcon.getItemMeta().getDisplayName(), this, null, false);
         List<String> lore = new ArrayList<>();
-        lore.add("Type: " + this.getType().toString().toUpperCase());
-        if(this.getType() == ShopType.BARTER)
-            lore.add("Price: "+(int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack()));
-        else if(this.getType() == ShopType.BUY)
-            lore.add("Pays: " + this.getPriceString());
-        else
-            lore.add("Price: " + this.getPriceString());
-        if(!this.isAdmin()) {
-            lore.add("Stock: " + this.getStock());
+        for(String loreLine : placeHolderIcon.getItemMeta().getLore()){
+            if(loreLine.contains("[barter item]") && this.getType() != ShopType.BARTER) {}
+            else {
+                lore.add(ShopMessage.formatMessage(loreLine, this, null, false));
+            }
         }
-        lore.add("Location: " + UtilMethods.getCleanLocation(this.getSignLocation(), true));
 
-        //TODO encorporate gambling shops and bartering shops better
-
-        String name = UtilMethods.getItemName(this.getItemStack()) + " (x" + this.getAmount() + ")";
         ItemMeta iconMeta = guiIcon.getItemMeta();
         iconMeta.setDisplayName(name);
         iconMeta.setLore(lore);
+
+        PersistentDataContainer container = iconMeta.getPersistentDataContainer();
+        container.set(Shop.getPlugin().getSignLocationNameSpacedKey(), PersistentDataType.STRING, UtilMethods.getCleanLocation(this.getSignLocation(), true));
 
         guiIcon.setItemMeta(iconMeta);
     }

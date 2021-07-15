@@ -18,7 +18,8 @@ public class ListSearchResultsWindow extends ShopGuiWindow {
     public ListSearchResultsWindow(UUID player, ItemStack searchItem){
         super(player);
 
-        this.title = "Shops with item: "+Shop.getPlugin().getItemNameUtil().getName(searchItem);
+        //this.title = "Shops with item: "+Shop.getPlugin().getItemNameUtil().getName(searchItem);
+        this.title = Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.LIST_SEARCH_RESULTS);
 
         this.page = Bukkit.createInventory(null, INV_SIZE, this.title);
         this.searchItem = searchItem;

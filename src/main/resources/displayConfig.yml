@@ -63,13 +63,10 @@ display_tag_text:
          - "&7<right click sign to have shop buy the item from you>"
    BARTER:
       normal:
-         - "[lshift]&aYou get:"
-         - "[lshift][item]&7(x[item amount])"
-         - "&b[item enchants]"
-         - "[rshift]&6You trade:"
-         - "[rshift][barter item]&7(x[barter item amount])"
-         - "&b[barter item enchants]"
-         - "&7<right click sign to barter items with shop>"
+         - '&aYou get:            &6You trade:'
+         - '[item]&7(x[item amount])        &f[barter item]&7(x[barter item amount])'
+         - '&b[item enchants]          &b[barter item enchants]'
+         - '&7<right click sign to barter items with shop>'
    GAMBLE:
       normal:
          - "[gamble item]"

@@ -98,14 +98,17 @@ public class ShopMessage {
         }
         if(shop != null && shop.getItemStack() != null) {
             unformattedMessage = unformattedMessage.replace("[item amount]", "" + shop.getItemStack().getAmount());
-            unformattedMessage = unformattedMessage.replace("[location]", shop.getChestLocation().getWorld().getName()+","+shop.getChestLocation().getBlockX()+","+shop.getChestLocation().getBlockY()+","+shop.getChestLocation().getBlockZ());
+            unformattedMessage = unformattedMessage.replace("[location]", shop.getSignLocation().getWorld().getName()+","+shop.getSignLocation().getBlockX()+","+shop.getSignLocation().getBlockY()+","+shop.getSignLocation().getBlockZ());
             unformattedMessage = unformattedMessage.replace("[item enchants]", UtilMethods.getEnchantmentsString(shop.getItemStack()));
             unformattedMessage = unformattedMessage.replace("[item lore]", UtilMethods.getLoreString(shop.getItemStack()));
             //dont replace [item] tag on first run through if its for a sign
             if(!forSign)
                 unformattedMessage = unformattedMessage.replace("[item]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack()));
             unformattedMessage = unformattedMessage.replace("[item durability]", "" + shop.getItemDurabilityPercent());
-            unformattedMessage = unformattedMessage.replace("[item type]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack().getType()));
+            if(shop.getType() == ShopType.GAMBLE)
+                unformattedMessage = unformattedMessage.replace("[item type]", "???");
+            else
+                unformattedMessage = unformattedMessage.replace("[item type]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack().getType()));
 
             if(shop.getType() == ShopType.GAMBLE) {
                 unformattedMessage = unformattedMessage.replace("[gamble item amount]", "" + shop.getAmount());
@@ -159,7 +162,7 @@ public class ShopMessage {
                 shop.setSignLinesRequireRefresh(true);
             }
             if(unformattedMessage.contains("[stock color]")) {
-                if(shop.getStock() > 0)
+                if(shop.getStock() > 0 || shop.isAdmin())
                     unformattedMessage = unformattedMessage.replace("[stock color]", "" + ChatColor.GREEN);
                 else
                     unformattedMessage = unformattedMessage.replace("[stock color]", "" + ChatColor.DARK_RED);
@@ -306,7 +309,7 @@ public class ShopMessage {
             formattedLine = formatMessage(line, shop, null, false);
             formattedLine = ChatColor.translateAlternateColorCodes('&', formattedLine);
 
-            if(!formattedLine.isEmpty() && !ChatColor.stripColor(formattedLine).isEmpty())
+            if(!formattedLine.isEmpty() && !ChatColor.stripColor(formattedLine).isEmpty() && (ChatColor.stripColor(formattedLine).trim().length() > 0))
                 formattedLines.add(formattedLine);
         }
         return formattedLines;

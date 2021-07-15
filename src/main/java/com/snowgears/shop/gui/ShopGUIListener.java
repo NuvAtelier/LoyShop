@@ -16,6 +16,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 import java.util.UUID;
@@ -139,28 +141,24 @@ public class ShopGUIListener implements Listener {
                         }
                     }
                     else if(window instanceof ListShopsWindow || window instanceof ListSearchResultsWindow){
-                        List<String> lore = clicked.getItemMeta().getLore();
-                        if(lore != null){
-                            for(String line : lore){
-                                if(line.startsWith("Location: ")){
-                                    line = line.substring(10);
-                                    Location loc = UtilMethods.getLocation(line);
-                                    AbstractShop shop = plugin.getShopHandler().getShop(loc);
 
-                                    if(shop != null){
-                                        if(Shop.getPlugin().usePerms()){
-                                            if(player.hasPermission("shop.operator") || player.hasPermission("shop.gui.teleport")){
-                                                shop.teleportPlayer(player);
-                                            }
-                                        }
-                                        else{
-                                            if(player.isOp()){
-                                                shop.teleportPlayer(player);
-                                            }
-                                        }
-                                        return;
+                        String signLocation = clicked.getItemMeta().getPersistentDataContainer().get(plugin.getSignLocationNameSpacedKey(), PersistentDataType.STRING);
+                        if(signLocation != null){
+                            Location loc = UtilMethods.getLocation(signLocation);
+                            AbstractShop shop = plugin.getShopHandler().getShop(loc);
+
+                            if(shop != null){
+                                if(Shop.getPlugin().usePerms()){
+                                    if(player.hasPermission("shop.operator") || player.hasPermission("shop.gui.teleport")){
+                                        shop.teleportPlayer(player);
                                     }
                                 }
+                                else{
+                                    if(player.isOp()){
+                                        shop.teleportPlayer(player);
+                                    }
+                                }
+                                return;
                             }
                         }
                     }

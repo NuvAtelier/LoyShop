@@ -265,6 +265,8 @@ public class ShopHandler {
         for(AbstractShop shop : allShops.values()){
             if(shop.getItemStack().getType() == itemStack.getType())
                 shops.add(shop);
+            else if(shop.getSecondaryItemStack() != null && shop.getSecondaryItemStack().getType() == itemStack.getType())
+                shops.add(shop);
         }
         return shops;
     }

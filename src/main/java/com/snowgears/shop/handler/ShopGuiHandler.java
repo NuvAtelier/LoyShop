@@ -3,6 +3,7 @@ package com.snowgears.shop.handler;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.gui.*;
 import com.snowgears.shop.shop.AbstractShop;
+import com.snowgears.shop.util.ConfigUpdater;
 import com.snowgears.shop.util.PlayerSettings;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.Bukkit;
@@ -16,6 +17,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 public class ShopGuiHandler {
@@ -25,11 +27,11 @@ public class ShopGuiHandler {
         HOME_LIST_OWN_SHOPS, HOME_LIST_PLAYERS, HOME_SETTINGS, HOME_COMMANDS,
         LIST_SHOP, LIST_PLAYER, LIST_PLAYER_ADMIN,
         SETTINGS_NOTIFY_OWNER_ON, SETTINGS_NOTIFY_OWNER_OFF, SETTINGS_NOTIFY_USER_ON, SETTINGS_NOTIFY_USER_OFF, SETTINGS_NOTIFY_STOCK_ON, SETTINGS_NOTIFY_STOCK_OFF,
-        COMMANDS_CURRENCY, COMMANDS_SET_CURRENCY, COMMANDS_SET_GAMBLE, COMMANDS_REFRESH_DISPLAYS, COMMANDS_RELOAD
+        COMMANDS_CURRENCY, COMMANDS_SET_CURRENCY, COMMANDS_SET_GAMBLE, COMMANDS_REFRESH_DISPLAYS, COMMANDS_RELOAD, ALL_SHOP_ICON
     }
 
     public enum GuiTitle {
-        HOME, LIST_PLAYERS, SETTINGS, COMMANDS
+        HOME, LIST_PLAYERS, SETTINGS, COMMANDS, LIST_SEARCH_RESULTS
 
     }
 
@@ -174,6 +176,13 @@ public class ShopGuiHandler {
             configFile.getParentFile().mkdirs();
             UtilMethods.copy(plugin.getResource("guiConfig.yml"), configFile);
         }
+
+        try {
+            ConfigUpdater.update(plugin, "guiConfig.yml", configFile, new ArrayList<>());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
 
         //load all titles first
@@ -188,20 +197,29 @@ public class ShopGuiHandler {
 
         //load all icons next
         for(GuiIcon iconEnum : GuiIcon.values()) {
+
+            boolean translateColors = true;
+            if(iconEnum == GuiIcon.ALL_SHOP_ICON)
+                translateColors = false;
+
             String iconString = iconEnum.toString().toLowerCase();
             String parentKey = iconString.substring(0, iconString.indexOf('_'));
             String childKey = iconString.substring(iconString.indexOf('_')+1);
 
             String type = config.getString("icons."+parentKey+"."+childKey+".type");
             String name = config.getString("icons."+parentKey+"."+childKey+".name");
-            if(name != null)
+
+            if(name != null && translateColors)
                 name = ChatColor.translateAlternateColorCodes('&', name);
 
             List<String> loreLines = config.getStringList("icons."+parentKey+"."+childKey+".lore");
             List<String> lore = new ArrayList<>();
             if(loreLines != null) {
                 for (String line : loreLines) {
-                    lore.add(ChatColor.translateAlternateColorCodes('&', line));
+                    if(translateColors)
+                        lore.add(ChatColor.translateAlternateColorCodes('&', line));
+                    else
+                        lore.add(line);
                 }
             }
 
@@ -216,6 +234,9 @@ public class ShopGuiHandler {
                 if(childKey.equals("player")) {
                     icon = new ItemStack(Material.PLAYER_HEAD, 1, (short) 3);
                 }
+            }
+            else if(childKey.equals("shop_icon")){
+                icon = new ItemStack(Material.DIRT); // just a placeholder. will replace with the item shop is selling later
             }
 
             if(icon != null) {
