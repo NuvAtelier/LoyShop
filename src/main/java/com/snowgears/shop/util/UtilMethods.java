@@ -261,10 +261,10 @@ public class UtilMethods {
     public static String getItemName(ItemStack is){
         ItemMeta itemMeta = is.getItemMeta();
 
-        if (itemMeta.getDisplayName() != null)
-            return itemMeta.getDisplayName();
-        else
+        if (itemMeta.getDisplayName() == null || itemMeta.getDisplayName().isEmpty())
             return capitalize(is.getType().name().replace("_", " ").toLowerCase());
+        else
+            return itemMeta.getDisplayName();
     }
 
     public static boolean stringStartsWithUUID(String name){

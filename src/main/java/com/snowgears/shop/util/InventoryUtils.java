@@ -116,7 +116,7 @@ public class InventoryUtils {
         for (int i = 0; i < contents.length; i++) {
             ItemStack is = contents[i];
             if (is != null) {
-                if (itemstacksAreSimilar(is, itemStack)) {
+                if (itemstacksAreSimilar(itemStack, is)) {
                     amount += is.getAmount();
                 }
             }
@@ -133,7 +133,7 @@ public class InventoryUtils {
         ItemMeta i1Meta = i1.getItemMeta();
         ItemMeta i2Meta = i2.getItemMeta();
         //only have the option to ignore durability if the item can be damaged
-        if(i1 instanceof Damageable) {
+        if(i1Meta instanceof Damageable) {
             Damageable i1Damagable = (Damageable)i1Meta;
             Damageable i2Damagable = (Damageable)i2Meta;
 
@@ -144,7 +144,7 @@ public class InventoryUtils {
                 ItemMeta is1 = itemStack1.getItemMeta();
                 Damageable is1Damagable = (Damageable)is1;
                 is1Damagable.setDamage(i2Damagable.getDamage());
-                itemStack1.setItemMeta(is1);
+                itemStack1.setItemMeta((ItemMeta)is1Damagable);
 
                 return itemStack1.isSimilar(itemStack2);
             }

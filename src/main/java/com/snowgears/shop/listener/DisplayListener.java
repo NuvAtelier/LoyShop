@@ -1,9 +1,9 @@
 package com.snowgears.shop.listener;
 
-import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.display.DisplayType;
+import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.InventoryUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;

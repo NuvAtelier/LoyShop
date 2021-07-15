@@ -1,9 +1,9 @@
 package com.snowgears.shop.gui;
 
 
-import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.handler.ShopGuiHandler;
+import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.PlayerSettings;
 import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.UtilMethods;

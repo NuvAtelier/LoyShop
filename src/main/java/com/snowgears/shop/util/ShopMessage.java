@@ -1,10 +1,10 @@
 package com.snowgears.shop.util;
 
+import com.snowgears.shop.Shop;
+import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
-import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.ShopType;
-import com.snowgears.shop.display.DisplayType;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;

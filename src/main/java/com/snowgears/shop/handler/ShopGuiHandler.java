@@ -1,8 +1,8 @@
 package com.snowgears.shop.handler;
 
-import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.gui.*;
+import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.PlayerSettings;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.Bukkit;

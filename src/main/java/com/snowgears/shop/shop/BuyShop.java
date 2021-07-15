@@ -1,10 +1,10 @@
 package com.snowgears.shop.shop;
 
-import com.snowgears.shop.util.TransactionError;
 import com.snowgears.shop.event.PlayerExchangeShopEvent;
 import com.snowgears.shop.util.EconomyUtils;
 import com.snowgears.shop.util.InventoryUtils;
 import com.snowgears.shop.util.ShopMessage;
+import com.snowgears.shop.util.TransactionError;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;

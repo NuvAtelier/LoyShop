@@ -112,7 +112,6 @@ public class Shop extends JavaPlugin {
             configFile.getParentFile().mkdirs();
             UtilMethods.copy(getResource("config.yml"), configFile);
         }
-        config = YamlConfiguration.loadConfiguration(configFile);
 
         File chatConfigFile = new File(getDataFolder(), "chatConfig.yml");
         if (!chatConfigFile.exists()) {
@@ -158,6 +157,8 @@ public class Shop extends JavaPlugin {
 
         reloadConfig();
 
+        config = YamlConfiguration.loadConfiguration(configFile);
+
         nmsBullshitHandler = new NMSBullshitHandler(this);
 
         //removed item names file after item ids are no longer used. may revisit later with new materials
@@ -180,12 +181,6 @@ public class Shop extends JavaPlugin {
         creativeSelectionListener = new CreativeSelectionListener(this);
         displayListener = new DisplayListener(this);
         guiListener = new ShopGUIListener(this);
-
-        //removing clearlag support since API is no longer reachable in previously published repo
-//        if (getServer().getPluginManager().getPlugin("ClearLag") != null) {
-//            clearLaggListener = new ClearLaggListener(this);
-//            getServer().getPluginManager().registerEvents(clearLaggListener, this);
-//        }
 
         //TODO set all config defaults here
         //config.setDefaults();

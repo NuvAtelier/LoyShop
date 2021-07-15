@@ -6,10 +6,7 @@ import com.snowgears.shop.display.version.*;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Tag;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -322,25 +319,17 @@ public class DisplayUtil {
             standLocation.setYaw(blockfaceToYaw(nextFace(facing)));
         }
 
-        try {
-            //stop the edge case of shulker boxes being able to be used in shulker chests
-            if (Tag.SHULKER_BOXES.isTagged(shopItem.getType())) {
-                if (shop.getChestLocation().getBlock().getState() instanceof ShulkerBox) {
-                    event.setCancelled(true);
-                    return;
-                }
-            }
-        } catch (NoSuchFieldError e) {}
-
-        try {
-            Block chestBlock = blockLocation.getBlock();
-            if (Tag.SHULKER_BOXES || chestBlock.getRelative(BlockFace.DOWN).getState() instanceof ShulkerBox) {
-                standLocation.add(0, 0.1, 0);
-            }
-            else if(UtilMethods.isMCVersion14Plus() && (chestBlock.getType() == Material.BARREL || chestBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL)){
-                standLocation.add(0, 0.1, 0); //y was 0.22 for items before packets were used
-            }
-        } catch (NoClassDefFoundError e) {}
+        //TODO come back to this
+        //removed barrel and shulker box check because it requires getBlock() which ends up loading the chunk
+//        try {
+//            Block chestBlock = blockLocation.getBlock();
+//            if (chestBlock.getRelative(BlockFace.DOWN).getState() instanceof ShulkerBox) {
+//                standLocation.add(0, 0.1, 0);
+//            }
+//            else if(UtilMethods.isMCVersion14Plus() && (chestBlock.getType() == Material.BARREL || chestBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL)){
+//                standLocation.add(0, 0.1, 0); //y was 0.22 for items before packets were used
+//            }
+//        } catch (NoClassDefFoundError e) {}
 
         //material is an item
         return standLocation;

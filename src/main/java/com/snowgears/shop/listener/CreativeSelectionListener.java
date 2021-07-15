@@ -1,12 +1,12 @@
 package com.snowgears.shop.listener;
 
 
-import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
-import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.event.PlayerInitializeShopEvent;
 import com.snowgears.shop.gui.HomeWindow;
 import com.snowgears.shop.gui.ListSearchResultsWindow;
+import com.snowgears.shop.shop.AbstractShop;
+import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.PlayerData;
 import com.snowgears.shop.util.ShopMessage;
 import org.bukkit.Bukkit;
@@ -166,6 +166,7 @@ public class CreativeSelectionListener implements Listener {
 
                             shop.setItemStack(event.getCursor());
                             shop.getDisplay().spawn(null);
+                            shop.updateSign();
                             String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                             if (message != null && !message.isEmpty())
                                 player.sendMessage(message);
@@ -182,6 +183,7 @@ public class CreativeSelectionListener implements Listener {
 
                             shop.setSecondaryItemStack(event.getCursor());
                             shop.getDisplay().spawn(null);
+                            shop.updateSign();
                             String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                             if (message != null && !message.isEmpty())
                                 player.sendMessage(message);

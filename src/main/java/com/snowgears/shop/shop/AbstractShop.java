@@ -1,7 +1,6 @@
 package com.snowgears.shop.shop;
 
 import com.snowgears.shop.Shop;
-import com.snowgears.shop.util.TransactionError;
 import com.snowgears.shop.display.AbstractDisplay;
 import com.snowgears.shop.util.*;
 import net.md_5.bungee.api.ChatColor;
@@ -369,10 +368,7 @@ public abstract class AbstractShop {
         return isPerformingTransaction;
     }
 
-    //common base methods to all shops
-
     public void updateSign() {
-
         signLines = ShopMessage.getSignLines(this, this.type);
 
         Shop.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(Shop.getPlugin(), new Runnable() {
@@ -441,6 +437,7 @@ public abstract class AbstractShop {
             return;
 
         if(chestLocation == null) {
+            this.load();
             Location loc = this.getSignLocation().getBlock().getRelative(BlockFace.UP).getLocation().add(0.5, 0, 0.5);
             player.teleport(loc);
         }

@@ -1,10 +1,10 @@
 package com.snowgears.shop.handler;
 
+import com.snowgears.shop.Shop;
+import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
-import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.ShopType;
-import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.util.DisplayUtil;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.*;
@@ -23,7 +23,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.util.*;
@@ -215,11 +214,11 @@ public class ShopHandler {
     }
 
     public void processUnloadedShopsInChunk(Chunk chunk){
-        String key = chunk.getX()+"_"+chunk.getZ();
+        String key = chunk.getWorld().getName()+"_"+chunk.getX()+"_"+chunk.getZ();
         if(unloadedShopsByChunk.containsKey(key)){
-            System.out.println("[Shop] chunk contained unloaded shops.");
+            //System.out.println("[Shop] chunk contained unloaded shops.");
             List<UUID> playerUUIDs = new ArrayList<>();
-            List<Location> shopLocations = getUnloadedShopsByChunk(chunk);
+            List<Location> shopLocations = getUnloadedShopsByChunk(key);
             for(Location shopLocation : shopLocations) {
                 AbstractShop shop = getShop(shopLocation);
                 if(shop != null){
@@ -240,12 +239,14 @@ public class ShopHandler {
     }
 
     public void addUnloadedShopToChunkList(AbstractShop shop){
-        Chunk chunk = shop.getSignLocation().getChunk();
-        List<Location> shopLocations = getUnloadedShopsByChunk(chunk);
+        //Chunk chunk = shop.getSignLocation().getChunk();
+        int chunkX = UtilMethods.floor(shop.getSignLocation().getBlockX()) >> 4;
+        int chunkZ = UtilMethods.floor(shop.getSignLocation().getBlockZ()) >> 4;
+        String chunkKey = shop.getSignLocation().getWorld().getName()+"_"+chunkX+"_"+chunkZ;
+        List<Location> shopLocations = getUnloadedShopsByChunk(chunkKey);
         if(!shopLocations.contains(shop.getSignLocation())) {
             shopLocations.add(shop.getSignLocation());
-            String key = chunk.getX()+"_"+chunk.getZ();
-            unloadedShopsByChunk.put(key, shopLocations);
+            unloadedShopsByChunk.put(chunkKey, shopLocations);
         }
     }
 
@@ -286,11 +287,10 @@ public class ShopHandler {
         return shopLocations;
     }
 
-    private List<Location> getUnloadedShopsByChunk(Chunk chunk){
+    private List<Location> getUnloadedShopsByChunk(String chunkKey){
         List<Location> unloadedShopsInChunk;
-        String key = chunk.getX()+"_"+chunk.getZ();
-        if(unloadedShopsByChunk.containsKey(key)) {
-            unloadedShopsInChunk = unloadedShopsByChunk.get(key);
+        if(unloadedShopsByChunk.containsKey(chunkKey)) {
+            unloadedShopsInChunk = unloadedShopsByChunk.get(chunkKey);
         }
         else
             unloadedShopsInChunk = new ArrayList<>();
@@ -365,7 +365,7 @@ public class ShopHandler {
     }
 
     private void saveShopsDriver(UUID player){
-        System.out.println("[Shop] saving shops for player - "+player.toString());
+        //System.out.println("[Shop] saving shops for player - "+player.toString());
         try {
 
             File fileDirectory = new File(plugin.getDataFolder(), "Data");
@@ -558,7 +558,7 @@ public class ShopHandler {
 
         for (String shopOwner : allShopOwners) {
             UUID owner = null;
-            System.out.println("[Shop] loading shops for player - "+shopOwner);
+            //System.out.println("[Shop] loading shops for player - "+shopOwner);
 
             Set<String> allShopNumbers = config.getConfigurationSection("shops." + shopOwner).getKeys(false);
             for (String shopNumber : allShopNumbers) {
@@ -606,32 +606,8 @@ public class ShopHandler {
                         if(displayType != null)
                             shop.getDisplay().setType(DisplayType.valueOf(displayType), false);
 
-                        //if facing is null, shop direction needs to be calculated on chunkloadevent
-                        if(facing == null){
-                            //System.out.println("[Shop] facing was null");
-                            //if chunk its in is already loaded, calculate it here
-                            if(shop.getSignLocation().getChunk().isLoaded()) {
-                                //System.out.println("[Shop] chunk was already loaded");
-                                //run this task synchronously
-                                Bukkit.getScheduler().runTask(plugin, new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        boolean signDefined = shop.load();
-                                        if(signDefined)
-                                            addShop(shop);
-                                    }
-                                });
-                            }
-                            //if the chunk is not already loaded, add it to a list to calculate it at chunkloadevent later
-                            else {
-                                System.out.println("[Shop] chunk not already loaded. Adding to unloadedList");
-                                addUnloadedShopToChunkList(shop);
-                                addShop(shop);
-                            }
-                        }
-                        //if facing is already defined, go ahead and load the shop without checking if the chunk is loaded (because we wont need blockdata to define the sign)
-                        else{
-                            //System.out.println("[Shop] facing defined already");
+                        //if chunk its in is already loaded, calculate it here
+                        if(shop.getDisplay().isChunkLoaded()) {
                             //run this task synchronously
                             Bukkit.getScheduler().runTask(plugin, new Runnable() {
                                 @Override
@@ -642,8 +618,13 @@ public class ShopHandler {
                                 }
                             });
                         }
-
-                    } catch (NullPointerException e) {}
+                        //if the chunk is not already loaded, add it to a list to calculate it at chunkloadevent later
+                        else {
+                            //System.out.println("[Shop] chunk not loaded. Adding to unloadedList");
+                            addUnloadedShopToChunkList(shop);
+                            addShop(shop);
+                        }
+                    } catch (NullPointerException e) {e.printStackTrace();}
                 }
             }
         }
@@ -681,18 +662,6 @@ public class ShopHandler {
         else
             return ShopType.GAMBLE;
     }
-
-//    public boolean isChest(Block b){
-//        try{
-//            if(b.getState() instanceof ShulkerBox){
-//                return true;
-//            }
-//            if(b.getState() instanceof Barrel){
-//                return true;
-//            }
-//        } catch (NoClassDefFoundError e) {}
-//        return chestMaterials.contains(b.getType());
-//    }
 
     public boolean isChest(Block b){
         return chestMaterials.contains(b.getType());

@@ -37,7 +37,7 @@ public class NMSBullshitHandler {
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
-            System.out.println("[Shop] Unable to retrieve a NMS class used for NBT data.");
+            System.out.println("[Shop] [ERROR] Unable to retrieve a NMS class used for NBT data.");
         }
     }
 

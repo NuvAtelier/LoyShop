@@ -1,6 +1,6 @@
 package com.snowgears.shop.listener;
 
-import com.snowgears.shop.*;
+import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.event.PlayerCreateShopEvent;
 import com.snowgears.shop.event.PlayerDestroyShopEvent;
@@ -333,8 +333,9 @@ public class MiscListener implements Listener {
                         shop.setItemStack(plugin.getGambleDisplayItem());
                         shop.setAmount(1);
                         plugin.getShopHandler().addShop(shop);
-                        shop.getDisplay().setType(DisplayType.LARGE_ITEM, true);
+                        shop.getDisplay().setType(DisplayType.LARGE_ITEM, false);
                         shop.getDisplay().spawn(null);
+                        shop.updateSign();
 
                         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                         if(message != null && !message.isEmpty())
@@ -424,8 +425,9 @@ public class MiscListener implements Listener {
                     Block aboveShop = shop.getChestLocation().getBlock().getRelative(BlockFace.UP);
                     if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
                         if(plugin.forceDisplayToNoneIfBlocked()){
-                            shop.getDisplay().setType(DisplayType.NONE, true);
+                            shop.getDisplay().setType(DisplayType.NONE, false);
                             shop.getDisplay().spawn(null);
+                            shop.updateSign();
                         }
                         else {
                             String message = ShopMessage.getMessage("interactionIssue", "displayRoom", null, player);
@@ -489,6 +491,7 @@ public class MiscListener implements Listener {
                     }
                     else {
                         shop.getDisplay().spawn(null);
+                        shop.updateSign();
                         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);
@@ -507,6 +510,7 @@ public class MiscListener implements Listener {
                         if(shop.getSecondaryItemStack() == null)
                             shop.setSecondaryItemStack(shopItem);
                         shop.getDisplay().spawn(null);
+                        shop.updateSign();
                         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);
@@ -535,8 +539,10 @@ public class MiscListener implements Listener {
             if (b.getBlockData() instanceof WallSign) {
                 AbstractShop shop = plugin.getShopHandler().getShop(b.getLocation());
                 if (shop != null) {
-                    if (shop.getDisplay().getType() == DisplayType.ITEM)
+                    if (shop.getDisplay().getType() == DisplayType.ITEM) {
                         shop.getDisplay().spawn(null);
+                        shop.updateSign();
+                    }
                 }
             }
         }
@@ -623,10 +629,8 @@ public class MiscListener implements Listener {
 
             AbstractShop shop = plugin.getShopHandler().getShopByChest(b);
             if (shop == null) {
-                System.out.println("[Shop] shop by chest was null. returning.");
                 return;
             }
-            System.out.println("[Shop] shop by chest was not null.");
 
             InventoryHolder ih = ((InventoryHolder)b.getState()).getInventory().getHolder();
 

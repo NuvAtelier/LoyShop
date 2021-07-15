@@ -1,7 +1,7 @@
 package com.snowgears.shop.display;
 
-import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.Shop;
+import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.ArmorStandData;
 import com.snowgears.shop.util.DisplayUtil;
@@ -44,6 +44,10 @@ public abstract class AbstractDisplay {
 
     public boolean isInChunk(Chunk chunk){
         return chunk.getX() == chunkX && chunk.getZ() == chunkZ && chunk.getWorld().toString().equals(shopSignLocation.getWorld().toString());
+    }
+
+    public boolean isChunkLoaded(){
+        return shopSignLocation.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
     }
 
     //spawns a floating item packet for a specific player
@@ -151,7 +155,7 @@ public abstract class AbstractDisplay {
                 case ITEM_FRAME:
                     Location frameLocation;
                     //only calculate the item frame location if the shop is in a loaded chunk (because Block is used)
-                    if(shop.getChestLocation().getChunk().isLoaded()) {
+                    if(this.isChunkLoaded()) {
                         Block aboveShop = shop.getChestLocation().getBlock().getRelative(BlockFace.UP);
                         frameLocation = aboveShop.getLocation();
                         //if display is blocked, put item frame on front
@@ -190,7 +194,7 @@ public abstract class AbstractDisplay {
             lowerTagLocation = UtilMethods.pushLocationInDirection(lowerTagLocation, this.getShop().getFacing(), 0.2);
 
             Block displayBlock = lowerTagLocation.getBlock();
-            if(UtilMethods.isMCVersion14Plus()) {
+            if(UtilMethods.isMCVersion14Plus() && this.isChunkLoaded()) {
                 if (displayBlock.getType() == Material.BARREL || displayBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL) {
                     lowerTagLocation = lowerTagLocation.add(0, .25, 0);
                 }
@@ -241,15 +245,17 @@ public abstract class AbstractDisplay {
         return Shop.getPlugin().getShopHandler().getShop(this.shopSignLocation);
     }
 
-    public void setType(DisplayType type, boolean checkBlock){
+    public void setType(DisplayType type, boolean checkDisplayBlock){
         DisplayType oldType = this.type;
 
-        if(checkBlock && getShop().getChestLocation() != null) {
+        if(checkDisplayBlock && getShop().getChestLocation() != null) {
             if ((oldType == DisplayType.NONE && type != DisplayType.ITEM_FRAME) || (oldType == DisplayType.ITEM_FRAME && type != DisplayType.NONE)) {
-                //make sure there is room above the shop for the display
-                Block aboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP);
-                if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
-                    return;
+                if(this.isChunkLoaded()) {
+                    //make sure there is room above the shop for the display
+                    Block aboveShop = this.getShop().getChestLocation().getBlock().getRelative(BlockFace.UP);
+                    if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
+                        return;
+                    }
                 }
             }
         }
