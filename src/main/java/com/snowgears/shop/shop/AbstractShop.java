@@ -466,23 +466,23 @@ public abstract class AbstractShop {
         if(price != 0) {
             message = ShopMessage.getMessage(this.getType().toString(), "descriptionPrice", this, player);
             if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+                formatAndSendFancyMessage(message, player);
 
             message = ShopMessage.getMessage(this.getType().toString(), "descriptionPricePerItem", this, player);
             if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+                formatAndSendFancyMessage(message, player);
             //player.sendMessage("");
         }
 
         if(this.isAdmin()){
             message = ShopMessage.getMessage("description", "stockAdmin", this, player);
             if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+                formatAndSendFancyMessage(message, player);
         }
         else {
             message = ShopMessage.getMessage("description", "stock", this, player);
             if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+                formatAndSendFancyMessage(message, player);
         }
 
         return;

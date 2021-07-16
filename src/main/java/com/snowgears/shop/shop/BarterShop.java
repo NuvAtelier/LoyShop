@@ -1,6 +1,8 @@
 package com.snowgears.shop.shop;
 
+import com.snowgears.shop.Shop;
 import com.snowgears.shop.event.PlayerExchangeShopEvent;
+import com.snowgears.shop.util.CurrencyType;
 import com.snowgears.shop.util.InventoryUtils;
 import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.TransactionError;
@@ -141,10 +143,14 @@ public class BarterShop extends AbstractShop {
     }
 
     public enum BarterType{
-        ITEM, EXPERIENCE;
+        ITEM, EXPERIENCE
     }
 
     public void cycleBarterType(){
+        //if shops are already using experience as the main currency, don't allow barter shops to barter experience (that would be a sell shop)
+        if(Shop.getPlugin().getCurrencyType() == CurrencyType.EXPERIENCE)
+            return;
+
         if(this.barterType == ITEM){
             this.barterType = EXPERIENCE;
         }

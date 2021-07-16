@@ -215,52 +215,52 @@ public class ComboShop extends AbstractShop {
 
     @Override
     public void printSalesInfo(Player player) {
-        player.sendMessage("");
+        //player.sendMessage("");
 
         String message = ShopMessage.getUnformattedMessage(ShopType.BUY.toString(), "descriptionItem");
         formatAndSendFancyMessage(message, player);
-        player.sendMessage("");
+        //player.sendMessage("");
 
 
         if(priceBuy != 0) {
             message = ShopMessage.getMessage(ShopType.BUY.toString(), "descriptionPrice", this, player);
             if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+                formatAndSendFancyMessage(message, player);
 
             message = ShopMessage.getMessage(ShopType.BUY.toString(), "descriptionPricePerItem", this, player);
             if(message != null && !message.isEmpty())
-                player.sendMessage(message);
-            player.sendMessage("");
+                formatAndSendFancyMessage(message, player);
+            //player.sendMessage("");
         }
 
         if(priceSell != 0) {
             message = ShopMessage.getUnformattedMessage(ShopType.SELL.toString(), "descriptionItem");
             formatAndSendFancyMessage(message, player);
-            player.sendMessage("");
+            //player.sendMessage("");
 
             message = ShopMessage.getUnformattedMessage(ShopType.SELL.toString(), "descriptionPrice");
             message = message.replaceAll("price]", "price sell]");
             message = ShopMessage.formatMessage(message, this, player, false);
             if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+                formatAndSendFancyMessage(message, player);
 
 
             message = ShopMessage.getUnformattedMessage(ShopType.SELL.toString(), "descriptionPricePerItem");
             message = message.replaceAll("price per item]", "price sell per item]");
             message = ShopMessage.formatMessage(message, this, player, false);
             if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+                formatAndSendFancyMessage(message, player);
         }
 
         if(this.isAdmin()){
             message = ShopMessage.getMessage("description", "stockAdmin", this, player);
             if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+                formatAndSendFancyMessage(message, player);
         }
         else {
             message = ShopMessage.getMessage("description", "stock", this, player);
             if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+                formatAndSendFancyMessage(message, player);
         }
 
         return;

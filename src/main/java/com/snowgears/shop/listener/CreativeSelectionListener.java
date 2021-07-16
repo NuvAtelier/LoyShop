@@ -27,6 +27,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -151,6 +152,7 @@ public class CreativeSelectionListener implements Listener {
         Player player = (Player) event.getWhoClicked();
         PlayerData playerData = PlayerData.loadFromFile(player);
         if (playerData != null) {
+
             //player dropped item outside the inventory
             if (event.getSlot() == -999 && event.getCursor() != null) {
                 if (!playerData.isGuiSearch()) {
@@ -161,8 +163,12 @@ public class CreativeSelectionListener implements Listener {
                             PlayerInitializeShopEvent e = new PlayerInitializeShopEvent(player, shop);
                             Bukkit.getServer().getPluginManager().callEvent(e);
 
-                            if (e.isCancelled())
+                            if (e.isCancelled()) {
+                                event.setResult(Event.Result.DENY);
+                                event.setCursor(new ItemStack(Material.AIR));
+                                event.setCancelled(true);
                                 return;
+                            }
 
                             shop.setItemStack(event.getCursor());
                             shop.getDisplay().spawn(null);
@@ -178,8 +184,12 @@ public class CreativeSelectionListener implements Listener {
                             PlayerInitializeShopEvent e = new PlayerInitializeShopEvent(player, shop);
                             Bukkit.getServer().getPluginManager().callEvent(e);
 
-                            if (e.isCancelled())
+                            if (e.isCancelled()) {
+                                event.setResult(Event.Result.DENY);
+                                event.setCursor(new ItemStack(Material.AIR));
+                                event.setCancelled(true);
                                 return;
+                            }
 
                             shop.setSecondaryItemStack(event.getCursor());
                             shop.getDisplay().spawn(null);
@@ -195,16 +205,19 @@ public class CreativeSelectionListener implements Listener {
                 }
                 //player data is a GUI Search
                 else{
-                    player.closeInventory();
+                    plugin.getGuiHandler().closeWindow(player);
                     removePlayerData(player);
 
                     ListSearchResultsWindow searchResultsWindow = new ListSearchResultsWindow(player.getUniqueId(), event.getCursor());
                     searchResultsWindow.setPrevWindow(new HomeWindow(player.getUniqueId()));
                     plugin.getGuiHandler().setWindow(player, searchResultsWindow);
                 }
-                event.setResult(Event.Result.DENY);
-                event.setCancelled(true);
+//                event.setResult(Event.Result.DENY);
+//                event.setCancelled(true);
             }
+            event.setResult(Event.Result.DENY);
+            event.setCursor(new ItemStack(Material.AIR));
+            event.setCancelled(true);
         }
     }
 

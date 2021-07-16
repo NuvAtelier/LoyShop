@@ -112,14 +112,15 @@ public abstract class ShopGuiWindow {
         return false;
     }
 
-    public boolean close(){
-        Player p = this.getPlayer();
-        if(p != null){
-            p.closeInventory();
-            return true;
-        }
-        return false;
-    }
+    //use plugin.getGuiHandler().closeWindow(player);
+//    public boolean close(){
+//        Player p = this.getPlayer();
+//        if(p != null){
+//            p.closeInventory();
+//            return true;
+//        }
+//        return false;
+//    }
 
 
     //override in subclasses

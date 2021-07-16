@@ -2,9 +2,7 @@ package com.snowgears.shop.gui;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.handler.ShopGuiHandler;
-import com.snowgears.shop.util.OfflinePlayerNameComparator;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
@@ -27,15 +25,19 @@ public class ListPlayersWindow extends ShopGuiWindow {
         makeMenuBarUpper();
         makeMenuBarLower();
 
-        List<OfflinePlayer> owners = Shop.getPlugin().getShopHandler().getShopOwners();
-        owners.sort(new OfflinePlayerNameComparator());
+        //TODO make a more efficient method to sort players by name
+        //this current method is way too resource intensive on large servers
+        //List<OfflinePlayer> owners = Shop.getPlugin().getShopHandler().getShopOwners();
+        //owners.sort(new OfflinePlayerNameComparator());
+
+        List<UUID> owners = Shop.getPlugin().getShopHandler().getShopOwnerUUIDs();
 
         int startIndex = pageIndex * 36; //36 items is a full page in the inventory
         ItemStack icon;
         boolean added = true;
 
         for (int i=startIndex; i< owners.size(); i++) {
-            icon = createIcon(owners.get(i).getUniqueId());
+            icon = createIcon(owners.get(i));
 
             if(!this.addIcon(icon)){
                 added = false;

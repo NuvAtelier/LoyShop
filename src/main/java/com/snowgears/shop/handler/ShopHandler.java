@@ -222,10 +222,18 @@ public class ShopHandler {
             for(Location shopLocation : shopLocations) {
                 AbstractShop shop = getShop(shopLocation);
                 if(shop != null){
-                    shop.load();
-                    shop.getDisplay().spawn(null);
-                    if(!playerUUIDs.contains(shop.getOwnerUUID())){
-                        playerUUIDs.add(shop.getOwnerUUID());
+                    boolean signExists = shop.load();
+                    if(signExists) {
+                        //System.out.println("[Shop] shop loaded. sign exists.");
+                        shop.getDisplay().spawn(null);
+                        if (!playerUUIDs.contains(shop.getOwnerUUID())) {
+                            playerUUIDs.add(shop.getOwnerUUID());
+                        }
+                    }
+                    else{
+                        //System.out.println("[Shop] shop deleted. sign did not exist.");
+                        //System.out.println("[Shop] location: "+UtilMethods.getCleanLocation(shop.getSignLocation(), true));
+                        this.removeShop(shop);
                     }
                 }
             }
@@ -271,10 +279,19 @@ public class ShopHandler {
         return shops;
     }
 
+    //TODO this is too resource intensive on large servers
     public List<OfflinePlayer> getShopOwners(){
         ArrayList<OfflinePlayer> owners = new ArrayList<>();
         for(UUID player : playerShops.keySet()) {
             owners.add(Bukkit.getOfflinePlayer(player));
+        }
+        return owners;
+    }
+
+    public List<UUID> getShopOwnerUUIDs(){
+        ArrayList<UUID> owners = new ArrayList<>();
+        for(UUID player : playerShops.keySet()) {
+            owners.add(player);
         }
         return owners;
     }
@@ -419,7 +436,8 @@ public class ShopHandler {
                 //don't save shops that are not initialized with items
                 if (shop.isInitialized()) {
                     config.set("shops." + owner + "." + shopNumber + ".location", locationToString(shop.getSignLocation()));
-                    config.set("shops." + owner + "." + shopNumber + ".facing", shop.getFacing().toString());
+                    if(shop.getFacing() != null)
+                        config.set("shops." + owner + "." + shopNumber + ".facing", shop.getFacing().toString());
                     config.set("shops." + owner + "." + shopNumber + ".price", shop.getPrice());
                     if(shop.getType() == ShopType.COMBO){
                         config.set("shops." + owner + "." + shopNumber + ".priceSell", ((ComboShop)shop).getPriceSell());

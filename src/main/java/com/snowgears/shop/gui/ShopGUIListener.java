@@ -90,7 +90,7 @@ public class ShopGUIListener implements Listener {
                             return;
                         }
                         else if(clicked.getType() == searchIcon.getType()){
-                            player.closeInventory();
+                            plugin.getGuiHandler().closeWindow(player);
                             plugin.getCreativeSelectionListener().addPlayerData(player, player.getLocation(), true);
 
                             for(String message : ShopMessage.getSelectionLines("guiSearchSelection", true)){
@@ -142,11 +142,13 @@ public class ShopGUIListener implements Listener {
                                 if(Shop.getPlugin().usePerms()){
                                     if(player.hasPermission("shop.operator") || player.hasPermission("shop.gui.teleport")){
                                         shop.teleportPlayer(player);
+                                        plugin.getGuiHandler().closeWindow(player);
                                     }
                                 }
                                 else{
                                     if(player.isOp()){
                                         shop.teleportPlayer(player);
+                                        plugin.getGuiHandler().closeWindow(player);
                                     }
                                 }
                                 return;
@@ -231,7 +233,7 @@ public class ShopGUIListener implements Listener {
                             command += "reload";
                         }
 
-                        player.closeInventory();
+                        plugin.getGuiHandler().closeWindow(player);
                         Bukkit.getServer().dispatchCommand(player, command);
                         return;
                     }

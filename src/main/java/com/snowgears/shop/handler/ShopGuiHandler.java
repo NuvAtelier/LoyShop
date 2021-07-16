@@ -46,6 +46,7 @@ public class ShopGuiHandler {
     private HashMap<GuiTitle, String> guiWindowTitles = new HashMap<>();
 
     private HashMap<UUID, ItemStack> playerHeads = new HashMap<>();
+    //private HashMap<UUID, String>
 
     public ShopGuiHandler(Shop instance){
         plugin = instance;
@@ -66,19 +67,34 @@ public class ShopGuiHandler {
         window.open();
     }
 
+    public void closeWindow(Player player){
+        if(playerGuiWindows.get(player.getUniqueId()) != null){
+            playerGuiWindows.remove(player.getUniqueId());
+        }
+        player.closeInventory();
+    }
+
     //TODO make this text configurable
     public void reloadPlayerHeadIcon(UUID playerUUID){
         if(playerUUID == null)
             return;
-        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
+        ItemStack playerHead = playerHeads.get(playerUUID);
+        SkullMeta skMeta;
+        if(playerHead == null) {
+            //System.out.println("[Shop] building new player head for player - "+playerUUID);
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
 
-        ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta skMeta = (SkullMeta) playerHead.getItemMeta();
-        if(!playerUUID.equals(plugin.getShopHandler().getAdminUUID())) {
-            //System.out.println("[Shop] player was not null. Adding owning player to icon skin");
-            if(offlinePlayer == null)
-                return;
-            skMeta.setOwningPlayer(offlinePlayer);
+            playerHead = new ItemStack(Material.PLAYER_HEAD);
+            skMeta = (SkullMeta) playerHead.getItemMeta();
+            if (!playerUUID.equals(plugin.getShopHandler().getAdminUUID())) {
+                //System.out.println("[Shop] player was not null. Adding owning player to icon skin");
+                if (offlinePlayer == null)
+                    return;
+                skMeta.setOwningPlayer(offlinePlayer);
+            }
+        }
+        else{
+            skMeta = (SkullMeta) playerHead.getItemMeta();
         }
 
         //get the placeholder icon with all of the unformatted fields
@@ -104,12 +120,9 @@ public class ShopGuiHandler {
     }
 
     public ItemStack getPlayerHeadIcon(UUID playerUUID){
-        //System.out.println("[Shop] getting player head icon for "+playerUUID);
         if(playerHeads.containsKey(playerUUID))
             return playerHeads.get(playerUUID);
-        //System.out.println("Player heads did not contain the head");
-        return new ItemStack(Material.AIR); //TODO change this back to null once you see why the icons arent loaded on addShop()
-        //return null;
+        return new ItemStack(Material.AIR);
     }
 
     //TODO have a change window to type method here that can be called from the button listener to clean things up?
