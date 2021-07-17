@@ -150,23 +150,47 @@ interaction_issue:
 
 description:
    SELL:
-      item: "&7Item(s) this shop sells to you: &b[[item]] &7([item durability]% durability) &d[item enchants]"
-      price: "&aYou can buy &f[item amount] [[item]](s) &afrom this shop for &f[price]."
-      pricePerItem: "&7That is [price per item] per [[item]]."
+      - '&d+---------------------------------------------------+'
+      - '&d| &aShop Information: &7(selling items)'
+      - '&d| &7Owner: &f[owner]'
+      - '&d|           &7v (hover over item to see details)'
+      - '&d| &7Item: &b[[item]] &7(x&e[item amount]&7)'
+      - '&d| &7Price: &a[price] &7([price per item] per 1 &7[item])'
+      - '&d| &7Stock: [stock color][stock]'
+      - '&d+---------------------------------------------------+'
    BUY:
-      item: "&7Item(s) this shop buys from you: &b[[item]] &7([item durability]% durability) &d[item enchants]"
-      price: "&aYou can sell &f[item amount] [[item]](s) &ato this shop for &f[price]."
-      pricePerItem: "&7That is [price per item] per [[item]]."
+      - '&d+---------------------------------------------------+'
+      - '&d| &aShop Information: &7(buying items)'
+      - '&d| &7Owner: &f[owner]'
+      - '&d|           &7v (hover over item to see details)'
+      - '&d| &7Item: &b[[item]] &7(x&e[item amount]&7)'
+      - '&d| &7Price: &a[price] &7([price per item] per 1 &7[item])'
+      - '&d| &7Stock: [stock color][stock]'
+      - '&d+---------------------------------------------------+'
+   COMBO:
+      - '&d+---------------------------------------------------+'
+      - '&d| &aShop Information: &7(buying or selling items) [stock color]in stock'
+      - '&d| &7Owner: &f[owner]'
+      - '&d| &7Click &eLEFT &7side of sign:'
+      - '&d| &7You get: &a[price] &7for your &b[[item]] &7(x&e[item amount]&7)'
+      - '&d| &7Click &eRIGHT &7side of sign'
+      - '&d| &7You get: &b[[item]] &7(x&e[item amount]&7) for your &a[price sell]'
+      - '&d+---------------------------------------------------+'
    BARTER:
-      item: "&7Item(s) this shop trades to you: &b[[item]] &7([item durability]% durability) &d[item enchants]"
-      barterItem: "&7Item(s) you trade to the shop: &b[[barter item]] &7([barter item durability]% durability) &d[barter item enchants]"
-      price: "&aYou can barter &f[barter item amount] &aof your &f[[barter item]](s) &ato this shop for &f[item amount] [[item]](s)&f."
-      pricePerItem: "&7That is [price per item](s) per [[item]]."
+      - '&d+---------------------------------------------------+'
+      - '&d| &aShop Information: &7(bartering items) [stock color]in stock'
+      - '&d| &7Owner: &f[owner]'
+      - '&d|             &7v (hover over items to see details)'
+      - '&d| &eYou give: &b[[barter item]] &7(x&e[barter item amount]&7)'
+      - '&d| &aYou get: &b[[item]] &7(x&e[item amount]&7)'
+      - '&d| &7Price: &7([price per item] per 1 [item])'
+      - '&d+---------------------------------------------------+'
    GAMBLE:
-      item: "&7This shop sells random items."
-      price: "&aYou can gamble with this shop for &f[price]."
-   stock: "&7This shop is currently able to provide [stock] more transactions."
-   stockAdmin: "&7This shop can never run out of stock."
+      - '&d+---------------------------------------------------+'
+      - '&d| &aShop Information: &7(gambling for items)'
+      - '&d| &7Item: &b[[item]]'
+      - '&d| &7Price: &a[price]'
+      - '&d+---------------------------------------------------+'
 
 permission:
    use: "&cYou are not authorized to use [shop type] shops."

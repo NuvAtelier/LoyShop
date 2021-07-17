@@ -109,6 +109,8 @@ public class CommandHandler extends BukkitCommand {
                         p.closeInventory();
                     }
                 }
+                plugin.getShopHandler().refreshShopDisplays(null);
+                plugin.getShopHandler().removeLegacyDisplays();
 
             }
             else if (args[0].equalsIgnoreCase("currency")) {

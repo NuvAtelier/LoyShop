@@ -30,7 +30,7 @@ public class ShopGuiHandler {
         HOME_LIST_OWN_SHOPS, HOME_LIST_PLAYERS, HOME_SETTINGS, HOME_COMMANDS,
         LIST_SHOP, LIST_PLAYER, LIST_PLAYER_ADMIN,
         SETTINGS_NOTIFY_OWNER_ON, SETTINGS_NOTIFY_OWNER_OFF, SETTINGS_NOTIFY_USER_ON, SETTINGS_NOTIFY_USER_OFF, SETTINGS_NOTIFY_STOCK_ON, SETTINGS_NOTIFY_STOCK_OFF,
-        COMMANDS_CURRENCY, COMMANDS_SET_CURRENCY, COMMANDS_SET_GAMBLE, COMMANDS_REFRESH_DISPLAYS, COMMANDS_RELOAD, ALL_SHOP_ICON, ALL_PLAYER_ICON
+        COMMANDS_CURRENCY, COMMANDS_SET_CURRENCY, COMMANDS_SET_GAMBLE, COMMANDS_REFRESH_DISPLAYS, COMMANDS_RELOAD, ALL_SHOP_ICON, ALL_PLAYER_ICON, ALL_ADMIN_ICON
     }
 
     public enum GuiTitle {
@@ -79,26 +79,40 @@ public class ShopGuiHandler {
         if(playerUUID == null)
             return;
         ItemStack playerHead = playerHeads.get(playerUUID);
-        SkullMeta skMeta;
+        ItemMeta itemMeta;
+        ItemStack placeHolderIcon;
         if(playerHead == null) {
             //System.out.println("[Shop] building new player head for player - "+playerUUID);
-            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
 
-            playerHead = new ItemStack(Material.PLAYER_HEAD);
-            skMeta = (SkullMeta) playerHead.getItemMeta();
-            if (!playerUUID.equals(plugin.getShopHandler().getAdminUUID())) {
+            //playerUUID is the fake admin UUID
+            if(playerUUID.equals(plugin.getShopHandler().getAdminUUID())) {
+                playerHead = Shop.getPlugin().getGuiHandler().getIcon(GuiIcon.ALL_ADMIN_ICON, playerUUID, null).clone();
+                itemMeta = playerHead.getItemMeta();
+            }
+            else{
+                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
+                playerHead = new ItemStack(Material.PLAYER_HEAD);
+                itemMeta = playerHead.getItemMeta();
+
                 //System.out.println("[Shop] player was not null. Adding owning player to icon skin");
                 if (offlinePlayer == null)
                     return;
-                skMeta.setOwningPlayer(offlinePlayer);
+                ((SkullMeta)itemMeta).setOwningPlayer(offlinePlayer);
             }
+
         }
         else{
-            skMeta = (SkullMeta) playerHead.getItemMeta();
+            itemMeta =  playerHead.getItemMeta();
         }
 
-        //get the placeholder icon with all of the unformatted fields
-        ItemStack placeHolderIcon = Shop.getPlugin().getGuiHandler().getIcon(GuiIcon.ALL_PLAYER_ICON, playerUUID, null);
+        if(playerUUID.equals(plugin.getShopHandler().getAdminUUID())) {
+            //get the placeholder icon with all of the unformatted fields
+            placeHolderIcon = Shop.getPlugin().getGuiHandler().getIcon(GuiIcon.ALL_ADMIN_ICON, playerUUID, null);
+        }
+        else{
+            //get the placeholder icon with all of the unformatted fields
+            placeHolderIcon = Shop.getPlugin().getGuiHandler().getIcon(GuiIcon.ALL_PLAYER_ICON, playerUUID, null);
+        }
 
         String name = ShopMessage.partialFormatMessageUUID(placeHolderIcon.getItemMeta().getDisplayName(), playerUUID);
         name = ShopMessage.formatMessage(name, null, null, false);
@@ -108,13 +122,13 @@ public class ShopGuiHandler {
             lore.add(ShopMessage.formatMessage(loreLine, null, null, false));
         }
 
-        skMeta.setDisplayName(name);
-        skMeta.setLore(lore);
+        itemMeta.setDisplayName(name);
+        itemMeta.setLore(lore);
 
-        PersistentDataContainer container = skMeta.getPersistentDataContainer();
+        PersistentDataContainer container = itemMeta.getPersistentDataContainer();
         container.set(Shop.getPlugin().getPlayerUUIDNameSpacedKey(), PersistentDataType.STRING, playerUUID.toString());
 
-        playerHead.setItemMeta(skMeta);
+        playerHead.setItemMeta(itemMeta);
 
         playerHeads.put(playerUUID, playerHead);
     }

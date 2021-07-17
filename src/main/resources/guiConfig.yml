@@ -43,6 +43,11 @@ icons:
          name: "[owner]"
          lore:
             - "&7Shops: &b[user amount]"
+      admin_icon:
+         name: "&dAdmin"
+         type: "CHEST"
+         lore:
+            - "&7Shops: &b[user amount]"
    menubar:
       back:
          type: "BARRIER"

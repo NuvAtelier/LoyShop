@@ -21,6 +21,7 @@ public class ShopMessage {
     private static HashMap<String, String[]> shopSignTextMap = new HashMap<String, String[]>();
     private static HashMap<String, List<String>> displayTextMap = new HashMap<String, List<String>>();
     private static String freePriceWord;
+    private static String adminStockWord;
     private static String serverDisplayName;
     private static HashMap<String, String> creationWords = new HashMap<String, String>();
     private static YamlConfiguration chatConfig;
@@ -42,6 +43,7 @@ public class ShopMessage {
         loadCreationWords();
 
         freePriceWord = signConfig.getString("sign_text.zeroPrice");
+        adminStockWord = signConfig.getString("sign_text.adminStock");
         serverDisplayName = signConfig.getString("sign_text.serverDisplayName");
     }
 
@@ -51,6 +53,10 @@ public class ShopMessage {
 
     public static String getFreePriceWord(){
         return freePriceWord;
+    }
+
+    public static String getAdminStockWord(){
+        return adminStockWord;
     }
 
     public static String getServerDisplayName(){
@@ -155,9 +161,14 @@ public class ShopMessage {
             }
             unformattedMessage = unformattedMessage.replace("[shop type]", "" + ShopMessage.getCreationWord(shop.getType().toString().toUpperCase())); //sub in user's word for SELL,BUY,BARTER
             if(unformattedMessage.contains("[stock]")) {
-                unformattedMessage = unformattedMessage.replace("[stock]", "" + shop.getStock());
-                //if shop is displaying stock on sign, it will require a sign refresh on transactions
-                shop.setSignLinesRequireRefresh(true);
+                if(shop.isAdmin()){
+                    unformattedMessage = unformattedMessage.replace("[stock]", "" + adminStockWord);
+                }
+                else {
+                    unformattedMessage = unformattedMessage.replace("[stock]", "" + shop.getStock());
+                    //if shop is displaying stock on sign, it will require a sign refresh on transactions
+                    shop.setSignLinesRequireRefresh(true);
+                }
             }
             if(unformattedMessage.contains("[stock color]")) {
                 if(shop.getStock() > 0 || shop.isAdmin())
@@ -322,18 +333,28 @@ public class ShopMessage {
         return formattedLines;
     }
 
-    public static List<String> getSelectionLines(String section, boolean prompt){
+    public static List<String> getMessageList(String key, String subKey, AbstractShop shop, Player player){
         List<String> messages = new ArrayList<>();
-
-        String subKey = "enter";
-        if(prompt)
-            subKey = "prompt";
 
         int count = 1;
         String message = "-1";
-        while (!message.isEmpty()) {
-            message = getMessage(section, subKey + count, null, null);
-            if (!message.isEmpty())
+        while (message != null && !message.isEmpty()) {
+            message = getMessage(key, subKey + count, shop, player);
+            if (message != null && !message.isEmpty())
+                messages.add(message);
+            count++;
+        }
+        return messages;
+    }
+
+    public static List<String> getUnformattedMessageList(String key, String subKey){
+        List<String> messages = new ArrayList<>();
+
+        int count = 1;
+        String message = "-1";
+        while (message != null && !message.isEmpty()) {
+            message = getUnformattedMessage(key, subKey + count);
+            if (message != null && !message.isEmpty())
                 messages.add(message);
             count++;
         }
@@ -369,14 +390,12 @@ public class ShopMessage {
             messageMap.put(type.toString() + "_playerNoStock", chatConfig.getString("transaction_issue." + type.toString().toUpperCase() + ".playerNoStock"));
             messageMap.put(type.toString() + "_playerNoSpace", chatConfig.getString("transaction_issue." + type.toString().toUpperCase() + ".playerNoSpace"));
 
-            messageMap.put(type.toString() + "_descriptionItem", chatConfig.getString("description."+type.toString().toUpperCase()+".item"));
-            if(type == ShopType.BARTER)
-                messageMap.put(type.toString() + "_descriptionBarterItem", chatConfig.getString("description." + type.toString().toUpperCase() + ".barterItem"));
-            messageMap.put(type.toString() + "_descriptionPrice", chatConfig.getString("description."+type.toString().toUpperCase()+".price"));
-            messageMap.put(type.toString() + "_descriptionPricePerItem", chatConfig.getString("description."+type.toString().toUpperCase()+".pricePerItem"));
+            int count = 1;
+            for(String s : chatConfig.getStringList("description."+type.toString().toUpperCase())){
+                messageMap.put(type.toString() + "_description"+count, s);
+                count++;
+            }
         }
-        messageMap.put("description_stock", chatConfig.getString("description.stock"));
-        messageMap.put("description_stockAdmin", chatConfig.getString("description.stockAdmin"));
 
         messageMap.put("permission_use", chatConfig.getString("permission.use"));
         messageMap.put("permission_create", chatConfig.getString("permission.create"));

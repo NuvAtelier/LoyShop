@@ -446,46 +446,11 @@ public abstract class AbstractShop {
         }
     }
 
-    //TODO you may have to override this in other shop types like COMBO or GAMBLE
     public void printSalesInfo(Player player) {
-        //player.sendMessage("");
-
-        String message = ShopMessage.getUnformattedMessage(this.getType().toString(), "descriptionItem");
-        if(message != null && !message.isEmpty())
-            formatAndSendFancyMessage(message, player);
-
-        //is a barter shop of some kind
-        if (this.getSecondaryItemStack() != null) {
-            message = ShopMessage.getUnformattedMessage(this.getType().toString(), "descriptionBarterItem");
-            if(message != null && !message.isEmpty())
+        for (String message : ShopMessage.getUnformattedMessageList(this.getType().toString(), "description")) {
+            if (message != null && !message.isEmpty())
                 formatAndSendFancyMessage(message, player);
         }
-        //player.sendMessage("");
-
-
-        if(price != 0) {
-            message = ShopMessage.getMessage(this.getType().toString(), "descriptionPrice", this, player);
-            if(message != null && !message.isEmpty())
-                formatAndSendFancyMessage(message, player);
-
-            message = ShopMessage.getMessage(this.getType().toString(), "descriptionPricePerItem", this, player);
-            if(message != null && !message.isEmpty())
-                formatAndSendFancyMessage(message, player);
-            //player.sendMessage("");
-        }
-
-        if(this.isAdmin()){
-            message = ShopMessage.getMessage("description", "stockAdmin", this, player);
-            if(message != null && !message.isEmpty())
-                formatAndSendFancyMessage(message, player);
-        }
-        else {
-            message = ShopMessage.getMessage("description", "stock", this, player);
-            if(message != null && !message.isEmpty())
-                formatAndSendFancyMessage(message, player);
-        }
-
-        return;
     }
 
     protected void formatAndSendFancyMessage(String message, Player player){
@@ -504,7 +469,7 @@ public abstract class AbstractShop {
             if(part.contains("[barter item]"))
                 barterItem = true;
             part = ShopMessage.formatMessage(part, this, player, false);
-            part = ChatColor.stripColor(part);
+            //part = ChatColor.stripColor(part);
             builder.append(part);
             if(cc != null) {
                 builder.color(ChatColor.valueOf(cc.name()));
@@ -528,14 +493,6 @@ public abstract class AbstractShop {
                 fancyMessage.addExtra(b);
             }
         }
-
-        //use special ComponentSender for MC 1.8+ and regular way for MC 1.7
-        try {
-            if (Material.AIR != Material.ARMOR_STAND) {
-                player.spigot().sendMessage(fancyMessage);
-            }
-        } catch (NoSuchFieldError e) {
-            player.sendMessage(fancyMessage.getText());
-        }
+        player.spigot().sendMessage(fancyMessage);
     }
 }

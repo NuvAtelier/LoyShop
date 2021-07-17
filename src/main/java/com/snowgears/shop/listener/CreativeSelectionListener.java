@@ -261,13 +261,13 @@ public class CreativeSelectionListener implements Listener {
 
     private void sendPlayerLockedMessages(Player player, PlayerData playerData){
         if(playerData.isGuiSearch()){
-            for (String message : ShopMessage.getSelectionLines("guiSearchSelection", false)) {
+            for (String message : ShopMessage.getMessageList("guiSearchSelection", "enter", null, null)) {
                 if (message != null && !message.isEmpty())
                     player.sendMessage(message);
             }
         }
         else {
-            for (String message : ShopMessage.getSelectionLines("creativeSelection", false)) {
+            for (String message : ShopMessage.getMessageList("creativeSelection", "enter", null, null)) {
                 if (message != null && !message.isEmpty())
                     player.sendMessage(message);
             }

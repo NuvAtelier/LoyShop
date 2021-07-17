@@ -93,7 +93,7 @@ public class ShopGUIListener implements Listener {
                             plugin.getGuiHandler().closeWindow(player);
                             plugin.getCreativeSelectionListener().addPlayerData(player, player.getLocation(), true);
 
-                            for(String message : ShopMessage.getSelectionLines("guiSearchSelection", true)){
+                            for(String message : ShopMessage.getMessageList("guiSearchSelection", "prompt", null, null)){
                                 if(message != null && !message.isEmpty())
                                     player.sendMessage(message);
                             }
@@ -116,20 +116,18 @@ public class ShopGUIListener implements Listener {
                         //ItemStack playerIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER, null, null); //for some reason this is returning null
                         //ItemStack adminPlayerIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, null, null);
 
-                        if(clicked.getType() == Material.PLAYER_HEAD){
-                            String playerUUIDString = clicked.getItemMeta().getPersistentDataContainer().get(plugin.getPlayerUUIDNameSpacedKey(), PersistentDataType.STRING);
-                            UUID uuid;
-                            try {
-                                uuid = UUID.fromString(playerUUIDString);
-                            }catch(IllegalArgumentException e){
-                                return;
-                            }
-
-                            ListShopsWindow shopsWindow = new ListShopsWindow(player.getUniqueId(), uuid);
-                            shopsWindow.setPrevWindow(window);
-                            plugin.getGuiHandler().setWindow(player, shopsWindow);
+                        String playerUUIDString = clicked.getItemMeta().getPersistentDataContainer().get(plugin.getPlayerUUIDNameSpacedKey(), PersistentDataType.STRING);
+                        UUID uuid;
+                        try {
+                            uuid = UUID.fromString(playerUUIDString);
+                        }catch(IllegalArgumentException e){
                             return;
                         }
+
+                        ListShopsWindow shopsWindow = new ListShopsWindow(player.getUniqueId(), uuid);
+                        shopsWindow.setPrevWindow(window);
+                        plugin.getGuiHandler().setWindow(player, shopsWindow);
+                        return;
                     }
                     else if(window instanceof ListShopsWindow || window instanceof ListSearchResultsWindow){
 
