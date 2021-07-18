@@ -76,9 +76,11 @@ setGlowingItemFrame: false
 # If you want to use permissions with Shop, you must set this to true #
 usePermissions: false
 
-# THE CURRENT GUI IS EXPERIMENTAL. IF ENOUGH PEOPLE LIKE IT, I WILL EXPAND THE FEATURES #
+# This runs a check and notifies operators on login that a new Shop version is available #
+checkUpdates: true
+
 # This enables a graphical user interface to use all shop features without typing commands #
-enableGUI: false
+enableGUI: true
 
 # Setting this to true will force all Shops to be created in WorldGuard regions with a shop flag #
 # WorldGuard plugin must be installed for this feature to work #

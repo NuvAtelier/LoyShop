@@ -5,6 +5,7 @@ import com.snowgears.shop.Shop;
 import com.snowgears.shop.event.PlayerInitializeShopEvent;
 import com.snowgears.shop.gui.HomeWindow;
 import com.snowgears.shop.gui.ListSearchResultsWindow;
+import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.PlayerData;
@@ -132,10 +133,21 @@ public class CreativeSelectionListener implements Listener {
     public void inventoryClose(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player))
             return;
-        Player player = (Player) event.getPlayer();
-        boolean removed = removePlayerData(player);
-        if(removed)
-            player.updateInventory();
+        //don't remove player data if they just clicked the search icon
+        if(event.getView().getTitle().equals(Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.HOME))){
+            return;
+        }
+        //for some reason this event is also called now on PlayerQuitEvent. Check that player didnt quit
+        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+            public void run() {
+                Player player = plugin.getServer().getPlayer(event.getPlayer().getUniqueId());
+                if(player != null) {
+                    boolean removed = removePlayerData(player);
+                    if (removed)
+                        player.updateInventory();
+                }
+            }
+        }, 10L); //0.5 second
     }
 
     @EventHandler

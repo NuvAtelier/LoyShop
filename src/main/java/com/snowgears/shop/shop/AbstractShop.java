@@ -141,6 +141,8 @@ public abstract class AbstractShop {
     public abstract TransactionError executeTransaction(int orders, Player player, boolean isCheck, ShopType transactionType);
 
     public int getStock() {
+        if(this.isAdmin)
+            return Integer.MAX_VALUE;
         if(this.getInventory() == null || this.getItemStack() == null)
             return 0;
         return InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / this.getAmount();

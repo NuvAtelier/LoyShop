@@ -49,6 +49,7 @@ public class Shop extends JavaPlugin {
     private NMSBullshitHandler nmsBullshitHandler;
 
     private boolean usePerms;
+    private boolean checkUpdates;
     //private boolean enableMetrics;
     private boolean enableGUI;
     private boolean hookWorldGuard;
@@ -235,6 +236,7 @@ public class Shop extends JavaPlugin {
         }
 
         usePerms = config.getBoolean("usePermissions");
+        checkUpdates = config.getBoolean("checkUpdates");
         //enableMetrics = config.getBoolean("enableMetrics");
         enableGUI = config.getBoolean("enableGUI");
         hookWorldGuard = config.getBoolean("hookWorldGuard");
@@ -353,6 +355,10 @@ public class Shop extends JavaPlugin {
         getServer().getPluginManager().registerEvents(guiListener, this);
 
         displayListener.startRepeatingDisplayViewTask();
+
+        if(checkUpdates){
+            new UpdateChecker(this).checkForUpdate();
+        }
     }
 
     @Override
