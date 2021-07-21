@@ -38,7 +38,6 @@ public class ItemNameUtil {
 //            }
     }
 
-    @SuppressWarnings("deprecation")
     public String getName(ItemStack item){
         if(item == null)
             return "";
@@ -47,7 +46,7 @@ public class ItemNameUtil {
             return item.getItemMeta().getDisplayName();
 
         if(item.getItemMeta() != null && item.getItemMeta() instanceof PotionMeta){
-            String name = getBackupName(item.getType());
+            String name = getName(item.getType());
             PotionData data = ((PotionMeta) item.getItemMeta()).getBasePotionData();
             name += " {"+UtilMethods.capitalize(data.getType().name().replace("_", " ").toLowerCase());
             if(data.isUpgraded())
@@ -64,19 +63,15 @@ public class ItemNameUtil {
 //            return name;
 //        return getBackupName(item.getType());
 
-        return getBackupName(item.getType());
+        return getName(item.getType());
     }
 
-    @SuppressWarnings("deprecation")
     public String getName(Material material){
-//        String format = ""+material.getId()+":0";
-//        String name = names.get(format);
-//        if(name != null)
-//            return name;
-        return getBackupName(material);
-    }
-
-    private String getBackupName(Material material){
-        return UtilMethods.capitalize(material.name().replace("_", " ").toLowerCase());
+        ItemStack is = new ItemStack(material);
+        String name = is.getItemMeta().getLocalizedName();
+        if(name == null || name.isEmpty()){
+            return UtilMethods.capitalize(is.getType().name().replace("_", " ").toLowerCase());
+        }
+        return name;
     }
 }

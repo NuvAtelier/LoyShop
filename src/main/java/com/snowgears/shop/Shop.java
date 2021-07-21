@@ -80,7 +80,7 @@ public class Shop extends JavaPlugin {
     private double destructionCost;
     private boolean returnCreationCost;
     private double taxPercent;
-    private ArrayList<String> worldBlackList;
+    private List<String> worldBlackList;
     private NamespacedKey signLocationNameSpacedKey;
     private NamespacedKey playerUUIDNameSpacedKey;
 
@@ -321,8 +321,8 @@ public class Shop extends JavaPlugin {
         destructionCost = config.getDouble("destructionCost");
         returnCreationCost = config.getBoolean("returnCreationCost");
 
-        worldBlackList = new ArrayList<>();
-        for(String world : config.getConfigurationSection("worldBlacklist").getKeys(true)){
+        worldBlackList = config.getStringList("worldBlacklist");
+        for(String world : config.getStringList("worldBlacklist")){
             worldBlackList.add(world);
         }
 
@@ -628,7 +628,7 @@ public class Shop extends JavaPlugin {
         return itemNameUtil;
     }
 
-    public ArrayList<String> getWorldBlacklist(){
+    public List<String> getWorldBlacklist(){
         return worldBlackList;
     }
 

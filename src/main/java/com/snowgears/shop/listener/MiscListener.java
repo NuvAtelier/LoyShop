@@ -677,7 +677,7 @@ public class MiscListener implements Listener {
         Player player = event.getPlayer();
 
         if (plugin.getShopHandler().isChest(b)) {
-            ArrayList<BlockFace> doubleChestFaces = new ArrayList<BlockFace>();
+            ArrayList<BlockFace> doubleChestFaces = new ArrayList<>();
             doubleChestFaces.add(BlockFace.NORTH);
             doubleChestFaces.add(BlockFace.EAST);
             doubleChestFaces.add(BlockFace.SOUTH);
