@@ -138,11 +138,11 @@ public class GambleShop extends AbstractShop {
                 setItemStack(Shop.getPlugin().getGambleDisplayItem());
                 if(initialDisplayType == null) {
                     display.setType(Shop.getPlugin().getDisplayType(), false);
-                    getDisplay().spawn(null); //TODO maybe only show what item player got to the player themselves???
+                    getDisplay().spawn(player); //TODO maybe only show what item player got to the player themselves???
                 }
                 else {
                     display.setType(initialDisplayType, false);
-                    getDisplay().spawn(null); //TODO maybe only show what item player got to the player themselves???
+                    getDisplay().spawn(player); //TODO maybe only show what item player got to the player themselves???
                 }
                 isPerformingTransaction = false;
             }

@@ -57,14 +57,25 @@ public class DisplayListener implements Listener {
             }, 0, 15);
         }
 
-        //run task every 100 ticks (5 seconds)
-        repeatingDisplayTask = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            for (Player player : plugin.getServer().getOnlinePlayers()) {
-                if (player != null) {
-                    plugin.getShopHandler().processShopDisplaysNearPlayer(player);
+        BukkitRunnable runnable = (new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player : plugin.getServer().getOnlinePlayers()) {
+                    if (player != null && player.isOnline()) {
+                        plugin.getShopHandler().processShopDisplaysNearPlayer(player);
+                    }
                 }
             }
-        }, 0, 100);
+        });
+        repeatingDisplayTask = runnable.runTaskTimerAsynchronously(plugin, 0L, 100L).getTaskId();
+        //run task every 100 ticks (5 seconds)
+//        repeatingDisplayTask = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+//            for (Player player : plugin.getServer().getOnlinePlayers()) {
+//                if (player != null) {
+//                    plugin.getShopHandler().processShopDisplaysNearPlayer(player);
+//                }
+//            }
+//        }, 0, 100);
     }
 
     public DisplayListener(Shop instance) {
@@ -170,5 +181,6 @@ public class DisplayListener implements Listener {
 
     public void cancelRepeatingViewTask(){
         Bukkit.getScheduler().cancelTask(repeatingViewTask);
+        Bukkit.getScheduler().cancelTask(repeatingDisplayTask);
     }
 }

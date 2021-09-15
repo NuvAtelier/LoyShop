@@ -374,7 +374,9 @@ public class ShopHandler {
                 Location loc = iteratorOld.next();
                 if (!shopsNearPlayer.contains(loc)) {
                     AbstractShop shop = this.getShop(loc);
-                    shop.getDisplay().remove(player);
+                    plugin.getServer().getScheduler().runTask(plugin, () -> {
+                        shop.getDisplay().remove(player);
+                    });
                     iteratorOld.remove();
                 }
             }
@@ -384,7 +386,9 @@ public class ShopHandler {
                 Location loc = iteratorNew.next();
                 if (!oldShopsNearPlayer.contains(loc)) {
                     AbstractShop shop = this.getShop(loc);
-                    shop.getDisplay().spawn(player);
+                    plugin.getServer().getScheduler().runTask(plugin, () -> {
+                        shop.getDisplay().spawn(player);
+                    });
                 }
             }
         }
@@ -393,7 +397,9 @@ public class ShopHandler {
             while(iteratorNew.hasNext()) {
                 Location loc = iteratorNew.next();
                 AbstractShop shop = this.getShop(loc);
-                shop.getDisplay().spawn(player);
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    shop.getDisplay().spawn(player);
+                });
             }
         }
         playersWithActiveShopDisplays.put(player.getUniqueId(), shopsNearPlayer);
