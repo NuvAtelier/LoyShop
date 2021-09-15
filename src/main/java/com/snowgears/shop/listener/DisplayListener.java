@@ -6,10 +6,12 @@ import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.InventoryUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -24,12 +26,14 @@ import org.bukkit.inventory.Recipe;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DisplayListener implements Listener {
 
     public Shop plugin = Shop.getPlugin();
     private ArrayList<ItemStack> allServerRecipeResults = new ArrayList<>();
     private int repeatingViewTask;
+    private int repeatingDisplayTask;
 
     public void startRepeatingDisplayViewTask() {
         if (plugin.getDisplayTagOption() == DisplayTagOption.VIEW_SIGN) {
@@ -37,21 +41,30 @@ public class DisplayListener implements Listener {
             repeatingViewTask = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
                     if (player != null) {
-                        try {
-                            Block block = player.getTargetBlock(null, 8);
-                            if (block.getBlockData() instanceof WallSign) {
-                                AbstractShop shopObj = plugin.getShopHandler().getShop(block.getLocation());
-                                if (shopObj != null) {
-                                    shopObj.getDisplay().showDisplayTags(player);
+                            try {
+                                Block block = player.getTargetBlock(null, 8);
+                                if (block.getBlockData() instanceof WallSign) {
+                                    AbstractShop shopObj = plugin.getShopHandler().getShop(block.getLocation());
+                                    if (shopObj != null) {
+                                        shopObj.getDisplay().showDisplayTags(player);
+                                    }
                                 }
+                            } catch (IllegalStateException e) {
+                                //do nothing, the block iterator missed a block for a player
                             }
-                        } catch (IllegalStateException e) {
-                            //do nothing, the block iterator missed a block for a player
                         }
-                    }
                 }
             }, 0, 15);
         }
+
+        //run task every 100 ticks (5 seconds)
+        repeatingDisplayTask = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                if (player != null) {
+                    plugin.getShopHandler().processShopDisplaysNearPlayer(player);
+                }
+            }
+        }, 0, 100);
     }
 
     public DisplayListener(Shop instance) {
@@ -125,8 +138,25 @@ public class DisplayListener implements Listener {
                 Container container = ((Container)event.getInventory().getHolder());
                 AbstractShop shop = plugin.getShopHandler().getShopByChest(container.getBlock());
 
-                if(shop == null)
+                if(shop == null) {
                     return;
+                }
+
+                //if the sign lines use a variable that requires a refresh (like stock that is dynamically updated), then refresh sign
+                if(shop.getSignLinesRequireRefresh())
+                    shop.updateSign();
+
+                //set the GUI icon again (in case stock var needs to be updated in the GUI)
+                shop.setGuiIcon();
+            }
+            //for some reason, DoubleChest does not extend Container like Chest does
+            else if(event.getInventory().getHolder() instanceof DoubleChest){
+                DoubleChest doubleChest = ((DoubleChest)event.getInventory().getHolder());
+                AbstractShop shop = plugin.getShopHandler().getShopByChest(doubleChest.getLocation().getBlock());
+
+                if(shop == null) {
+                    return;
+                }
 
                 //if the sign lines use a variable that requires a refresh (like stock that is dynamically updated), then refresh sign
                 if(shop.getSignLinesRequireRefresh())

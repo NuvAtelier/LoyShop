@@ -176,6 +176,10 @@ public abstract class AbstractDisplay {
                     break;
             }
         }
+//        if(player != null) {
+//            Shop.getPlugin().getShopHandler().addActiveShopDisplay(player, this.shopSignLocation);
+//        }
+
         //shop.updateSign();
     }
 
@@ -263,7 +267,7 @@ public abstract class AbstractDisplay {
         this.type = type;
     }
 
-    public void cycleType(){
+    public void cycleType(Player player){
         if(getShop().getFacing() == null)
             return;
         DisplayType[] cycle = Shop.getPlugin().getDisplayCycle();
@@ -343,7 +347,8 @@ public abstract class AbstractDisplay {
         }
 
         this.setType(cycle[index], true);
-        this.spawn(null);
+        this.spawn(player);
+        Shop.getPlugin().getShopHandler().addActiveShopDisplay(player, this.shopSignLocation);
         getShop().updateSign();
 
         Shop.getPlugin().getShopHandler().saveShops(getShop().getOwnerUUID());
@@ -353,6 +358,9 @@ public abstract class AbstractDisplay {
         removeDisplayEntities(player, false);
         removeDisplayEntities(player, true);
 
+//        if(player != null) {
+//            Shop.getPlugin().getShopHandler().removeActiveShopDisplay(player, this.shopSignLocation);
+//        }
         //if(player == null)
         //    entityIDs.clear();
         //if(displayTagEntityIDs != null) {
