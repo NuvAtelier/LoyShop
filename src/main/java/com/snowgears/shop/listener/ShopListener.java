@@ -329,6 +329,7 @@ public class ShopListener implements Listener {
                     plugin.getEnderChestHandler().saveInventory(player, inv);
                 }
 
+                plugin.getShopHandler().clearShopDisplaysNearPlayer(player);
                 plugin.getShopHandler().processShopDisplaysNearPlayer(player);
             }
         }, 2L);

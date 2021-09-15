@@ -55,7 +55,7 @@ public class Display_1_17R1 extends AbstractDisplay {
                         if (serverWorld != null) {
                             EntityItem entityItem = new EntityItem((World) serverWorld.invoke(craftWorld), location.getX(), location.getY(), location.getZ(), itemStack);
                             int entityID = entityItem.getId();
-                            this.entityIDs.add(entityID);
+                            this.addEntityID(player, entityID);
                             entityItem.setInvulnerable(true);
                             entityItem.setFireTicks(-1);
                             entityItem.setNoGravity(true);
@@ -101,7 +101,7 @@ public class Display_1_17R1 extends AbstractDisplay {
             this.addDisplayTag(player, armorStand.getId());
         }
         else{
-            this.entityIDs.add(armorStand.getId());
+            this.addEntityID(player, armorStand.getId());
         }
         armorStand.setCustomNameVisible(text != null);
         armorStand.setInvisible(true);
@@ -161,7 +161,7 @@ public class Display_1_17R1 extends AbstractDisplay {
         }
 
         int entityID = itemFrame.getId();
-        this.entityIDs.add(entityID);
+        this.addEntityID(player, entityID);
         itemFrame.setLocation(location.getX(), location.getY(), location.getZ(),0f,0f);
         itemFrame.setItem(CraftItemStack.asNMSCopy(is));
         itemFrame.setDirection(getEnumDirection(facing));

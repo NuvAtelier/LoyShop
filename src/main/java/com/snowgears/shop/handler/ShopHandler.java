@@ -399,6 +399,11 @@ public class ShopHandler {
         playersWithActiveShopDisplays.put(player.getUniqueId(), shopsNearPlayer);
     }
 
+    public void clearShopDisplaysNearPlayer(Player player){
+        if(playersWithActiveShopDisplays.containsKey(player.getUniqueId()))
+            playersWithActiveShopDisplays.remove(player.getUniqueId());
+    }
+
     public void addActiveShopDisplay(Player player, Location shopSignLocation){
         HashSet<Location> shops;
         if(playersWithActiveShopDisplays.containsKey(player.getUniqueId())){
