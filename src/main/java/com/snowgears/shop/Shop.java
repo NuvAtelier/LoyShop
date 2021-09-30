@@ -8,13 +8,11 @@ import com.snowgears.shop.handler.EnderChestHandler;
 import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.handler.ShopHandler;
 import com.snowgears.shop.listener.*;
-import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.*;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
@@ -26,7 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public class Shop extends JavaPlugin {
@@ -83,6 +80,7 @@ public class Shop extends JavaPlugin {
     private double destructionCost;
     private boolean returnCreationCost;
     private double taxPercent;
+    private ItemListType itemListType;
     private List<String> worldBlackList;
     private NamespacedKey signLocationNameSpacedKey;
     private NamespacedKey playerUUIDNameSpacedKey;
@@ -323,6 +321,12 @@ public class Shop extends JavaPlugin {
         creationCost = config.getDouble("creationCost");
         destructionCost = config.getDouble("destructionCost");
         returnCreationCost = config.getBoolean("returnCreationCost");
+
+        try {
+            itemListType = ItemListType.valueOf(config.getString("itemList"));
+        } catch(Exception e){
+            itemListType = ItemListType.NONE;
+        }
 
         worldBlackList = config.getStringList("worldBlacklist");
         for(String world : config.getStringList("worldBlacklist")){
@@ -629,6 +633,10 @@ public class Shop extends JavaPlugin {
 
     public ItemNameUtil getItemNameUtil(){
         return itemNameUtil;
+    }
+
+    public ItemListType getItemListType(){
+        return itemListType;
     }
 
     public List<String> getWorldBlacklist(){

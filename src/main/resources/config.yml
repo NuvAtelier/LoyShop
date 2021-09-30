@@ -119,6 +119,12 @@ enableEnderChests: false
 # If this is set to false, LEFT side of combo shop signs will SELL items and RIGHT side will BUY items #
 inverseComboShops: false
 
+# Options:
+# NONE - all items can be listed in shops
+# DENY_LIST - all items except those defined in ./Data/itemList.yml can be listed in shops
+# ALLOW_LIST - only items defined in ./Data/itemList.yml can be listed in shops
+itemList: NONE
+
 # Add the names of worlds that you do not want shops to be able to be created in here #
 worldBlacklist:
    - "example_world"

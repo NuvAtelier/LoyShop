@@ -4,11 +4,9 @@ package com.snowgears.shop.gui;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.handler.ShopGuiHandler;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.UUID;
 

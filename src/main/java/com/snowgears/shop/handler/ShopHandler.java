@@ -6,6 +6,7 @@ import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.DisplayUtil;
+import com.snowgears.shop.util.ItemListType;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -18,6 +19,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -25,6 +27,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,12 +49,15 @@ public class ShopHandler {
     private UUID adminUUID;
     private BlockFace[] directions = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
 
+    private ArrayList<ItemStack> itemListItems = new ArrayList<>();
+
     private ArrayList<UUID> playersSavingShops = new ArrayList<>();
 
     public ShopHandler(Shop instance) {
         plugin = instance;
         adminUUID = UUID.randomUUID();
         initChestMaterials();
+        initItemList();
 
         new BukkitRunnable() {
             @Override
@@ -848,5 +854,117 @@ public class ShopHandler {
         try{
             chestMaterials.add(Material.BARREL);
         } catch (NoSuchFieldError e) {}
+    }
+
+    public boolean passesItemListCheck(ItemStack is){
+        if(plugin.getItemListType() == ItemListType.NONE)
+            return true;
+
+        for(ItemStack itemInList : itemListItems){
+            if(itemInList.isSimilar(is)){
+                if(plugin.getItemListType() == ItemListType.ALLOW_LIST)
+                    return true;
+                else if(plugin.getItemListType() == ItemListType.DENY_LIST)
+                    return false;
+            }
+        }
+
+        //item not similar to anything in our item list
+        if(plugin.getItemListType() == ItemListType.ALLOW_LIST)
+            return false;
+
+        return true;
+    }
+
+    public void addInventoryToItemList(Inventory inventory){
+        for(ItemStack is : inventory.getContents()) {
+            if(is != null && is.getType() != Material.AIR) {
+                ItemStack itemClone = is.clone();
+                itemClone.setAmount(1);
+                boolean doNotAdd = false;
+                for (ItemStack itemInList : itemListItems) {
+                    if (itemInList.isSimilar(itemClone)) {
+                        doNotAdd = true;
+                    }
+                }
+                if(!doNotAdd){
+                    itemListItems.add(itemClone);
+                }
+            }
+        }
+        saveItemList();
+    }
+
+    public void removeInventoryFromItemList(Inventory inventory){
+        Iterator<ItemStack> itemIterator = itemListItems.iterator();
+        while(itemIterator.hasNext()){
+            ItemStack listItem = itemIterator.next();
+            for(ItemStack toRemove : inventory.getContents()) {
+                if(toRemove != null && toRemove.getType() != Material.AIR) {
+                    ItemStack itemClone = toRemove.clone();
+                    itemClone.setAmount(1);
+                    if (listItem.isSimilar(itemClone)) {
+                        itemIterator.remove();
+                    }
+                }
+            }
+        }
+        saveItemList();
+    }
+
+    public void initItemList(){
+        if(plugin.getItemListType() == ItemListType.NONE)
+            return;
+
+        try {
+            File itemListFile = new File(plugin.getDataFolder() + "/itemList.yml");
+
+            if (!itemListFile.exists()) { // file doesn't exist{
+                itemListFile.createNewFile();
+                return;
+            }
+
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(itemListFile);
+            for(String key : config.getKeys(false)){
+                ItemStack is = config.getItemStack(key);
+                if(is != null) {
+                    is.setAmount(1);
+                    itemListItems.add(is);
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void saveItemList(){
+        if(plugin.getItemListType() == ItemListType.NONE)
+            return;
+
+        try {
+            File itemListFile = new File(plugin.getDataFolder() + "/itemList.yml");
+
+            if (!itemListFile.exists()) { // file doesn't exist{
+                itemListFile.createNewFile();
+            }
+            else{
+                itemListFile.delete();
+                itemListFile.createNewFile();
+            }
+
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(itemListFile);
+            for(int i=0; i< itemListItems.size(); i++){
+                ItemStack is = itemListItems.get(i);
+                if(is != null) {
+                    config.set(""+i, is);
+                }
+            }
+
+            config.save(itemListFile);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
