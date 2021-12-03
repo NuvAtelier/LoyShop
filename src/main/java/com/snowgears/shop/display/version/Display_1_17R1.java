@@ -4,21 +4,20 @@ import com.mojang.datafixers.util.Pair;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.AbstractDisplay;
 import com.snowgears.shop.util.ArmorStandData;
-import net.minecraft.core.BlockPosition;
-import net.minecraft.core.EnumDirection;
-import net.minecraft.core.Vector3f;
-import net.minecraft.network.chat.IChatBaseComponent;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Rotations;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.*;
-import net.minecraft.server.level.WorldServer;
-import net.minecraft.server.network.PlayerConnection;
-import net.minecraft.world.entity.EnumItemSlot;
-import net.minecraft.world.entity.decoration.EntityArmorStand;
-import net.minecraft.world.entity.decoration.EntityItemFrame;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.network.ServerPlayerConnection;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.GlowItemFrame;
-import net.minecraft.world.entity.item.EntityItem;
-import net.minecraft.world.level.World;
-import net.minecraft.world.phys.Vec3D;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
@@ -53,21 +52,21 @@ public class Display_1_17R1 extends AbstractDisplay {
                     if (craftWorld != null) {
                         Method serverWorld = craftWorld.getClass().getMethod("getHandle");
                         if (serverWorld != null) {
-                            EntityItem entityItem = new EntityItem((World) serverWorld.invoke(craftWorld), location.getX(), location.getY(), location.getZ(), itemStack);
+                            ItemEntity entityItem = new ItemEntity((Level) serverWorld.invoke(craftWorld), location.getX(), location.getY(), location.getZ(), itemStack);
                             int entityID = entityItem.getId();
                             this.addEntityID(player, entityID);
                             entityItem.setInvulnerable(true);
-                            entityItem.setFireTicks(-1);
+                            entityItem.setRemainingFireTicks(-1);
                             entityItem.setNoGravity(true);
                             entityItem.persist = true;
-                            entityItem.setMot(new Vec3D(0.0D, 0.0D, 0.0D));
-                            entityItem.setPickupDelay(32767);
+                            entityItem.setDeltaMovement(new Vec3(0.0D, 0.0D, 0.0D)); //setDeltaMovements() //not sure if this is the same as setMot() that was there first
+                            entityItem.setPickUpDelay(32767);
                             entityItem.setTicksFrozen(2147483647);
 
-                            PacketPlayOutEntityDestroy entityDestroyPacket = new PacketPlayOutEntityDestroy(entityID);
-                            PacketPlayOutSpawnEntity entitySpawnPacket = new PacketPlayOutSpawnEntity(entityItem);
-                            PacketPlayOutEntityVelocity entityVelocityPacket = new PacketPlayOutEntityVelocity(entityItem);
-                            PacketPlayOutEntityMetadata entityMetadataPacket = new PacketPlayOutEntityMetadata(entityID, entityItem.getDataWatcher(), true);
+                            ClientboundRemoveEntitiesPacket entityDestroyPacket = new ClientboundRemoveEntitiesPacket(entityID);
+                            ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(entityItem);
+                            ClientboundSetEntityMotionPacket entityVelocityPacket = new ClientboundSetEntityMotionPacket(entityItem);
+                            ClientboundSetEntityDataPacket entityMetadataPacket = new ClientboundSetEntityDataPacket(entityID, entityItem.getEntityData(), true); //entityItem.ai() = entityItem.getDataWatcher()
 
                             sendPacket(player, entityDestroyPacket);
                             sendPacket(player, entitySpawnPacket);
@@ -91,51 +90,57 @@ public class Display_1_17R1 extends AbstractDisplay {
     protected void spawnArmorStandPacket(Player player, ArmorStandData armorStandData, String text) {
 
         Location location = armorStandData.getLocation();
-        WorldServer worldServer = ((CraftWorld) location.getWorld()).getHandle();
+        ServerLevel worldServer = ((CraftWorld) location.getWorld()).getHandle();
 
-        EntityArmorStand armorStand = new EntityArmorStand(worldServer, location.getX(), location.getY(), location.getZ());
-        armorStand.setLocation(location.getX(), location.getY(), location.getZ(), (float)armorStandData.getYaw(), 0);
+        ArmorStand armorStand = new ArmorStand(worldServer, location.getX(), location.getY(), location.getZ());
+        System.out.println("Armor stand defined. Current y body rotation: "+armorStand.getBukkitYaw());
+        armorStand.setYBodyRot((float)(armorStandData.getYaw()));
+        //armorStand.setYHeadRot((float)(armorStandData.getYaw()));
+        System.out.println("Armor stand body pos set. Current y body rotation: "+armorStand.getBukkitYaw());
+        //armorStand.setBodyPose(new Rotations(0f, (float)armorStandData.getYaw(), 0f));
+        //armorStand.setPos(location.getX(), location.getY(), location.getZ());//, (float)armorStandData.getYaw(), 0); TODO was setLocation() before which im not sure is the same thing
+        //armorStand.setYHeadRot(0f);
+        //armorStand.setYBodyRot((float)(armorStandData.getYaw() + 90));
 
         if(text != null) {
-            armorStand.setCustomName(IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + text + "\"}"));
+            armorStand.setCustomName(Component.Serializer.fromJson("{\"text\": \"" + text + "\"}"));
             this.addDisplayTag(player, armorStand.getId());
         }
         else{
             this.addEntityID(player, armorStand.getId());
         }
         armorStand.setCustomNameVisible(text != null);
-        armorStand.setInvisible(true);
 
         if(armorStandData.getRightArmPose() != null){
             EulerAngle angle = armorStandData.getRightArmPose(); //EulerAngles are in radians
             float x = (float)Math.toDegrees(angle.getX());
             float y = (float)Math.toDegrees(angle.getY());
             float z = (float)Math.toDegrees(angle.getZ());
-            armorStand.setRightArmPose(new Vector3f(x, y, z));
+            armorStand.setRightArmPose(new Rotations(x, y, z)); //TODO used Rotations instead of Vector3F, not sure if this will matter
+            //armorStand.setRightArmPose(new Rotations((float)angle.getX(), (float)angle.getY(), (float)angle.getZ())); //TODO used Rotations instead of Vector3F, not sure if this will matter
         }
-        armorStand.setHeadRotation(0.0F);
-        armorStand.setHeadPose(new Vector3f(0.0F, 0.0F, 0.0F));
-        armorStand.setMarker(true);
-        armorStand.setNoGravity(true);
-        armorStand.setInvulnerable(true);
-        armorStand.setInvisible(true);
+        //armorStand.setHeadPose(new Rotations(0.0F, 0.0F, 0.0F));
+        armorStand.setMarker(true); //setMarker()
+        armorStand.setNoGravity(true); //setNoGravity()
+        armorStand.setInvulnerable(true); //setInvulnerable()
+        armorStand.setInvisible(true); //setInvisible()
         armorStand.persist = true;
         armorStand.collides = false;
 
         if(armorStandData.isSmall()) {
-            armorStand.setSmall(true);
+            armorStand.setSmall(true); //setSmall()
         }
 
-        PacketPlayOutSpawnEntityLiving spawnEntityLivingPacket = new PacketPlayOutSpawnEntityLiving(armorStand);
-        PacketPlayOutEntityMetadata spawnEntityMetadataPacket = new PacketPlayOutEntityMetadata(armorStand.getId(), armorStand.getDataWatcher(), true);
-        PacketPlayOutEntityEquipment spawnEntityEquipmentPacket = null;
+        ClientboundAddMobPacket spawnEntityLivingPacket = new ClientboundAddMobPacket(armorStand); //TODO not sure if this needs to be a different packet. Was EntityLiving before so Mob is the closest I could find
+        ClientboundSetEntityDataPacket spawnEntityMetadataPacket = new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData(), true); //getID(), getDataWatcher()
+        ClientboundSetEquipmentPacket spawnEntityEquipmentPacket = null;
 
         //armor stand only going to have equipment if text is not populated
         if(text == null){
             ArrayList equipmentList = new ArrayList();
-            equipmentList.add(new Pair(getEnumItemSlot(armorStandData.getEquipmentSlot()), CraftItemStack.asNMSCopy(armorStandData.getEquipment())));
+            equipmentList.add(new Pair(getMojangEquipmentSlot(armorStandData.getEquipmentSlot()), CraftItemStack.asNMSCopy(armorStandData.getEquipment())));
 
-            spawnEntityEquipmentPacket = new PacketPlayOutEntityEquipment(armorStand.getId(), equipmentList);
+            spawnEntityEquipmentPacket = new ClientboundSetEquipmentPacket(armorStand.getId(), equipmentList);
         }
 
         sendPacket(player, spawnEntityLivingPacket);
@@ -147,27 +152,27 @@ public class Display_1_17R1 extends AbstractDisplay {
 
     @Override
     protected void spawnItemFramePacket(Player player, ItemStack is, Location location, BlockFace facing, boolean isGlowing){
-        WorldServer worldServer = ((CraftWorld) location.getWorld()).getHandle();
+        ServerLevel worldServer = ((CraftWorld) location.getWorld()).getHandle();
 
-        BlockPosition blockPosition = new BlockPosition(location.getX(), location.getY(), location.getZ());
+        BlockPos blockPosition = new BlockPos(location.getX(), location.getY(), location.getZ());
 
-        EntityItemFrame itemFrame;
+        ItemFrame itemFrame;
 
         if(isGlowing){
-            itemFrame = new GlowItemFrame(worldServer, blockPosition, getEnumDirection(facing));
+            itemFrame = new GlowItemFrame(worldServer, blockPosition, getMojangDirection(facing));
         }
         else{
-            itemFrame = new EntityItemFrame(worldServer, blockPosition, getEnumDirection(facing));
+            itemFrame = new ItemFrame(worldServer, blockPosition, getMojangDirection(facing));
         }
 
         int entityID = itemFrame.getId();
         this.addEntityID(player, entityID);
-        itemFrame.setLocation(location.getX(), location.getY(), location.getZ(),0f,0f);
+        itemFrame.setPos(location.getX(), location.getY(), location.getZ()); //TODO was setLocation() before which im not sure is the same thing
         itemFrame.setItem(CraftItemStack.asNMSCopy(is));
-        itemFrame.setDirection(getEnumDirection(facing));
+        itemFrame.setDirection(getMojangDirection(facing));
 
-        PacketPlayOutSpawnEntity entitySpawnPacket = new PacketPlayOutSpawnEntity(itemFrame, itemFrame.getDirection().b());
-        PacketPlayOutEntityMetadata entityMetadataPacket = new PacketPlayOutEntityMetadata(entityID, itemFrame.getDataWatcher(), true);
+        ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(itemFrame, itemFrame.getDirection().get3DDataValue()); //getDirection().b() <- direction to int //TODO NOT SURE IF THIS IS 2D or 3D data value for the int
+        ClientboundSetEntityDataPacket entityMetadataPacket = new ClientboundSetEntityDataPacket(entityID, itemFrame.getEntityData(), true); //getDataWatcher()
 
         sendPacket(player, entitySpawnPacket);
         sendPacket(player, entityMetadataPacket);
@@ -177,17 +182,17 @@ public class Display_1_17R1 extends AbstractDisplay {
     private void sendPacket(Player player, Packet packet){
         if (player != null) {
             if(isSameWorld(player)) {
-                PlayerConnection connection = getPlayerConnection(player);
+                ServerPlayerConnection connection = getPlayerConnection(player);
                 if (connection != null) {
-                    connection.sendPacket(packet);
+                    connection.send(packet); //sendPacket()
                 }
             }
         }
         else {
             for (Player onlinePlayer : this.shopSignLocation.getWorld().getPlayers()) {
-                PlayerConnection connection = getPlayerConnection(onlinePlayer);
+                ServerPlayerConnection connection = getPlayerConnection(onlinePlayer);
                 if(connection != null) {
-                    connection.sendPacket(packet);
+                    connection.send(packet); //sendPacket
                 }
             }
         }
@@ -201,9 +206,9 @@ public class Display_1_17R1 extends AbstractDisplay {
 
         while(entityIterator.hasNext()) {
             int displayEntityID = entityIterator.next();
-            PacketPlayOutEntityDestroy destroyEntityPacket;
+            ClientboundRemoveEntitiesPacket destroyEntityPacket;
             try{
-                destroyEntityPacket = new PacketPlayOutEntityDestroy(displayEntityID);
+                destroyEntityPacket = new ClientboundRemoveEntitiesPacket(displayEntityID);
             } catch(NoSuchMethodError e){
                 throw new RuntimeException("[Shop] [ERROR] This version of Shop does not support 1.17.0. Upgrade to 1.17.1.!");
             }
@@ -216,7 +221,7 @@ public class Display_1_17R1 extends AbstractDisplay {
         }
     }
 
-    private PlayerConnection getPlayerConnection(Player player) {
+    private ServerPlayerConnection getPlayerConnection(Player player) {
         try {
             Object craftPlayer = Shop.getPlugin().getNmsBullshitHandler().getCraftPlayerClass().cast(player);
             if (craftPlayer != null) {
@@ -226,7 +231,7 @@ public class Display_1_17R1 extends AbstractDisplay {
                     if (entityPlayer != null) {
                         Field playerConnection = entityPlayer.getClass().getField("b");
                         if(playerConnection != null)
-                        return (PlayerConnection) playerConnection.get(entityPlayer);
+                        return (ServerPlayerConnection) playerConnection.get(entityPlayer);
                     }
                 }
             }
@@ -242,37 +247,37 @@ public class Display_1_17R1 extends AbstractDisplay {
         return null;
     }
 
-    private EnumDirection getEnumDirection(BlockFace facing){
+    private Direction getMojangDirection(BlockFace facing){
         switch (facing){
             case NORTH:
-                return EnumDirection.c;
+                return Direction.NORTH;
             case SOUTH:
-                return EnumDirection.d;
+                return Direction.SOUTH;
             case WEST:
-                return EnumDirection.e;
+                return Direction.WEST;
             case EAST:
-                return EnumDirection.f;
+                return Direction.EAST;
             case DOWN:
-                return EnumDirection.a;
+                return Direction.DOWN;
             default:
-                return EnumDirection.b;
+                return Direction.UP;
         }
     }
 
-    private EnumItemSlot getEnumItemSlot(EquipmentSlot equipmentSlot){
+    private net.minecraft.world.entity.EquipmentSlot getMojangEquipmentSlot(EquipmentSlot equipmentSlot){
         switch(equipmentSlot){
             case HAND:
-                return EnumItemSlot.a;
+                return net.minecraft.world.entity.EquipmentSlot.MAINHAND;
             case OFF_HAND:
-                return EnumItemSlot.b;
+                return net.minecraft.world.entity.EquipmentSlot.OFFHAND;
             case FEET:
-                return EnumItemSlot.c;
+                return net.minecraft.world.entity.EquipmentSlot.FEET;
             case LEGS:
-                return EnumItemSlot.d;
+                return net.minecraft.world.entity.EquipmentSlot.LEGS;
             case CHEST:
-                return EnumItemSlot.e;
+                return net.minecraft.world.entity.EquipmentSlot.CHEST;
             default:
-                return EnumItemSlot.f;
+                return net.minecraft.world.entity.EquipmentSlot.HEAD;
         }
     }
 }

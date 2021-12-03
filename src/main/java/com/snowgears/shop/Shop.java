@@ -3,10 +3,7 @@ package com.snowgears.shop;
 import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.gui.ShopGUIListener;
-import com.snowgears.shop.handler.CommandHandler;
-import com.snowgears.shop.handler.EnderChestHandler;
-import com.snowgears.shop.handler.ShopGuiHandler;
-import com.snowgears.shop.handler.ShopHandler;
+import com.snowgears.shop.handler.*;
 import com.snowgears.shop.listener.*;
 import com.snowgears.shop.util.*;
 import net.milkbowl.vault.economy.Economy;
@@ -84,6 +81,7 @@ public class Shop extends JavaPlugin {
     private List<String> worldBlackList;
     private NamespacedKey signLocationNameSpacedKey;
     private NamespacedKey playerUUIDNameSpacedKey;
+    private LogHandler logHandler;
 
     private YamlConfiguration config;
 
@@ -284,6 +282,8 @@ public class Shop extends JavaPlugin {
 //            }
 //        }
 
+
+
         //Loading the itemCurrency from a file makes it easier to allow servers to use detailed itemstacks as the server's economy item
         File itemCurrencyFile = new File(fileDirectory, "itemCurrency.yml");
         if(itemCurrencyFile.exists()){
@@ -353,6 +353,7 @@ public class Shop extends JavaPlugin {
         shopHandler = new ShopHandler(plugin);
         guiHandler.loadIconsAndTitles();
         enderChestHandler = new EnderChestHandler(plugin);
+        logHandler = new LogHandler(plugin, config);
 
         getServer().getPluginManager().registerEvents(displayListener, this);
         getServer().getPluginManager().registerEvents(shopListener, this);

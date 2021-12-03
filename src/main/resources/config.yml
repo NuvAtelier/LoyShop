@@ -121,11 +121,65 @@ inverseComboShops: false
 
 # Options:
 # NONE - all items can be listed in shops
-# DENY_LIST - all items except those defined in ./Data/itemList.yml can be listed in shops
-# ALLOW_LIST - only items defined in ./Data/itemList.yml can be listed in shops
+# DENY_LIST - all items except those defined in itemList.yml can be listed in shops
+# ALLOW_LIST - only items defined in itemList.yml can be listed in shops
 itemList: NONE
 
 # Add the names of worlds that you do not want shops to be able to be created in here #
 worldBlacklist:
    - "example_world"
    - "example2_world"
+
+# =================================================================== #
+#                         LOGGING SETTINGS                            #
+# =================================================================== #
+
+# All logging functionality requires a MySQL database to be defined and enabled #
+# Logging is optional, but if you do want to use logging, a MySQL database is required #
+
+# MySQL database settings
+database:
+   enabled: false
+   name: 'mysql'
+   host: 'localhost'
+   port: 3306
+   username: 'dbadmin'
+   password: '123456'
+   ssl: false
+
+
+transaction_history:
+   notify_user_on_join: true
+   max_rows: 60
+
+logging:
+   SELL:
+      transaction_success: true
+      transaction_fail: false
+      create: true
+      initialize: true
+      destroy: true
+   BUY:
+      transaction_success: true
+      transaction_fail: false
+      create: true
+      initialize: true
+      destroy: true
+   BARTER:
+      transaction_success: true
+      transaction_fail: false
+      create: true
+      initialize: true
+      destroy: true
+   GAMBLE:
+      transaction_success: true
+      transaction_fail: false
+      create: true
+      initialize: true
+      destroy: true
+   COMBO:
+      transaction_success: true
+      transaction_fail: false
+      create: true
+      initialize: true
+      destroy: true
