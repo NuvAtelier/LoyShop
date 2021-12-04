@@ -137,6 +137,9 @@ worldBlacklist:
 # All logging functionality requires a MySQL database to be defined and enabled #
 # Logging is optional, but if you do want to use logging, a MySQL database is required #
 
+# READ-ME: ALL LOGGING IS CURRENTLY DISABLED AND WILL THROW ERRORS IF TURNED ON. #
+# THIS IS A FEATURE THAT IS IN ACTIVE DEVELOPMENT AND WILL BE ADDED SOON #
+
 # MySQL database settings
 database:
    enabled: false

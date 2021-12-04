@@ -498,7 +498,7 @@ public class DisplayUtil {
             case "1_17_R1":
                 return new Display_1_17R1(signLocation);
                 default:
-                    return new Display_1_17R1(signLocation);
+                    return new Display_1_18R1(signLocation);
                     //return new Display_1_18R1(signLocation);
         }
     }

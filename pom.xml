@@ -42,21 +42,27 @@
 <!--            <version>1.18-R0.1-SNAPSHOT</version>-->
 <!--            <scope>provided</scope>-->
 <!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.spigotmc</groupId>-->
-<!--            <artifactId>spigot18R1</artifactId>-->
-<!--            <version>1.18-R0.1-SNAPSHOT</version>-->
-<!--            <scope>system</scope>-->
-<!--            <systemPath>${project.basedir}/craftbukkit/spigot-1.18.jar</systemPath>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.spigotmc</groupId>
-            <artifactId>spigot17R1</artifactId>
-            <version>1.17.1-R0.1-SNAPSHOT</version>
+            <artifactId>spigot18R1</artifactId>
+            <version>1.18-R0.1-SNAPSHOT</version>
             <classifier>remapped-mojang</classifier>
             <scope>system</scope>
-            <systemPath>${project.basedir}/craftbukkit/spigot-1.17.1-R0.1-SNAPSHOT-remapped-mojang.jar</systemPath>
+            <systemPath>${project.basedir}/craftbukkit/spigot-1.18-R0.1-SNAPSHOT-remapped-mojang.jar</systemPath>
         </dependency>
+        <dependency>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>fastutil</artifactId>
+            <version>8.5.6</version>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.spigotmc</groupId>-->
+<!--            <artifactId>spigot17R1</artifactId>-->
+<!--            <version>1.17.1-R0.1-SNAPSHOT</version>-->
+<!--            <classifier>remapped-mojang</classifier>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>${project.basedir}/craftbukkit/spigot-1.17.1-R0.1-SNAPSHOT-remapped-mojang.jar</systemPath>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot16R3</artifactId>
@@ -127,9 +133,9 @@
                         </goals>
                         <id>remap-obf</id>
                         <configuration>
-                            <srgIn>org.spigotmc:minecraft-server:1.17.1-R0.1-SNAPSHOT:txt:maps-mojang</srgIn>
+                            <srgIn>org.spigotmc:minecraft-server:1.18-R0.1-SNAPSHOT:txt:maps-mojang</srgIn>
                             <reverse>true</reverse>
-                            <remappedDependencies>org.spigotmc:spigot:1.17.1-R0.1-SNAPSHOT:jar:remapped-mojang</remappedDependencies>
+                            <remappedDependencies>org.spigotmc:spigot:1.18-R0.1-SNAPSHOT:jar:remapped-mojang</remappedDependencies>
                             <remappedArtifactAttached>true</remappedArtifactAttached>
                             <remappedClassifierName>remapped-obf</remappedClassifierName>
                         </configuration>
@@ -142,14 +148,53 @@
                         <id>remap-spigot</id>
                         <configuration>
                             <inputFile>${project.build.directory}/${project.artifactId}-${project.version}-remapped-obf.jar</inputFile>
-                            <srgIn>org.spigotmc:minecraft-server:1.17.1-R0.1-SNAPSHOT:csrg:maps-spigot</srgIn>
-                            <remappedDependencies>org.spigotmc:spigot:1.17.1-R0.1-SNAPSHOT:jar:remapped-obf</remappedDependencies>
+                            <srgIn>org.spigotmc:minecraft-server:1.18-R0.1-SNAPSHOT:csrg:maps-spigot</srgIn>
+                            <remappedDependencies>org.spigotmc:spigot:1.18-R0.1-SNAPSHOT:jar:remapped-obf</remappedDependencies>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
+
+<!--    TODO need to make a multi module project in maven to build different MC version dependent classes-->
+<!--    <build>-->
+<!--        <plugins>-->
+<!--            <plugin>-->
+<!--                <groupId>net.md-5</groupId>-->
+<!--                <artifactId>specialsource-maven-plugin</artifactId>-->
+<!--                <version>1.2.2</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <phase>package</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>remap</goal>-->
+<!--                        </goals>-->
+<!--                        <id>remap-obf</id>-->
+<!--                        <configuration>-->
+<!--                            <srgIn>org.spigotmc:minecraft-server:1.17.1-R0.1-SNAPSHOT:txt:maps-mojang</srgIn>-->
+<!--                            <reverse>true</reverse>-->
+<!--                            <remappedDependencies>org.spigotmc:spigot:1.17.1-R0.1-SNAPSHOT:jar:remapped-mojang</remappedDependencies>-->
+<!--                            <remappedArtifactAttached>true</remappedArtifactAttached>-->
+<!--                            <remappedClassifierName>remapped-obf</remappedClassifierName>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                    <execution>-->
+<!--                        <phase>package</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>remap</goal>-->
+<!--                        </goals>-->
+<!--                        <id>remap-spigot</id>-->
+<!--                        <configuration>-->
+<!--                            <inputFile>${project.build.directory}/${project.artifactId}-${project.version}-remapped-obf.jar</inputFile>-->
+<!--                            <srgIn>org.spigotmc:minecraft-server:1.17.1-R0.1-SNAPSHOT:csrg:maps-spigot</srgIn>-->
+<!--                            <remappedDependencies>org.spigotmc:spigot:1.17.1-R0.1-SNAPSHOT:jar:remapped-obf</remappedDependencies>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
+<!--        </plugins>-->
+<!--    </build>-->
 
 </project>
 
