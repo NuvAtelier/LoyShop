@@ -84,7 +84,6 @@ public class Display_1_18R1 extends AbstractDisplay {
         } catch(IllegalAccessException e){
             e.printStackTrace();
         }
-
     }
 
     @Override
