@@ -73,8 +73,8 @@ setGlowingItemFrame: false
 #                         GENERAL SETTINGS                            #
 # =================================================================== #
 
-# If you want to use permissions with Shop, you must set this to true #
-usePermissions: false
+# If you do not use a permissions plugin, you should set this to false #
+usePermissions: true
 
 # This runs a check and notifies operators on login that a new Shop version is available #
 checkUpdates: true

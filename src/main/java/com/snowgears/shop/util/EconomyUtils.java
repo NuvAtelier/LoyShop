@@ -72,6 +72,7 @@ public class EconomyUtils {
                 EconomyResponse response = Shop.getPlugin().getEconomy().withdrawPlayer(player, amount);
                 if(response.transactionSuccess())
                     return true;
+                return false;
             case EXPERIENCE:
                 Player onlinePlayer = player.getPlayer();
                 if (onlinePlayer != null) {

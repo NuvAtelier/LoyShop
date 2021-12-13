@@ -34,6 +34,7 @@ public class Shop extends JavaPlugin {
     private MiscListener miscListener;
     private CreativeSelectionListener creativeSelectionListener;
     private ShopGUIListener guiListener;
+    private LWCHookListener lwcHookListener;
 
     private ShopHandler shopHandler;
     private CommandHandler commandHandler;
@@ -361,6 +362,10 @@ public class Shop extends JavaPlugin {
         getServer().getPluginManager().registerEvents(miscListener, this);
         getServer().getPluginManager().registerEvents(creativeSelectionListener, this);
         getServer().getPluginManager().registerEvents(guiListener, this);
+        if(getServer().getPluginManager().getPlugin("LWC") != null){
+            lwcHookListener = new LWCHookListener(this);
+            getServer().getPluginManager().registerEvents(lwcHookListener, this);
+        }
 
         displayListener.startRepeatingDisplayViewTask();
 
@@ -381,6 +386,9 @@ public class Shop extends JavaPlugin {
         HandlerList.unregisterAll(miscListener);
         HandlerList.unregisterAll(creativeSelectionListener);
         HandlerList.unregisterAll(guiListener);
+        if(lwcHookListener != null){
+            HandlerList.unregisterAll(lwcHookListener);
+        }
 
         plugin.getShopHandler().removeAllDisplays(null);
 

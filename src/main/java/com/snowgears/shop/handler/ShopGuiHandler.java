@@ -226,7 +226,7 @@ public class ShopGuiHandler {
 
         for(GuiTitle titleEnum : GuiTitle.values()) {
             String titleString = config.getString("titles."+titleEnum.toString().toLowerCase());
-            guiWindowTitles.put(titleEnum, titleString);
+            guiWindowTitles.put(titleEnum, ChatColor.translateAlternateColorCodes('&', titleString));
         }
 
         Set<String> icons = config.getConfigurationSection("icons").getKeys(false);
