@@ -2,10 +2,7 @@ package com.snowgears.shop.handler;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.gui.ShopGuiWindow;
-import com.snowgears.shop.util.CurrencyType;
-import com.snowgears.shop.util.ItemListType;
-import com.snowgears.shop.util.PlayerSettings;
-import com.snowgears.shop.util.ShopMessage;
+import com.snowgears.shop.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.CommandMap;
@@ -13,8 +10,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.StringUtil;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class CommandHandler extends BukkitCommand {
@@ -225,6 +225,75 @@ public class CommandHandler extends BukkitCommand {
         return true;
     }
 
+    @Override
+    public List<String> tabComplete(CommandSender sender, String alias, String[] args) throws IllegalArgumentException {
+        List<String> results = new ArrayList<>();
+        if (args.length == 0) {
+            results.add(this.getName());
+        }
+        else if (args.length == 1) {
+            results.add("list");
+            results.add("currency");
+
+            boolean showOperatorCommands = false;
+            if(sender instanceof Player){
+                Player player = (Player)sender;
+
+                if(player.hasPermission("shop.operator") || player.isOp()) {
+                    showOperatorCommands = true;
+                }
+            }
+            else{
+                showOperatorCommands = true;
+            }
+
+            if(showOperatorCommands){
+                results.add("setcurrency");
+                results.add("setgamble");
+                results.add("item");
+                results.add("notify");
+                if(Shop.getPlugin().getItemListType() != ItemListType.NONE){
+                    results.add("itemlist");
+                }
+                results.add("reload");
+            }
+            return sortedResults(args[0], results);
+        }
+        else if (args.length == 2) {
+            if(args[0].equalsIgnoreCase("notify")){
+                results.add("user");
+                results.add("owner");
+                results.add("stock");
+            }
+
+            boolean showOperatorCommands = false;
+            if(sender instanceof Player){
+                Player player = (Player)sender;
+
+                if(player.hasPermission("shop.operator") || player.isOp()) {
+                    showOperatorCommands = true;
+                }
+            }
+            else{
+                showOperatorCommands = true;
+            }
+
+            if(showOperatorCommands){
+                if(Shop.getPlugin().getItemListType() != ItemListType.NONE){
+                    if(args[0].equalsIgnoreCase("itemlist")) {
+                        results.add("add");
+                        results.add("remove");
+                    }
+                }
+                if(args[0].equalsIgnoreCase("item")) {
+                    results.add("refresh");
+                }
+            }
+            return sortedResults(args[1], results);
+        }
+        return results;
+    }
+
     private void toggleOptionAndNotifyPlayer(Player player, PlayerSettings.Option option) {
         Shop.getPlugin().getGuiHandler().toggleSettingsOption(player, option);
 
@@ -248,5 +317,17 @@ public class CommandHandler extends BukkitCommand {
 
         CommandMap commandMap = (CommandMap) bukkitCommandMap.get(Bukkit.getServer());
         commandMap.register(this.getName(), this);
+    }
+
+    // Sorts possible results to provide true tab auto complete based off of what is already typed.
+    public List <String> sortedResults(String arg, List<String> results) {
+        final List < String > completions = new ArrayList < > ();
+        StringUtil.copyPartialMatches(arg, results, completions);
+        Collections.sort(completions);
+        results.clear();
+        for (String s: completions) {
+            results.add(s);
+        }
+        return results;
     }
 }

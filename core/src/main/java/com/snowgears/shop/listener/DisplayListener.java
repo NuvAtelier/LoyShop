@@ -5,6 +5,7 @@ import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.InventoryUtils;
+import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -18,6 +19,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemStack;
@@ -124,13 +126,31 @@ public class DisplayListener implements Listener {
         if (shop != null && shop.getDisplay().getType() != DisplayType.NONE)
             event.setCancelled(true);
 
+        shop = plugin.getShopHandler().getShopByChest(event.getBlock().getRelative(event.getDirection()).getRelative(BlockFace.UP));
+        if (shop != null)
+            event.setCancelled(true);
+
         for(Block pushedBlock : event.getBlocks()){
             shop = plugin.getShopHandler().getShopByChest(pushedBlock.getRelative(event.getDirection()).getRelative(BlockFace.DOWN));
             if (shop != null && shop.getDisplay().getType() != DisplayType.NONE) {
                 event.setCancelled(true);
                 return;
             }
+
+            shop = plugin.getShopHandler().getShopByChest(pushedBlock.getRelative(event.getDirection()).getRelative(BlockFace.UP));
+            if (shop != null) {
+                event.setCancelled(true);
+                return;
+            }
         }
+    }
+
+    @EventHandler
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        Block pulledBlock = event.getBlock().getRelative(event.getDirection().getOppositeFace()).getRelative(event.getDirection().getOppositeFace()).getRelative(BlockFace.UP);
+        AbstractShop shop = plugin.getShopHandler().getShopByChest(pulledBlock);
+        if (shop != null)
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH)

@@ -4,10 +4,7 @@ package com.snowgears.shop.gui;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.shop.AbstractShop;
-import com.snowgears.shop.util.ItemListType;
-import com.snowgears.shop.util.PlayerSettings;
-import com.snowgears.shop.util.ShopMessage;
-import com.snowgears.shop.util.UtilMethods;
+import com.snowgears.shop.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -140,6 +137,18 @@ public class ShopGUIListener implements Listener {
                             if(shop != null){
                                 if(Shop.getPlugin().usePerms()){
                                     if(player.hasPermission("shop.operator") || player.hasPermission("shop.gui.teleport")){
+                                        if(!player.isOp() && plugin.getTeleportCost() > 0){
+                                            if(EconomyUtils.hasSufficientFunds(player, player.getInventory(), plugin.getTeleportCost())){
+                                                EconomyUtils.removeFunds(player, player.getInventory(), plugin.getTeleportCost());
+                                            }
+                                            else{
+                                                String message = ShopMessage.getMessage("interactionIssue", "teleportInsufficientFunds", shop, player);
+                                                if(message != null && !message.isEmpty())
+                                                    player.sendMessage(message);
+                                                plugin.getGuiHandler().closeWindow(player);
+                                                return;
+                                            }
+                                        }
                                         shop.teleportPlayer(player);
                                         plugin.getGuiHandler().closeWindow(player);
                                     }

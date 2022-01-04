@@ -7,7 +7,7 @@ import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.CurrencyType;
 import com.snowgears.shop.util.PlayerExperience;
 import com.snowgears.shop.util.ShopMessage;
-import com.snowgears.shop.util.WorldGuardHook;
+import com.snowgears.shop.hook.WorldGuardHook;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Tag;

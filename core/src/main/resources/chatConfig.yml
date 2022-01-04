@@ -140,6 +140,7 @@ interaction_issue:
    createOtherShop: "&cYou may not create a shop on the same chest as another player."
    createInsufficientFunds: "&cYou do not have the funds required to create this shop."
    destroyInsufficientFunds: "&cYou do not have the funds required to destroy this shop."
+   teleportInsufficientFunds: "&cYou do not have the funds required to teleport to this shop."
    initializeOtherShop: "&cYou may not initialize another players shop with an item."
    useShopAlreadyInUse: "&cThis shop is in the middle of a transaction."
    destroyChest: "&cYou must remove the sign from this shop to break it."
