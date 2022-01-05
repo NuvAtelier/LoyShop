@@ -70,6 +70,9 @@ public class Shop extends JavaPlugin {
     private boolean playSounds;
     private boolean playEffects;
     private boolean setGlowingSignText;
+    private boolean allowCreateMethodSign;
+    private boolean allowCreateMethodChest;
+    private boolean allowCreateMethodCommand;
     private ItemStack gambleDisplayItem;
     private ItemStack itemCurrency = null;
     private CurrencyType currencyType;
@@ -239,6 +242,10 @@ public class Shop extends JavaPlugin {
                 getServer().getConsoleSender().sendMessage("[Shop]" + ChatColor.RED + " Data folder could not be created.");
             }
         }
+
+        allowCreateMethodSign = config.getBoolean("creationMethod.placeSign");
+        allowCreateMethodChest = config.getBoolean("creationMethod.hitChest");
+        allowCreateMethodCommand = config.getBoolean("creationMethod.runCommand");
 
         usePerms = config.getBoolean("usePermissions");
         checkUpdates = config.getBoolean("checkUpdates");
@@ -457,6 +464,18 @@ public class Shop extends JavaPlugin {
 
     public boolean usePerms() {
         return usePerms;
+    }
+
+    public boolean getAllowCreationMethodSign(){
+        return allowCreateMethodSign;
+    }
+
+    public boolean getAllowCreationMethodChest(){
+        return allowCreateMethodChest;
+    }
+
+    public boolean getAllowCreationMethodCommand(){
+        return allowCreateMethodCommand;
     }
 
     public CurrencyType getCurrencyType() {
