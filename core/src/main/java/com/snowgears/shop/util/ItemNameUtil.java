@@ -68,7 +68,9 @@ public class ItemNameUtil {
 
     public String getName(Material material){
         ItemStack is = new ItemStack(material);
-        String name = is.getItemMeta().getLocalizedName();
+        String name = null;
+        if(is.getItemMeta() != null)
+            name = is.getItemMeta().getLocalizedName();
         if(name == null || name.isEmpty()){
             return UtilMethods.capitalize(is.getType().name().replace("_", " ").toLowerCase());
         }

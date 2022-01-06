@@ -24,8 +24,6 @@ public class ShopCreationProcess {
     private ItemStack barterItemStack;
     private ShopType shopType;
     boolean isAdmin;
-    private int itemAmount;
-    private int barterItemAmount;
     private PricePair pricePair;
 
     private ChatCreationStep step;
@@ -54,7 +52,10 @@ public class ShopCreationProcess {
 
     public void setShopType(ShopType shopType) {
         this.shopType = shopType;
-        this.step = ChatCreationStep.ITEM_AMOUNT;
+        if(shopType == ShopType.GAMBLE)
+            this.step = ChatCreationStep.ITEM_PRICE;
+        else
+            this.step = ChatCreationStep.ITEM_AMOUNT;
     }
 
     public boolean isAdmin() {
@@ -66,11 +67,13 @@ public class ShopCreationProcess {
     }
 
     public int getItemAmount() {
-        return itemAmount;
+        if(itemStack == null)
+            return 0;
+        return itemStack.getAmount();
     }
 
     public void setItemAmount(int itemAmount) {
-        this.itemAmount = itemAmount;
+        this.itemStack.setAmount(itemAmount);
         if(this.shopType == ShopType.BARTER){
             this.step = ChatCreationStep.BARTER_CHEST_HIT;
         }
@@ -80,11 +83,13 @@ public class ShopCreationProcess {
     }
 
     public int getBarterItemAmount() {
-        return barterItemAmount;
+        if(barterItemStack == null)
+            return 0;
+        return barterItemStack.getAmount();
     }
 
     public void setBarterItemAmount(int barterItemAmount){
-        this.barterItemAmount = barterItemAmount;
+        this.barterItemStack.setAmount(barterItemAmount);
         this.step = ChatCreationStep.FINISHED;
     }
 
@@ -121,25 +126,16 @@ public class ShopCreationProcess {
                     signBlock.setBlockData(wallSignData);
                 }
 
-                AbstractShop shop = ShopCreationUtil.createShop(Bukkit.getPlayer(playerUUID), clickedChest, clickedChest.getRelative(clickedFace), getPricePair(), itemAmount, isAdmin, shopType, clickedFace);
+                AbstractShop shop = Shop.getPlugin().getShopCreationUtil().createShop(Bukkit.getPlayer(playerUUID), clickedChest, signBlock, getPricePair(), getItemAmount(), isAdmin, shopType, clickedFace);
                 if(shop == null) {
                     return;
                 }
-                shop.setItemStack(process.getItemStack());
-                if(shopType == ShopType.BARTER){
-                    shop.setSecondaryItemStack(process.getBarterItemStack());
-                    //TODO make sure gamble amounts and barter and combo amounts are all correct
+
+                boolean initializedShop = Shop.getPlugin().getShopCreationUtil().initializeShop(shop, player, itemStack, barterItemStack);
+
+                if(initializedShop) {
+                    Shop.getPlugin().getShopCreationUtil().sendCreationSuccess(player, shop);
                 }
-                shop.updateSign();
-                //shop.getDisplay().spawn();
-
-                String message = ShopMessage.getUnformattedMessage(shopType.toString(), "create");
-                message = ShopMessage.formatMessage(message, process, player);
-                if (message != null && !message.isEmpty())
-                    player.sendMessage(message);
-
-                Shop.getPlugin().getTransactionListener().sendEffects(true, player, shop);
-                Shop.getPlugin().getShopHandler().saveShops(shop.getOwnerUUID());
             }
         });
     }
@@ -162,7 +158,6 @@ public class ShopCreationProcess {
 
     public void setItemStack(ItemStack itemStack) {
         this.itemStack = itemStack.clone();
-        this.itemStack.setAmount(1);
     }
 
     public void setBarterItemStack(ItemStack barterItemStack) {

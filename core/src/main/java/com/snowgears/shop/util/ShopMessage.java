@@ -7,11 +7,8 @@ import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.text.DecimalFormat;

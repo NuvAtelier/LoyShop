@@ -5,7 +5,6 @@ import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.InventoryUtils;
-import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;

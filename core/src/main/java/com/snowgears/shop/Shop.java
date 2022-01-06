@@ -47,6 +47,7 @@ public class Shop extends JavaPlugin {
     private ShopMessage shopMessage;
     private ItemNameUtil itemNameUtil;
     private PriceUtil priceUtil;
+    private ShopCreationUtil shopCreationUtil;
 
     private NMSBullshitHandler nmsBullshitHandler;
 
@@ -174,6 +175,8 @@ public class Shop extends JavaPlugin {
         config = YamlConfiguration.loadConfiguration(configFile);
 
         nmsBullshitHandler = new NMSBullshitHandler(this);
+
+        shopCreationUtil = new ShopCreationUtil(this);
 
         //removed item names file after item ids are no longer used. may revisit later with new materials
 //        File itemNameFile = new File(getDataFolder(), "items.tsv");
@@ -684,6 +687,10 @@ public class Shop extends JavaPlugin {
 
     public ItemNameUtil getItemNameUtil(){
         return itemNameUtil;
+    }
+
+    public ShopCreationUtil getShopCreationUtil(){
+        return shopCreationUtil;
     }
 
     public ItemListType getItemListType(){

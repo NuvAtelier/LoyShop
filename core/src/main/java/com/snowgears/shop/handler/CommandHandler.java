@@ -2,7 +2,10 @@ package com.snowgears.shop.handler;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.gui.ShopGuiWindow;
-import com.snowgears.shop.util.*;
+import com.snowgears.shop.util.CurrencyType;
+import com.snowgears.shop.util.ItemListType;
+import com.snowgears.shop.util.PlayerSettings;
+import com.snowgears.shop.util.ShopMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.CommandMap;

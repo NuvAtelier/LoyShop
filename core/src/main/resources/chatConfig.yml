@@ -135,11 +135,12 @@ interaction:
       opDestroy: "&7You have destroyed a combo shop owned by [owner]."
       opOpen: "&7You are opening a combo shop owned by [owner]."
       createHitChestAmount: '&eEnter in chat the amount of &a[item](s) &eyou want to buy/sell per transaction.'
-      createHitChestPrice: '&eEnter in chat the price you will &dSELL &a[item](x[item amount]) &efor.'
-      createHitChestPriceCombo: '&eEnter in chat the price you will &dBUY &a[item](x[item amount]) &efor.'
+      createHitChestPrice: '&eEnter in chat the price players will &dBUY &a[item](x[item amount]) &efor.'
+      createHitChestPriceCombo: '&eEnter in chat the price players you will &dSELL &a[item](x[item amount]) &efor.'
    GAMBLE:
       create: "&eYou have created a gambling shop."
       opDestroy: "&7You have destroyed a gambling shop owned by [server name]."
+      createHitChestPrice: '&eEnter in chat the price to gamble with this shop.'
    createHitChest: '&eEnter in chat what to do with &a[item](s) &e. &7([shop types])'
    adminCreateHitChest: '&7(Adding &eadmin &7will make the shop unlimited stock.)'
 

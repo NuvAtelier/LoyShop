@@ -183,13 +183,7 @@ public class CreativeSelectionListener implements Listener {
                             }
 
                             shop.setItemStack(event.getCursor());
-                            shop.getDisplay().spawn(player);
-                            shop.updateSign();
-                            String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
-                            if (message != null && !message.isEmpty())
-                                player.sendMessage(message);
-                            plugin.getTransactionListener().sendEffects(true, player, shop);
-                            plugin.getShopHandler().saveShops(shop.getOwnerUUID());
+                            plugin.getShopCreationUtil().sendCreationSuccess(player, shop);
 
                         } else if (shop.getType() == ShopType.BARTER) {
 
@@ -204,13 +198,7 @@ public class CreativeSelectionListener implements Listener {
                             }
 
                             shop.setSecondaryItemStack(event.getCursor());
-                            shop.getDisplay().spawn(player);
-                            shop.updateSign();
-                            String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
-                            if (message != null && !message.isEmpty())
-                                player.sendMessage(message);
-                            plugin.getTransactionListener().sendEffects(true, player, shop);
-                            plugin.getShopHandler().saveShops(shop.getOwnerUUID());
+                            plugin.getShopCreationUtil().sendCreationSuccess(player, shop);
                         }
                         removePlayerData(player);
                     }
