@@ -90,11 +90,9 @@ commandAlias: shop
 # These are the methods players are able to use to create shops #
 # placeSign - players can place signs on chests and fill out the info on the sign itself #
 # hitChest - players can hit a chest and they will be prompted to fill out the info in chat. A sign will be created. #
-# runCommand - players can run a command with parameters to create a shop. A sign will be created. #
 creationMethod:
    placeSign: true
    hitChest: true
-   runCommand: true
 
 # This will make it so shops will only complete transactions if the item durabilities are the same #
 checkItemDurability: true

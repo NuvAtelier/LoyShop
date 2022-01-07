@@ -445,6 +445,10 @@ public class Shop extends JavaPlugin {
         return displayListener;
     }
 
+    public MiscListener getMiscListener(){
+        return miscListener;
+    }
+
     public CreativeSelectionListener getCreativeSelectionListener() {
         return creativeSelectionListener;
     }

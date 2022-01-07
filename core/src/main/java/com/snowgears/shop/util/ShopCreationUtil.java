@@ -22,9 +22,27 @@ import org.bukkit.inventory.ItemStack;
 public class ShopCreationUtil {
 
     private Shop plugin;
+    private BlockFace[] wallFaces = new BlockFace[]{BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
 
     public ShopCreationUtil(Shop plugin){
         this.plugin = plugin;
+    }
+
+    public BlockFace calculateBlockFaceForSign(Player player, Block chest, BlockFace facePreference){
+        if(facePreference == BlockFace.UP || facePreference == BlockFace.DOWN)
+            facePreference = BlockFace.NORTH;
+        Block futureSign = chest.getRelative(facePreference);
+        if(UtilMethods.materialIsNonIntrusive(futureSign.getType()))
+            return facePreference;
+        for(BlockFace face : wallFaces){
+            futureSign = chest.getRelative(face);
+            if(UtilMethods.materialIsNonIntrusive(futureSign.getType()))
+                return face;
+        }
+        String message = ShopMessage.getMessage("interactionIssue", "signRoom", null, player);
+        if (message != null && !message.isEmpty())
+            player.sendMessage(message);
+        return null;
     }
 
     public boolean shopCanBeCreated(Player player, Block chest) {
@@ -75,9 +93,10 @@ public class ShopCreationUtil {
         return true;
     }
 
-    public AbstractShop createShop(Player player, Block chestBlock, Block signBlock, PricePair pricePair, int amount, boolean isAdmin, ShopType type, BlockFace signDirection){
+    public AbstractShop createShop(Player player, Block chestBlock, Block signBlock, PricePair pricePair, int amount, boolean isAdmin, ShopType type, BlockFace signDirection, boolean isFakeSign){
         String playerMessage = null;
         final AbstractShop shop = AbstractShop.create(signBlock.getLocation(), player.getUniqueId(), pricePair.getPrice(), pricePair.getPriceCombo(), amount, isAdmin, type, signDirection);
+        shop.setFakeSign(isFakeSign);
 
         if (plugin.usePerms()) {
             if (!(player.hasPermission("shop.create." + type.toString().toLowerCase()) || player.hasPermission("shop.create")))

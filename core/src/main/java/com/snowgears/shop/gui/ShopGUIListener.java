@@ -89,7 +89,7 @@ public class ShopGUIListener implements Listener {
                         }
                         else if(clicked.getType() == searchIcon.getType()){
                             plugin.getGuiHandler().closeWindow(player);
-                            plugin.getCreativeSelectionListener().addPlayerData(player, player.getLocation(), true);
+                            plugin.getCreativeSelectionListener().putPlayerInCreativeSelection(player, player.getLocation(), true);
 
                             for(String message : ShopMessage.getMessageList("guiSearchSelection", "prompt", null, null)){
                                 if(message != null && !message.isEmpty())

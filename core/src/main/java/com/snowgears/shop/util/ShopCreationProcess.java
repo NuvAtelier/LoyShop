@@ -33,7 +33,7 @@ public class ShopCreationProcess {
         this.playerUUID = player.getUniqueId();
         this.clickedChest = clickedChest;
         this.clickedFace = clickedFace;
-        this.step = ChatCreationStep.SHOP_TYPE;
+        this.step = ChatCreationStep.ITEM;
         //TODO calculate clicked face from player if blockface is UP or DOWN
         //TODO also that there is room for the sign on the clicked face
     }
@@ -75,7 +75,7 @@ public class ShopCreationProcess {
     public void setItemAmount(int itemAmount) {
         this.itemStack.setAmount(itemAmount);
         if(this.shopType == ShopType.BARTER){
-            this.step = ChatCreationStep.BARTER_CHEST_HIT;
+            this.step = ChatCreationStep.BARTER_ITEM;
         }
         else {
             this.step = ChatCreationStep.ITEM_PRICE;
@@ -126,7 +126,7 @@ public class ShopCreationProcess {
                     signBlock.setBlockData(wallSignData);
                 }
 
-                AbstractShop shop = Shop.getPlugin().getShopCreationUtil().createShop(Bukkit.getPlayer(playerUUID), clickedChest, signBlock, getPricePair(), getItemAmount(), isAdmin, shopType, clickedFace);
+                AbstractShop shop = Shop.getPlugin().getShopCreationUtil().createShop(Bukkit.getPlayer(playerUUID), clickedChest, signBlock, getPricePair(), getItemAmount(), isAdmin, shopType, clickedFace, true);
                 if(shop == null) {
                     return;
                 }
@@ -158,6 +158,7 @@ public class ShopCreationProcess {
 
     public void setItemStack(ItemStack itemStack) {
         this.itemStack = itemStack.clone();
+        this.step = ChatCreationStep.SHOP_TYPE;
     }
 
     public void setBarterItemStack(ItemStack barterItemStack) {
@@ -185,6 +186,8 @@ public class ShopCreationProcess {
 
     public enum ChatCreationStep {
 
+        ITEM,
+
         SHOP_TYPE,
 
         ITEM_AMOUNT,
@@ -193,7 +196,7 @@ public class ShopCreationProcess {
 
         ITEM_PRICE_COMBO,
 
-        BARTER_CHEST_HIT,
+        BARTER_ITEM,
 
         BARTER_ITEM_AMOUNT,
 
