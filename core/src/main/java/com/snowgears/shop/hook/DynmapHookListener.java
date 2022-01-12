@@ -25,6 +25,7 @@ public class DynmapHookListener implements Listener {
     private DynmapAPI api;
     private MarkerSet shopMarkerSet;
 
+    private boolean enabled;
     private String markerName;
     private String markerPreview;
     private String markerDescription;
@@ -32,18 +33,23 @@ public class DynmapHookListener implements Listener {
     public DynmapHookListener(Shop plugin){
         this.plugin = plugin;
         readConfig();
-        api = (DynmapAPI) plugin.getServer().getPluginManager().getPlugin("dynmap");
-        shopMarkerSet = api.getMarkerAPI().getMarkerSet("shop");
-        if (shopMarkerSet == null) {
-            shopMarkerSet = api.getMarkerAPI().createMarkerSet("shop", markerName, null, false);
-        }
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                updateMarkers();
+        try {
+            api = (DynmapAPI) plugin.getServer().getPluginManager().getPlugin("dynmap");
+            shopMarkerSet = api.getMarkerAPI().getMarkerSet("shop");
+            if (shopMarkerSet == null) {
+                shopMarkerSet = api.getMarkerAPI().createMarkerSet("shop", markerName, null, false);
             }
-        }.runTaskTimer(plugin, 1, 20 * 120 * 60);
+
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    updateMarkers();
+                }
+            }.runTaskTimer(plugin, 1, 20 * 120 * 60);
+        } catch(NullPointerException e){
+            enabled = false;
+            plugin.getLogger().warning("Dynmap marker api was null. Disabling DynMap integration.");
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -57,7 +63,9 @@ public class DynmapHookListener implements Listener {
     }
 
     private void updateMarkers() {
-        if (api.getMarkerAPI() == null) {
+        if(!enabled)
+            return;
+        if (api == null || api.getMarkerAPI() == null) {
             plugin.getLogger().warning("Dynmap marker api not ready, skipping...");
             return;
         }
@@ -92,6 +100,7 @@ public class DynmapHookListener implements Listener {
         File configFile = new File(plugin.getDataFolder(), "config.yml");
         YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
 
+        enabled = config.getBoolean("dynmap-marker.enabled");
         markerName = config.getString("dynmap-marker.name");
         markerPreview = config.getString("dynmap-marker.preview");
         markerDescription = config.getString("dynmap-marker.description");

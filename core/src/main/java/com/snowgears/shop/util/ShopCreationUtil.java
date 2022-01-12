@@ -57,8 +57,9 @@ public class ShopCreationUtil {
             }
         }
 
+        System.out.println("[shop]");
         if (plugin.getWorldBlacklist().contains(chest.getWorld().getName())) {
-            if (!(player.isOp() || (plugin.usePerms() && player.hasPermission("shop.operator")))) {
+            if ((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
                 player.sendMessage(ShopMessage.getMessage("interactionIssue", "worldBlacklist", null, player));
                 return false;
             }
