@@ -83,6 +83,7 @@ public class ShopHandler {
 
         try {
             final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display_" + nmsVersion);
+            //System.out.println("[Shop] Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
             if (AbstractDisplay.class.isAssignableFrom(clazz)) {
                 this.displayClass = clazz;
                 return true;

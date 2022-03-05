@@ -33,6 +33,8 @@ public class DynmapHookListener implements Listener {
     public DynmapHookListener(Shop plugin){
         this.plugin = plugin;
         readConfig();
+        if(!enabled)
+            return;
         try {
             api = (DynmapAPI) plugin.getServer().getPluginManager().getPlugin("dynmap");
             shopMarkerSet = api.getMarkerAPI().getMarkerSet("shop");
@@ -54,11 +56,15 @@ public class DynmapHookListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onShopRemoved(PlayerDestroyShopEvent event) {
+        if(!enabled)
+            return;
         plugin.getServer().getScheduler().runTask(plugin, this::updateMarkers);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onShopCreated(PlayerInitializeShopEvent event) {
+        if(!enabled)
+            return;
         plugin.getServer().getScheduler().runTask(plugin, this::updateMarkers);
     }
 
@@ -93,6 +99,8 @@ public class DynmapHookListener implements Listener {
     }
 
     public void deleteMarkers() {
+        if(!enabled)
+            return;
         shopMarkerSet.deleteMarkerSet();
     }
 

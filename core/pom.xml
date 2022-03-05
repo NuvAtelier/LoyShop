@@ -63,6 +63,12 @@
             <artifactId>worldguard-bukkit</artifactId>
             <version>7.0.0</version>
             <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bstats</groupId>
+                    <artifactId>bstats-bukkit</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.github.TownyAdvanced</groupId>
@@ -86,6 +92,12 @@
             <groupId>com.github.BlueMap-Minecraft</groupId>
             <artifactId>BlueMapAPI</artifactId>
             <version>1.7.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bstats</groupId>
+            <artifactId>bstats-bukkit</artifactId>
+            <version>2.2.1</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 
