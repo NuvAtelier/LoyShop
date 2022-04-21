@@ -112,16 +112,18 @@ public class ShopMessage {
             unformattedMessage = unformattedMessage.replace("[owner]", "" + Bukkit.getOfflinePlayer(process.getPlayerUUID().toString()));
 
             if(unformattedMessage.contains("[shop types]")) {
-                List<ShopType> typeList = Arrays.asList(ShopType.values());
+                List<ShopType> typeList = new ArrayList(Arrays.asList(ShopType.values()));
                 if((!Shop.getPlugin().usePerms() && !player.isOp()) || (Shop.getPlugin().usePerms() && !player.hasPermission("shop.operator"))){
                     typeList.remove(ShopType.GAMBLE);
                 }
                 if(Shop.getPlugin().usePerms()){
-                    Iterator<ShopType> typeIterator = typeList.iterator();
-                    while(typeIterator.hasNext()){
-                        ShopType type = typeIterator.next();
-                        if(!player.hasPermission("shop.operator") && !player.hasPermission("shop.create."+type.toString())){
-                            typeIterator.remove();
+                    if(!player.hasPermission("shop.create")) {
+                        Iterator<ShopType> typeIterator = typeList.iterator();
+                        while (typeIterator.hasNext()) {
+                            ShopType type = typeIterator.next();
+                            if (!player.hasPermission("shop.operator") && !player.hasPermission("shop.create." + type.toString().toLowerCase())) {
+                                typeIterator.remove();
+                            }
                         }
                     }
                 }
@@ -223,12 +225,17 @@ public class ShopMessage {
                 shop.setSignLinesRequireRefresh(true);
             }
         }
+        else{
+            //hacky workaround (for now). If shop is null, set shop type to nothing
+            //this is so permissions message reads "you are not able to make shops" instead of "you are not able to make [shop type] shops"
+            unformattedMessage = unformattedMessage.replace("[shop type] ", "");
+        }
         if(player != null) {
             unformattedMessage = unformattedMessage.replace("[user]", "" + player.getName());
             unformattedMessage = unformattedMessage.replace("[user amount]", "" + Shop.getPlugin().getShopHandler().getNumberOfShops(player));
             unformattedMessage = unformattedMessage.replace("[build limit]", "" + Shop.getPlugin().getShopListener().getBuildLimit(player));
             if(unformattedMessage.contains("[shop types]")) {
-                List<ShopType> typeList = Arrays.asList(ShopType.values());
+                List<ShopType> typeList = new ArrayList(Arrays.asList(ShopType.values()));
                 if((!Shop.getPlugin().usePerms() && !player.isOp()) || (Shop.getPlugin().usePerms() && !player.hasPermission("shop.operator"))){
                     typeList.remove(ShopType.GAMBLE);
                 }

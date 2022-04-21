@@ -51,19 +51,35 @@ public class ShopCreationUtil {
 
         if ((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
             if (numberOfShops >= buildPermissionNumber) {
-                AbstractShop tempShop = new SellShop(null, player.getUniqueId(), 0, 0, false, BlockFace.NORTH);
-                player.sendMessage(ShopMessage.getMessage("permission", "buildLimit", tempShop, player));
+                player.sendMessage(ShopMessage.getMessage("permission", "buildLimit", null, player));
                 return false;
             }
         }
 
-        System.out.println("[shop]");
         if (plugin.getWorldBlacklist().contains(chest.getWorld().getName())) {
             if ((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
                 player.sendMessage(ShopMessage.getMessage("interactionIssue", "worldBlacklist", null, player));
                 return false;
             }
         }
+
+        if (plugin.usePerms() && !player.hasPermission("shop.operator")) {
+            boolean canCreate = false;
+            if(!player.hasPermission("shop.create")){
+                for(ShopType shopType : ShopType.values()){
+                    if(player.hasPermission("shop.create."+shopType.toString().toLowerCase()))
+                        canCreate = true;
+                }
+            }
+            else {
+                canCreate = true;
+            }
+            if(!canCreate){
+                player.sendMessage(ShopMessage.getMessage("permission", "create", null, player));
+                return false;
+            }
+        }
+
 
         //do a check for the WorldGuard region (optional hook)
         boolean canCreateShopInRegion = true;
@@ -96,6 +112,8 @@ public class ShopCreationUtil {
 
     public AbstractShop createShop(Player player, Block chestBlock, Block signBlock, PricePair pricePair, int amount, boolean isAdmin, ShopType type, BlockFace signDirection, boolean isFakeSign){
         String playerMessage = null;
+        if(type == null)
+            type = ShopType.SELL;
         final AbstractShop shop = AbstractShop.create(signBlock.getLocation(), player.getUniqueId(), pricePair.getPrice(), pricePair.getPriceCombo(), amount, isAdmin, type, signDirection);
         shop.setFakeSign(isFakeSign);
 
@@ -351,7 +369,7 @@ public class ShopCreationUtil {
             type = ShopType.GAMBLE;
         else if (input.toLowerCase().contains(ShopMessage.getCreationWord("COMBO")))
             type = ShopType.COMBO;
-        else
+        else if (input.toLowerCase().contains(ShopMessage.getCreationWord("SELL")))
             type = ShopType.SELL;
         return type;
     }

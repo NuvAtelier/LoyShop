@@ -13,6 +13,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -45,23 +46,27 @@ public class ShopListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event){
-        if(plugin.usePerms()){
-            Player player = event.getPlayer();
-            int buildPermissionNumber = -1;
-            for(PermissionAttachmentInfo permInfo : player.getEffectivePermissions()){
-                if(permInfo.getPermission().contains("shop.buildlimit.")){
-                    try {
-                        int tempNum = Integer.parseInt(permInfo.getPermission().substring(permInfo.getPermission().lastIndexOf(".") + 1));
-                        if(tempNum > buildPermissionNumber)
-                            buildPermissionNumber = tempNum;
-                    } catch (Exception e) {}
+        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+            public void run() {
+                if(plugin.usePerms()){
+                    Player player = event.getPlayer();
+                    int buildPermissionNumber = -1;
+                    for(PermissionAttachmentInfo permInfo : player.getEffectivePermissions()){
+                        if(permInfo.getPermission().contains("shop.buildlimit.")){
+                            try {
+                                int tempNum = Integer.parseInt(permInfo.getPermission().substring(permInfo.getPermission().lastIndexOf(".") + 1));
+                                if(tempNum > buildPermissionNumber)
+                                    buildPermissionNumber = tempNum;
+                            } catch (Exception e) {}
+                        }
+                    }
+                    if(buildPermissionNumber == -1)
+                        shopBuildLimits.put(player.getName(), 10000);
+                    else
+                        shopBuildLimits.put(player.getName(), buildPermissionNumber);
                 }
             }
-            if(buildPermissionNumber == -1)
-                shopBuildLimits.put(player.getName(), 10000);
-            else
-                shopBuildLimits.put(player.getName(), buildPermissionNumber);
-        }
+        }, 5L);
     }
 
     public int getBuildLimit(Player player){
