@@ -1,6 +1,9 @@
 package com.snowgears.shop.util;
 
+import net.md_5.bungee.api.chat.TranslatableComponent;
+import net.md_5.bungee.chat.ComponentSerializer;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionData;
@@ -75,5 +78,35 @@ public class ItemNameUtil {
             return UtilMethods.capitalize(is.getType().name().replace("_", " ").toLowerCase());
         }
         return name;
+    }
+
+//    private TranslatableComponent getTranslatableName(ItemStack item){
+//        String key = item.getType().getKey().toString();
+//        key.replaceAll("^minecraft:", "");
+//        String itemKey = (item.getType().isItem() ? "item" : "block") + ".minecraft." + key;
+//        System.out.println(itemKey); //like 'item.swordDiamond.name' or 'block.minecraft.stone'
+//        TranslatableComponent component = new TranslatableComponent(itemKey);
+//        return component;
+//    }
+
+    public TranslatableComponent getTranslatableName(Material material){
+        String key = material.getKey().toString();
+        key = key.replaceAll("^minecraft:", "");
+        String itemKey = (material.isItem() ? "item" : "block") + ".minecraft." + key;
+//        System.out.println(itemKey); //like 'item.swordDiamond.name' or 'block.minecraft.stone'
+        TranslatableComponent component = new TranslatableComponent(itemKey);
+//        System.out.println(ComponentSerializer.toString(component));
+        return component;
+    }
+
+    private TranslatableComponent getTranslatableName(Player player, Material material){
+        String key = material.getKey().toString();
+        key = key.replaceAll("^minecraft:", "");
+        String itemKey = (material.isItem() ? "item" : "block") + ".minecraft." + key;
+//        System.out.println(itemKey); //like 'item.swordDiamond.name' or 'block.minecraft.stone'
+        TranslatableComponent component = new TranslatableComponent(itemKey);
+        player.spigot().sendMessage(component); //TODO this translates correctly on the client (Arrow is displayed as "Flecha")
+        player.sendMessage(ComponentSerializer.toString(component));
+        return component;
     }
 }

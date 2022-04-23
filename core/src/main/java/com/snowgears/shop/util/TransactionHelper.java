@@ -123,17 +123,20 @@ public class TransactionHelper {
             }
         }
 
-        System.out.println("Max orders: "+orderSizeMax);
-
         //loop through, submitting transactions up to the order max or until an issue occurs
         TransactionError issue = TransactionError.NONE;
-        while(orderNum < orderSizeMax || issue != TransactionError.NONE) {
-            issue = shop.executeTransaction(1, player, true, actionType);
+        while(orderNum < orderSizeMax && issue == TransactionError.NONE) {
             orderNum++;
-            System.out.println("Order: "+orderNum);
+            //System.out.println("MaxOrders - "+orderSizeMax+", OrderNum - "+orderNum+", issue - "+issue.toString());
+            issue = shop.executeTransaction(player, true, actionType);
+
+            //while loop fail safe
+            if(orderNum > 100)
+                return;
 
             //there was an issue when checking transaction, send reason to player
             if (issue != TransactionError.NONE) {
+                String message = null;
                 switch (issue) {
                     case INSUFFICIENT_FUNDS_SHOP:
                         if (!shop.isAdmin()) {
@@ -141,20 +144,16 @@ public class TransactionHelper {
                             //the shop owner is online
                             if (owner != null && notifyOwner(shop)) {
                                 if (plugin.getGuiHandler().getSettingsOption(owner, PlayerSettings.Option.STOCK_NOTIFICATIONS)) {
-                                    String message = ShopMessage.getMessage(actionType.toString(), "ownerNoStock", shop, owner);
-                                    if (message != null && !message.isEmpty())
-                                        owner.sendMessage(message);
+                                    String ownerMessage = ShopMessage.getMessage(actionType.toString(), "ownerNoStock", shop, owner);
+                                    if (ownerMessage != null && !ownerMessage.isEmpty())
+                                        owner.sendMessage(ownerMessage);
                                 }
                             }
                         }
-                        String message = ShopMessage.getMessage(actionType.toString(), "shopNoStock", shop, player);
-                        if (message != null && !message.isEmpty())
-                            player.sendMessage(message);
+                        message = ShopMessage.getMessage(actionType.toString(), "shopNoStock", shop, player);
                         break;
                     case INSUFFICIENT_FUNDS_PLAYER:
                         message = ShopMessage.getMessage(actionType.toString(), "playerNoStock", shop, player);
-                        if (message != null && !message.isEmpty())
-                            player.sendMessage(message);
                         break;
                     case INVENTORY_FULL_SHOP:
                         if (!shop.isAdmin()) {
@@ -162,29 +161,33 @@ public class TransactionHelper {
                             //the shop owner is online
                             if (owner != null && notifyOwner(shop)) {
                                 if (plugin.getGuiHandler().getSettingsOption(owner, PlayerSettings.Option.STOCK_NOTIFICATIONS)) {
-                                    message = ShopMessage.getMessage(actionType.toString(), "ownerNoSpace", shop, owner);
-                                    if (message != null && !message.isEmpty())
-                                        owner.sendMessage(message);
+                                    String ownerMessage = ShopMessage.getMessage(actionType.toString(), "ownerNoSpace", shop, owner);
+                                    if (ownerMessage != null && !ownerMessage.isEmpty())
+                                        owner.sendMessage(ownerMessage);
                                 }
                             }
                         }
                         message = ShopMessage.getMessage(actionType.toString(), "shopNoSpace", shop, player);
-                        if (message != null && !message.isEmpty())
-                            player.sendMessage(message);
                         break;
                     case INVENTORY_FULL_PLAYER:
                         message = ShopMessage.getMessage(actionType.toString(), "playerNoSpace", shop, player);
-                        if (message != null && !message.isEmpty())
-                            player.sendMessage(message);
                         break;
                 }
-                sendEffects(false, player, shop);
-                return;
+                if(orderNum < 2) {
+                    if (message != null && !message.isEmpty())
+                        player.sendMessage(message);
+                    sendEffects(false, player, shop);
+                    return;
+                }
+                //if orderNum >= 2, that means the player successfully transacted so we will show success messages below
             }
         }
 
         //TODO update enderchest shop inventory?
 
+        //this cleans up the while loop logic. If an order is on 2 and fails, they got 1 order. etc
+        if(issue != TransactionError.NONE)
+            orderNum = orderNum - 1;
         //the transaction has finished and the exchange event has not been cancelled
         sendExchangeMessages(shop, player, actionType, orderNum);
         sendEffects(true, player, shop);

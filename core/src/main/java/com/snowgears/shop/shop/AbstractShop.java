@@ -141,7 +141,7 @@ public abstract class AbstractShop {
 
     //abstract methods that must be implemented in each shop subclass
 
-    public abstract TransactionError executeTransaction(int orders, Player player, boolean isCheck, ShopType transactionType);
+    public abstract TransactionError executeTransaction(Player player, boolean isCheck, ShopType transactionType);
 
     public int getStock() {
         if(this.isAdmin)
@@ -514,12 +514,9 @@ public abstract class AbstractShop {
 
     public boolean executeClickAction(PlayerInteractEvent event, ShopClickType clickType){
         ShopAction action = Shop.getPlugin().getShopAction(clickType);
-        System.out.println(event.getPlayer().getName()+" - executing click action for "+clickType.toString());
         if(action == null)
             return false; //there is no action mapped to this click type
         Player player = event.getPlayer();
-
-        System.out.println(event.getPlayer().getName()+" - action was "+action.toString());
 
         switch(action) {
             case TRANSACT:

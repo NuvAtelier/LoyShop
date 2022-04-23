@@ -564,4 +564,5 @@ public abstract class AbstractDisplay {
         return player.getWorld().getUID().equals(this.shopSignLocation.getWorld().getUID());
     }
 
+    public abstract String getItemNameNMS(ItemStack item);
 }
