@@ -523,10 +523,10 @@ public abstract class AbstractShop {
 
         switch(action) {
             case TRANSACT:
-                Shop.getPlugin().getTransactionHelper().executeTransactionFromEvent(event, this);
+                Shop.getPlugin().getTransactionHelper().executeTransactionFromEvent(event, this, false);
                 break;
             case TRANSACT_FULLSTACK:
-                //TODO
+                Shop.getPlugin().getTransactionHelper().executeTransactionFromEvent(event, this, true);
                 break;
             case VIEW_DETAILS:
                 this.printSalesInfo(player);

@@ -4,6 +4,7 @@ package com.snowgears.shop.util;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.hook.WorldGuardHook;
 import com.snowgears.shop.shop.AbstractShop;
+import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -28,7 +29,7 @@ public class TransactionHelper {
 
     //TODO will need to update ender chest contents at the end of every transaction involving an ender chest
 
-    public void executeTransactionFromEvent(PlayerInteractEvent event, AbstractShop shop){
+    public void executeTransactionFromEvent(PlayerInteractEvent event, AbstractShop shop, boolean fullStackOrder){
         Player player = event.getPlayer();
 
         if(shop.isPerformingTransaction()) {
@@ -59,6 +60,10 @@ public class TransactionHelper {
             return;
         }
 
+        //do not allow gamble shops to have full stack orders
+        if(shop.getType() == ShopType.GAMBLE)
+            fullStackOrder = false;
+
         //player did not click their own shop
         if (!shop.getOwnerName().equals(player.getName())) {
 
@@ -76,20 +81,20 @@ public class TransactionHelper {
                 //clicked left side of sign
                 if(clickedSide >= 0){
                     if(plugin.inverseComboShops())
-                        executeTransaction(player, shop, ShopType.SELL);
+                        executeTransaction(player, shop, ShopType.SELL, fullStackOrder);
                     else
-                        executeTransaction(player, shop, ShopType.BUY);
+                        executeTransaction(player, shop, ShopType.BUY, fullStackOrder);
                 }
                 //clicked right side of sign
                 else{
                     if(plugin.inverseComboShops())
-                        executeTransaction(player, shop, ShopType.BUY);
+                        executeTransaction(player, shop, ShopType.BUY, fullStackOrder);
                     else
-                        executeTransaction(player, shop, ShopType.SELL);
+                        executeTransaction(player, shop, ShopType.SELL, fullStackOrder);
                 }
             }
             else {
-                executeTransaction(player, shop, shop.getType());
+                executeTransaction(player, shop, shop.getType(), fullStackOrder);
             }
         } else {
             String message = ShopMessage.getMessage("interactionIssue", "useOwnShop", shop, player);
@@ -100,82 +105,97 @@ public class TransactionHelper {
         event.setCancelled(true);
     }
 
-    private void executeTransaction(Player player, AbstractShop shop, ShopType actionType){
+    private void executeTransaction(Player player, AbstractShop shop, ShopType actionType, boolean fullStackOrder){
 
-        TransactionError issue = shop.executeTransaction(1, player, true, actionType);
-
-        //there was an issue when checking transaction, send reason to player
-        if(issue != TransactionError.NONE){
-            switch (issue){
-                case INSUFFICIENT_FUNDS_SHOP:
-                    if(!shop.isAdmin()){
-                        Player owner = shop.getOwner().getPlayer();
-                        //the shop owner is online
-                        if(owner != null && notifyOwner(shop)) {
-                            if(plugin.getGuiHandler().getSettingsOption(owner, PlayerSettings.Option.STOCK_NOTIFICATIONS)) {
-                                String message = ShopMessage.getMessage(actionType.toString(), "ownerNoStock", shop, owner);
-                                if(message != null && !message.isEmpty())
-                                    owner.sendMessage(message);
-                            }
-                        }
-                    }
-                    String message = ShopMessage.getMessage(actionType.toString(), "shopNoStock", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    break;
-                case INSUFFICIENT_FUNDS_PLAYER:
-                    message = ShopMessage.getMessage(actionType.toString(), "playerNoStock", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    break;
-                case INVENTORY_FULL_SHOP:
-                    if(!shop.isAdmin()){
-                        Player owner = shop.getOwner().getPlayer();
-                        //the shop owner is online
-                        if(owner != null && notifyOwner(shop)) {
-                            if (plugin.getGuiHandler().getSettingsOption(owner, PlayerSettings.Option.STOCK_NOTIFICATIONS)) {
-                                message = ShopMessage.getMessage(actionType.toString(), "ownerNoSpace", shop, owner);
-                                if(message != null && !message.isEmpty())
-                                    owner.sendMessage(message);
-                            }
-                        }
-                    }
-                    message = ShopMessage.getMessage(actionType.toString(), "shopNoSpace", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    break;
-                case INVENTORY_FULL_PLAYER:
-                    message = ShopMessage.getMessage(actionType.toString(), "playerNoSpace", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    break;
+        int orderNum = 0;
+        int orderSizeMax = 1;
+        //full stack order max will be a stack of 64
+        if(fullStackOrder){
+            if(shop.getType() == ShopType.BARTER){
+                orderSizeMax = 64 / shop.getSecondaryItemStack().getAmount();
+                if(orderSizeMax < 1)
+                    orderSizeMax = 1;
             }
-            sendEffects(false, player, shop);
-            return;
+            else {
+                orderSizeMax = 64 / shop.getAmount();
+                if (orderSizeMax < 1)
+                    orderSizeMax = 1;
+            }
+        }
+
+        System.out.println("Max orders: "+orderSizeMax);
+
+        //loop through, submitting transactions up to the order max or until an issue occurs
+        TransactionError issue = TransactionError.NONE;
+        while(orderNum < orderSizeMax || issue != TransactionError.NONE) {
+            issue = shop.executeTransaction(1, player, true, actionType);
+            orderNum++;
+            System.out.println("Order: "+orderNum);
+
+            //there was an issue when checking transaction, send reason to player
+            if (issue != TransactionError.NONE) {
+                switch (issue) {
+                    case INSUFFICIENT_FUNDS_SHOP:
+                        if (!shop.isAdmin()) {
+                            Player owner = shop.getOwner().getPlayer();
+                            //the shop owner is online
+                            if (owner != null && notifyOwner(shop)) {
+                                if (plugin.getGuiHandler().getSettingsOption(owner, PlayerSettings.Option.STOCK_NOTIFICATIONS)) {
+                                    String message = ShopMessage.getMessage(actionType.toString(), "ownerNoStock", shop, owner);
+                                    if (message != null && !message.isEmpty())
+                                        owner.sendMessage(message);
+                                }
+                            }
+                        }
+                        String message = ShopMessage.getMessage(actionType.toString(), "shopNoStock", shop, player);
+                        if (message != null && !message.isEmpty())
+                            player.sendMessage(message);
+                        break;
+                    case INSUFFICIENT_FUNDS_PLAYER:
+                        message = ShopMessage.getMessage(actionType.toString(), "playerNoStock", shop, player);
+                        if (message != null && !message.isEmpty())
+                            player.sendMessage(message);
+                        break;
+                    case INVENTORY_FULL_SHOP:
+                        if (!shop.isAdmin()) {
+                            Player owner = shop.getOwner().getPlayer();
+                            //the shop owner is online
+                            if (owner != null && notifyOwner(shop)) {
+                                if (plugin.getGuiHandler().getSettingsOption(owner, PlayerSettings.Option.STOCK_NOTIFICATIONS)) {
+                                    message = ShopMessage.getMessage(actionType.toString(), "ownerNoSpace", shop, owner);
+                                    if (message != null && !message.isEmpty())
+                                        owner.sendMessage(message);
+                                }
+                            }
+                        }
+                        message = ShopMessage.getMessage(actionType.toString(), "shopNoSpace", shop, player);
+                        if (message != null && !message.isEmpty())
+                            player.sendMessage(message);
+                        break;
+                    case INVENTORY_FULL_PLAYER:
+                        message = ShopMessage.getMessage(actionType.toString(), "playerNoSpace", shop, player);
+                        if (message != null && !message.isEmpty())
+                            player.sendMessage(message);
+                        break;
+                }
+                sendEffects(false, player, shop);
+                return;
+            }
         }
 
         //TODO update enderchest shop inventory?
 
         //the transaction has finished and the exchange event has not been cancelled
-        sendExchangeMessages(shop, player, actionType);
+        sendExchangeMessages(shop, player, actionType, orderNum);
         sendEffects(true, player, shop);
         //make sure to update the shop sign, but only if the sign lines use a variable that requires a refresh (like stock that is dynamically updated)
         if(shop.getSignLinesRequireRefresh())
             shop.updateSign();
     }
 
-    private void sendExchangeMessages(AbstractShop shop, Player player, ShopType shopType) {
+    private void sendExchangeMessages(AbstractShop shop, Player player, ShopType transactionType, int orders) {
 
-        String message;
-        if(shop.getType() == ShopType.COMBO && shopType == ShopType.SELL){
-            message = ShopMessage.getUnformattedMessage(shopType.toString(), "user");
-            message = message.replaceAll("price]", "price sell]");
-            message = ShopMessage.formatMessage(message, shop, player, false);
-        }
-        else{
-            message = ShopMessage.getMessage(shopType.toString(), "user", shop, player);
-        }
-
+        String message = getMessageFromOrders(shop, player, transactionType, "user", orders);
         if(plugin.getGuiHandler().getSettingsOption(player, PlayerSettings.Option.SALE_USER_NOTIFICATIONS)) {
             if(message != null && !message.isEmpty())
                 player.sendMessage(message);
@@ -184,15 +204,7 @@ public class TransactionHelper {
         Player owner = Bukkit.getPlayer(shop.getOwnerName());
         if ((owner != null) && (!shop.isAdmin())) {
 
-            if(shop.getType() == ShopType.COMBO && shopType == ShopType.SELL){
-                message = ShopMessage.getUnformattedMessage(shopType.toString(), "owner");
-                message = message.replaceAll("price]", "price sell]");
-                message = ShopMessage.formatMessage(message, shop, player, false);
-            }
-            else {
-                message = ShopMessage.getMessage(shopType.toString(), "owner", shop, player);
-            }
-
+            message = getMessageFromOrders(shop, player, transactionType, "owner", orders);
             if(plugin.getGuiHandler().getSettingsOption(owner, PlayerSettings.Option.SALE_OWNER_NOTIFICATIONS)) {
                 if(message != null && !message.isEmpty())
                     owner.sendMessage(message);
@@ -200,6 +212,32 @@ public class TransactionHelper {
         }
 //        if(shop.getType() == ShopType.GAMBLE)
 //            shop.shuffleGambleItem();
+    }
+
+    private String getMessageFromOrders(AbstractShop shop, Player player, ShopType transactionType, String subKey, int orders){
+        String message;
+        if(shop.getType() == ShopType.COMBO && transactionType == ShopType.SELL){
+            message = ShopMessage.getUnformattedMessage(transactionType.toString(), subKey);
+            int price = (int) (((ComboShop)shop).getPriceSell() * orders);
+            String priceStr = Shop.getPlugin().getPriceString(price, false);
+            message = message.replace("[price]", priceStr);
+        }
+        else{
+            message = ShopMessage.getUnformattedMessage(transactionType.toString(), subKey);
+            int price = ((int) shop.getPrice()) * orders;
+            String priceStr = Shop.getPlugin().getPriceString(price, false);
+            message = message.replace("[price]", ""+priceStr);
+        }
+        if(shop.getItemStack() != null) {
+            int amount = shop.getItemStack().getAmount() * orders;
+            message = message.replace("[item amount]", "" + amount);
+        }
+        if(shop.getSecondaryItemStack() != null) {
+            int amount = shop.getSecondaryItemStack().getAmount() * orders;
+            message = message.replace("[barter item amount]", "" + amount);
+        }
+        message = ShopMessage.formatMessage(message, shop, player, false);
+        return message;
     }
 
     public void sendEffects(boolean success, Player player, AbstractShop shop){
