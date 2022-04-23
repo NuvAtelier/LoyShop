@@ -606,7 +606,7 @@ public class MiscListener implements Listener {
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);
                         event.setCancelled(true);
-                        plugin.getTransactionListener().sendEffects(false, player, shop);
+                        plugin.getTransactionHelper().sendEffects(false, player, shop);
                     }
                     else {
                         PlayerResizeShopEvent e = new PlayerResizeShopEvent(player, shop, b.getLocation(), false);
@@ -627,7 +627,7 @@ public class MiscListener implements Listener {
                     String message = ShopMessage.getMessage("interactionIssue", "destroyChest", null, player);
                     if(message != null && !message.isEmpty())
                         player.sendMessage(message);
-                    plugin.getTransactionListener().sendEffects(false, player, shop);
+                    plugin.getTransactionHelper().sendEffects(false, player, shop);
                 }
                 event.setCancelled(true);
             }

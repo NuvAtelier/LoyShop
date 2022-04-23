@@ -7,13 +7,13 @@ import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.CurrencyType;
 import com.snowgears.shop.util.PlayerExperience;
+import com.snowgears.shop.util.ShopClickType;
 import com.snowgears.shop.util.ShopMessage;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -75,47 +75,43 @@ public class ShopListener implements Listener {
         return Integer.MAX_VALUE;
     }
 
-    @EventHandler (priority = EventPriority.LOW)
-    public void onDisplayChange(PlayerInteractEvent event){
+    @EventHandler (ignoreCancelled = true, priority = EventPriority.LOW)
+    public void onShopSignClick(PlayerInteractEvent event) {
         try {
             if (event.getHand() == EquipmentSlot.OFF_HAND) {
                 return; // off hand version, ignore.
             }
         } catch (NoSuchMethodError error) {}
+        Player player = event.getPlayer();
 
-        if(event.getAction() == Action.RIGHT_CLICK_BLOCK){
-            if(event.getClickedBlock().getBlockData() instanceof WallSign){
+        //player clicked the sign of a shop
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.LEFT_CLICK_BLOCK) {
+            if (event.getClickedBlock().getBlockData() instanceof WallSign) {
                 AbstractShop shop = plugin.getShopHandler().getShop(event.getClickedBlock().getLocation());
                 if (shop == null || !shop.isInitialized())
                     return;
-                Player player = event.getPlayer();
 
-                //player clicked another player's shop sign
-                if (!shop.getOwnerName().equals(player.getName())) {
-                    if(!player.isSneaking())
-                        return;
-
-                    //player has permission to change another player's shop display
-                    if(player.isOp() || (plugin.usePerms() && player.hasPermission("shop.operator"))) {
-                        shop.getDisplay().cycleType(player);
-                        event.setCancelled(true);
-                        return;
-                    }
-                //player clicked own shop sign
-                } else {
-                    if(plugin.usePerms() && !player.hasPermission("shop.setdisplay"))
-                        return;
-
-                    shop.getDisplay().cycleType(player);
-                    event.setCancelled(true);
-                    return;
+                boolean actionPerformed;
+                if(player.isSneaking()) {
+                    if(event.getAction() == Action.RIGHT_CLICK_BLOCK)
+                        actionPerformed = shop.executeClickAction(event, ShopClickType.SHIFT_RIGHT_CLICK_SIGN);
+                    else
+                        actionPerformed = shop.executeClickAction(event, ShopClickType.SHIFT_LEFT_CLICK_SIGN);
                 }
+                else{
+                    if(event.getAction() == Action.RIGHT_CLICK_BLOCK)
+                        actionPerformed = shop.executeClickAction(event, ShopClickType.RIGHT_CLICK_SIGN);
+                    else
+                        actionPerformed = shop.executeClickAction(event, ShopClickType.LEFT_CLICK_SIGN);
+                }
+                if (actionPerformed)
+                    event.setCancelled(true);
             }
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onShopOpen(PlayerInteractEvent event) {
+    public void onShopChestClick(PlayerInteractEvent event) {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             if (plugin.getShopHandler().isChest(event.getClickedBlock())) {
                 try {
@@ -148,20 +144,24 @@ public class ShopListener implements Listener {
                     return;
                 }
 
-                if(shop.getChestLocation().getBlock().getType() == Material.ENDER_CHEST) {
-                    if(player.isSneaking()){
-                        shop.printSalesInfo(player);
-                        event.setCancelled(true);
-                    }
-                    return;
-                }
+                //TODO maybe put this back in to the AbstractShop action method
+//                if(shop.getChestLocation().getBlock().getType() == Material.ENDER_CHEST) {
+//                    if(player.isSneaking()){
+//                        shop.printSalesInfo(player);
+//                        event.setCancelled(true);
+//                    }
+//                    return;
+//                }
 
                 //player is sneaking and clicks a chest of a shop
                 if(player.isSneaking()){
-                    //don't print sales info and cancel event if player is holding a sign (may be trying to place directly onto chest)
+                    //don't execute the action and cancel event if player is holding a sign (may be trying to place directly onto chest)
                     if(!Tag.SIGNS.isTagged(player.getInventory().getItemInMainHand().getType())) {
-                        shop.printSalesInfo(player);
-                        event.setCancelled(true);
+
+                        boolean actionPerformed = shop.executeClickAction(event, ShopClickType.SHIFT_RIGHT_CLICK_CHEST);
+                        if (actionPerformed)
+                            event.setCancelled(true);
+
                         if(plugin.getDisplayTagOption() == DisplayTagOption.RIGHT_CLICK_CHEST){
                             shop.getDisplay().showDisplayTags(player);
                         }
@@ -170,14 +170,17 @@ public class ShopListener implements Listener {
                 }
                 //non-owner is trying to open shop
                 if (!shop.getOwnerUUID().equals(player.getUniqueId())) {
-                    if ((plugin.usePerms() && player.hasPermission("shop.operator")) || player.isOp()) {
+                    if ((plugin.usePerms() && player.hasPermission("shop.operator")) || (!plugin.usePerms() && player.isOp())) {
                         if (shop.isAdmin()) {
                             if (shop.getType() == ShopType.GAMBLE) {
                                 //allow gamble shops to be opened by operators
                                 return;
                             }
                             event.setCancelled(true);
-                            shop.printSalesInfo(player);
+
+                            shop.executeClickAction(event, ShopClickType.RIGHT_CLICK_CHEST);
+                            //we are cancelling this event regardless so no need to check if the action was performed
+
                         } else {
                             String message = ShopMessage.getMessage(shop.getType().toString(), "opOpen", shop, player);
                             if(message != null && !message.isEmpty())
@@ -186,31 +189,42 @@ public class ShopListener implements Listener {
                         }
                     } else {
                         event.setCancelled(true);
-                        shop.printSalesInfo(player);
+
+                        shop.executeClickAction(event, ShopClickType.RIGHT_CLICK_CHEST);
+                        //we are cancelling this event regardless so no need to check if the action was performed
+
                         if(plugin.getDisplayTagOption() == DisplayTagOption.RIGHT_CLICK_CHEST){
                             shop.getDisplay().showDisplayTags(player);
                         }
-                        //player.sendMessage(ChatColor.RED + "You do not have access to open this shop.");
                     }
                 }
             }
         }
-    }
+        else if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
+            if (plugin.getShopHandler().isChest(event.getClickedBlock())) {
+                try {
+                    if (event.getHand() == EquipmentSlot.OFF_HAND) {
+                        return; // off hand version, ignore.
+                    }
+                } catch (NoSuchMethodError error) {
+                }
 
-    //NOT SURE WHY I WAS REFRESHING GAMBLE ITEM ON CLOSE?
-//    @EventHandler
-//    public void onShopClose(InventoryCloseEvent event) {
-//        InventoryHolder holder = event.getInventory().getHolder();
-//        if(holder != null && holder instanceof Chest) {
-//            Chest chest = (Chest) holder;
-//            AbstractShop shop = plugin.getShopHandler().getShopByChest(chest.getBlock());
-//            if(shop == null)
-//                return;
-//            if(shop.getType() == ShopType.GAMBLE){
-//                ((GambleShop)shop).shuffleGambleItem();
-//            }
-//        }
-//    }
+                Player player = event.getPlayer();
+                AbstractShop shop = plugin.getShopHandler().getShopByChest(event.getClickedBlock());
+                if (shop == null)
+                    return;
+
+                boolean actionPerformed;
+                if (player.isSneaking()) {
+                    actionPerformed = shop.executeClickAction(event, ShopClickType.SHIFT_LEFT_CLICK_CHEST);
+                } else {
+                    actionPerformed = shop.executeClickAction(event, ShopClickType.LEFT_CLICK_CHEST);
+                }
+                if (actionPerformed)
+                    event.setCancelled(true);
+            }
+        }
+    }
 
     @EventHandler
     public void onExplosion(EntityExplodeEvent event) {

@@ -67,7 +67,7 @@ public class CreativeSelectionListener implements Listener {
                         message = ShopMessage.getMessage("interactionIssue", "initialize", shop, player);
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);
-                        plugin.getTransactionListener().sendEffects(false, player, shop);
+                        plugin.getTransactionHelper().sendEffects(false, player, shop);
                         event.setCancelled(true);
                         return;
                     }

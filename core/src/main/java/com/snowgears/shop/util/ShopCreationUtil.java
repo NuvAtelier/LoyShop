@@ -7,7 +7,6 @@ import com.snowgears.shop.event.PlayerInitializeShopEvent;
 import com.snowgears.shop.hook.TownyHook;
 import com.snowgears.shop.hook.WorldGuardHook;
 import com.snowgears.shop.shop.AbstractShop;
-import com.snowgears.shop.shop.SellShop;
 import com.snowgears.shop.shop.ShopType;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -227,7 +226,7 @@ public class ShopCreationUtil {
         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
         if(message != null && !message.isEmpty())
             player.sendMessage(message);
-        Shop.getPlugin().getTransactionListener().sendEffects(true, player, shop);
+        Shop.getPlugin().getTransactionHelper().sendEffects(true, player, shop);
         Shop.getPlugin().getShopHandler().saveShops(shop.getOwnerUUID());
     }
 
@@ -263,7 +262,7 @@ public class ShopCreationUtil {
                 String message = ShopMessage.getMessage("interactionIssue", "initialize", null, player);
                 if(message != null && !message.isEmpty())
                     player.sendMessage(message);
-                plugin.getTransactionListener().sendEffects(false, player, shop);
+                plugin.getTransactionHelper().sendEffects(false, player, shop);
                 return false;
             }
         }
@@ -285,7 +284,7 @@ public class ShopCreationUtil {
                     String message = ShopMessage.getMessage("interactionIssue", "displayRoom", null, player);
                     if(message != null && !message.isEmpty())
                         player.sendMessage(message);
-                    plugin.getTransactionListener().sendEffects(false, player, shop);
+                    plugin.getTransactionHelper().sendEffects(false, player, shop);
                     return false;
                 }
             }
@@ -299,7 +298,7 @@ public class ShopCreationUtil {
                 String message = ShopMessage.getMessage("interactionIssue", "createInsufficientFunds", shop, player);
                 if(message != null && !message.isEmpty())
                     player.sendMessage(message);
-                plugin.getTransactionListener().sendEffects(false, player, shop);
+                plugin.getTransactionHelper().sendEffects(false, player, shop);
                 return false;
             }
         }
@@ -314,7 +313,7 @@ public class ShopCreationUtil {
         } catch (NoSuchFieldError e) {}
 
         if(!itemsCanBeInitialized(player, item, barterItem)){
-            plugin.getTransactionListener().sendEffects(false, player, shop);
+            plugin.getTransactionHelper().sendEffects(false, player, shop);
             return false;
         }
 

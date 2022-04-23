@@ -1,20 +1,12 @@
 
-package com.snowgears.shop.listener;
+package com.snowgears.shop.util;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.hook.WorldGuardHook;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
-import com.snowgears.shop.util.PlayerSettings;
-import com.snowgears.shop.util.ShopMessage;
-import com.snowgears.shop.util.TransactionError;
-import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.*;
-import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -23,107 +15,89 @@ import java.util.HashMap;
 import java.util.UUID;
 
 
-public class TransactionListener implements Listener {
+public class TransactionHelper {
 
     private Shop plugin = Shop.getPlugin();
     private HashMap<Location, UUID> shopMessageCooldown = new HashMap<>(); //shop location, shop owner
 //    private Logger exchangeLogger;
 
-    public TransactionListener(Shop instance) {
+    public TransactionHelper(Shop instance) {
         plugin = instance;
 //        initializeLogger(); //TODO
     }
 
     //TODO will need to update ender chest contents at the end of every transaction involving an ender chest
 
-    @EventHandler
-    public void onShopSignClick(PlayerInteractEvent event) {
-        if(event.isCancelled())
-            return;
-
-        try {
-            if (event.getHand() == EquipmentSlot.OFF_HAND) {
-                return; // off hand version, ignore.
-            }
-        } catch (NoSuchMethodError error) {}
+    public void executeTransactionFromEvent(PlayerInteractEvent event, AbstractShop shop){
         Player player = event.getPlayer();
 
-        //player clicked the sign of a shop
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            if (event.getClickedBlock().getBlockData() instanceof WallSign) {
-                AbstractShop shop = plugin.getShopHandler().getShop(event.getClickedBlock().getLocation());
-                if (shop == null || !shop.isInitialized())
-                    return;
-
-                if(shop.isPerformingTransaction()) {
-                    String message = ShopMessage.getMessage("interactionIssue", "useShopAlreadyInUse", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    event.setCancelled(true);
-                    return;
-                }
-
-                boolean canUseShopInRegion = true;
-                try {
-                    canUseShopInRegion = WorldGuardHook.canUseShop(player, shop.getSignLocation());
-                } catch(NoClassDefFoundError e) {}
-
-                //check that player can use the shop if it is in a WorldGuard region
-                if(!canUseShopInRegion){
-                    String message = ShopMessage.getMessage("interactionIssue", "regionRestriction", null, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    event.setCancelled(true);
-                    return;
-                }
-
-                //delete shop if it does not have a chest attached to it
-                if(!(plugin.getShopHandler().isChest(shop.getChestLocation().getBlock()))){
-                    shop.delete();
-                    return;
-                }
-
-                //player did not click their own shop
-                if (!shop.getOwnerName().equals(player.getName())) {
-
-                    if (plugin.usePerms() && !(player.hasPermission("shop.use."+shop.getType().toString().toLowerCase()) || player.hasPermission("shop.use"))) {
-                        if (!player.hasPermission("shop.operator")) {
-                            String message = ShopMessage.getMessage("permission", "use", shop, player);
-                            if(message != null && !message.isEmpty())
-                                player.sendMessage(message);
-                            return;
-                        }
-                    }
-                    //for COMBO shops, shops can execute either a BUY or a SELL depending on the side of sign that was clicked
-                    if(shop.getType() == ShopType.COMBO){
-                        int clickedSide = UtilMethods.calculateSideFromClickedSign(player, event.getClickedBlock());
-                        //clicked left side of sign
-                        if(clickedSide >= 0){
-                            if(plugin.inverseComboShops())
-                                executeTransaction(player, shop, ShopType.SELL);
-                            else
-                                executeTransaction(player, shop, ShopType.BUY);
-                        }
-                        //clicked right side of sign
-                        else{
-                            if(plugin.inverseComboShops())
-                                executeTransaction(player, shop, ShopType.BUY);
-                            else
-                                executeTransaction(player, shop, ShopType.SELL);
-                        }
-                    }
-                    else {
-                        executeTransaction(player, shop, shop.getType());
-                    }
-                } else {
-                    String message = ShopMessage.getMessage("interactionIssue", "useOwnShop", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    sendEffects(false, player, shop);
-                }
-                event.setCancelled(true);
-            }
+        if(shop.isPerformingTransaction()) {
+            String message = ShopMessage.getMessage("interactionIssue", "useShopAlreadyInUse", shop, player);
+            if(message != null && !message.isEmpty())
+                player.sendMessage(message);
+            event.setCancelled(true);
+            return;
         }
+
+        boolean canUseShopInRegion = true;
+        try {
+            canUseShopInRegion = WorldGuardHook.canUseShop(player, shop.getSignLocation());
+        } catch(NoClassDefFoundError e) {}
+
+        //check that player can use the shop if it is in a WorldGuard region
+        if(!canUseShopInRegion){
+            String message = ShopMessage.getMessage("interactionIssue", "regionRestriction", null, player);
+            if(message != null && !message.isEmpty())
+                player.sendMessage(message);
+            event.setCancelled(true);
+            return;
+        }
+
+        //delete shop if it does not have a chest attached to it
+        if(!(plugin.getShopHandler().isChest(shop.getChestLocation().getBlock()))){
+            shop.delete();
+            return;
+        }
+
+        //player did not click their own shop
+        if (!shop.getOwnerName().equals(player.getName())) {
+
+            if (plugin.usePerms() && !(player.hasPermission("shop.use."+shop.getType().toString().toLowerCase()) || player.hasPermission("shop.use"))) {
+                if (!player.hasPermission("shop.operator")) {
+                    String message = ShopMessage.getMessage("permission", "use", shop, player);
+                    if(message != null && !message.isEmpty())
+                        player.sendMessage(message);
+                    return;
+                }
+            }
+            //for COMBO shops, shops can execute either a BUY or a SELL depending on the side of sign that was clicked
+            if(shop.getType() == ShopType.COMBO){
+                int clickedSide = UtilMethods.calculateSideFromClickedSign(player, event.getClickedBlock());
+                //clicked left side of sign
+                if(clickedSide >= 0){
+                    if(plugin.inverseComboShops())
+                        executeTransaction(player, shop, ShopType.SELL);
+                    else
+                        executeTransaction(player, shop, ShopType.BUY);
+                }
+                //clicked right side of sign
+                else{
+                    if(plugin.inverseComboShops())
+                        executeTransaction(player, shop, ShopType.BUY);
+                    else
+                        executeTransaction(player, shop, ShopType.SELL);
+                }
+            }
+            else {
+                executeTransaction(player, shop, shop.getType());
+            }
+        } else {
+            String message = ShopMessage.getMessage("interactionIssue", "useOwnShop", shop, player);
+            if(message != null && !message.isEmpty())
+                player.sendMessage(message);
+            sendEffects(false, player, shop);
+        }
+        event.setCancelled(true);
     }
 
     private void executeTransaction(Player player, AbstractShop shop, ShopType actionType){

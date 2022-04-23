@@ -131,6 +131,23 @@ worldBlacklist:
    - "example_world"
    - "example2_world"
 
+# Here you can map player actions on shops to specific controls
+#   - LEFT_CLICK_SIGN
+#   - SHIFT_LEFT_CLICK_SIGN
+#   - RIGHT_CLICK_SIGN
+#   - SHIFT_RIGHT_CLICK_SIGN
+#
+#   - LEFT_CLICK_CHEST
+#   - SHIFT_LEFT_CLICK_CHEST
+#   - RIGHT_CLICK_CHEST
+#   - SHIFT_RIGHT_CLICK_CHEST
+actionMappings:
+   transactWithShop: RIGHT_CLICK_SIGN
+   transactWithShopFullStack: SHIFT_RIGHT_CLICK_SIGN
+   viewShopDetails: LEFT_CLICK_CHEST
+   cycleShopDisplay: SHIFT_RIGHT_CLICK_CHEST
+
+
 # =================================================================== #
 #                    INTEGRATION HOOK SETTINGS                        #
 # =================================================================== #

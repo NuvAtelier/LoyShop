@@ -7,7 +7,10 @@ import com.snowgears.shop.handler.*;
 import com.snowgears.shop.hook.DynmapHookListener;
 import com.snowgears.shop.hook.LWCHookListener;
 import com.snowgears.shop.hook.WorldGuardHook;
-import com.snowgears.shop.listener.*;
+import com.snowgears.shop.listener.CreativeSelectionListener;
+import com.snowgears.shop.listener.DisplayListener;
+import com.snowgears.shop.listener.MiscListener;
+import com.snowgears.shop.listener.ShopListener;
 import com.snowgears.shop.util.*;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.ChatColor;
@@ -23,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -33,7 +37,7 @@ public class Shop extends JavaPlugin {
 
     private ShopListener shopListener;
     private DisplayListener displayListener;
-    private TransactionListener transactionListener;
+    private TransactionHelper transactionHelper;
     private MiscListener miscListener;
     private CreativeSelectionListener creativeSelectionListener;
     private ShopGUIListener guiListener;
@@ -89,6 +93,7 @@ public class Shop extends JavaPlugin {
     private double taxPercent;
     private ItemListType itemListType;
     private List<String> worldBlackList;
+    private HashMap<ShopClickType, ShopAction> clickTypeActionMap;
     private NamespacedKey signLocationNameSpacedKey;
     private NamespacedKey playerUUIDNameSpacedKey;
     private LogHandler logHandler;
@@ -193,7 +198,7 @@ public class Shop extends JavaPlugin {
 //        }
 
         shopListener = new ShopListener(this);
-        transactionListener = new TransactionListener(this);
+        transactionHelper = new TransactionHelper(this);
         miscListener = new MiscListener(this);
         creativeSelectionListener = new CreativeSelectionListener(this);
         displayListener = new DisplayListener(this);
@@ -350,6 +355,12 @@ public class Shop extends JavaPlugin {
             worldBlackList.add(world);
         }
 
+        clickTypeActionMap = new HashMap<>();
+        clickTypeActionMap.put(ShopClickType.valueOf(config.getString("actionMappings.transactWithShop")), ShopAction.TRANSACT);
+        clickTypeActionMap.put(ShopClickType.valueOf(config.getString("actionMappings.transactWithShopFullStack")), ShopAction.TRANSACT_FULLSTACK);
+        clickTypeActionMap.put(ShopClickType.valueOf(config.getString("actionMappings.viewShopDetails")), ShopAction.VIEW_DETAILS);
+        clickTypeActionMap.put(ShopClickType.valueOf(config.getString("actionMappings.cycleShopDisplay")), ShopAction.CYCLE_DISPLAY);
+
         if (currencyType == CurrencyType.VAULT) {
             if (!setupEconomy()) {
                 log.severe("[Shop] Vault implementation not detected at startup! Currency may not work properly!");
@@ -378,7 +389,6 @@ public class Shop extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(displayListener, this);
         getServer().getPluginManager().registerEvents(shopListener, this);
-        getServer().getPluginManager().registerEvents(transactionListener, this);
         getServer().getPluginManager().registerEvents(miscListener, this);
         getServer().getPluginManager().registerEvents(creativeSelectionListener, this);
         getServer().getPluginManager().registerEvents(guiListener, this);
@@ -407,7 +417,6 @@ public class Shop extends JavaPlugin {
     public void reload(){
         HandlerList.unregisterAll(displayListener);
         HandlerList.unregisterAll(shopListener);
-        HandlerList.unregisterAll(transactionListener);
         HandlerList.unregisterAll(miscListener);
         HandlerList.unregisterAll(creativeSelectionListener);
         HandlerList.unregisterAll(guiListener);
@@ -453,8 +462,8 @@ public class Shop extends JavaPlugin {
         return creativeSelectionListener;
     }
 
-    public TransactionListener getTransactionListener() {
-        return transactionListener;
+    public TransactionHelper getTransactionHelper() {
+        return transactionHelper;
     }
 
     public ShopHandler getShopHandler() {
@@ -703,6 +712,10 @@ public class Shop extends JavaPlugin {
 
     public List<String> getWorldBlacklist(){
         return worldBlackList;
+    }
+
+    public ShopAction getShopAction(ShopClickType shopClickType){
+        return clickTypeActionMap.get(shopClickType);
     }
 
     public NMSBullshitHandler getNmsBullshitHandler() {
