@@ -385,7 +385,7 @@ public class Shop extends JavaPlugin {
         shopHandler = new ShopHandler(plugin);
         guiHandler.loadIconsAndTitles();
         enderChestHandler = new EnderChestHandler(plugin);
-        logHandler = new LogHandler(plugin, config);
+        logHandler = new LogHandler(plugin);
 
         getServer().getPluginManager().registerEvents(displayListener, this);
         getServer().getPluginManager().registerEvents(shopListener, this);

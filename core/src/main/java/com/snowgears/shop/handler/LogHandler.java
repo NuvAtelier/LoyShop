@@ -1,18 +1,15 @@
 package com.snowgears.shop.handler;
 
-import com.mysql.jdbc.jdbc2.optional.MysqlConnectionPoolDataSource;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.ShopActionType;
 import com.snowgears.shop.util.UtilMethods;
-import org.bukkit.configuration.file.YamlConfiguration;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.entity.Player;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -24,35 +21,21 @@ import java.util.stream.Collectors;
 public class LogHandler {
 
     private Shop plugin;
-    private boolean dbEnabled;
-    private String dbName;
-    private String dbHost;
-    private int dbPort;
-    private String dbUsername;
-    private String dbPassword;
-    private boolean dbSSL;
-
-    private boolean historyNotifyUser;
-    private int historyMaxRows;
 
     private HashMap<String, Boolean> logTypeMap = new HashMap<>();
-    private MysqlConnectionPoolDataSource dataSource;
+    private HikariDataSource dataSource;
+    private boolean enabled;
 
-    public LogHandler(Shop plugin, YamlConfiguration config){
+    public LogHandler(Shop plugin){
         this.plugin = plugin;
-
-        loadSettings(config);
-
-        if(!this.dbEnabled){
-            return;
-        }
         defineDataSource();
+
         try {
             testDataSource();
         } catch (SQLException e){
             e.printStackTrace();
+            enabled = false;
             System.out.println("[Shop] Error establishing connection to defined database. Logging will not be used.");
-            dbEnabled = false;
             return;
         }
 
@@ -60,21 +43,22 @@ public class LogHandler {
             initDb();
         } catch (SQLException e){
             e.printStackTrace();
+            enabled = false;
             System.out.println("[Shop] Error initializing tables in database. Logging will not be used.");
-            dbEnabled = false;
             return;
         }
     }
 
     public void defineDataSource(){
-        dataSource = new MysqlConnectionPoolDataSource();
+        File hikariPropertiesFile = new File(plugin.getDataFolder(), "hikari.properties");
+        if (!hikariPropertiesFile.exists()) {
+            hikariPropertiesFile.getParentFile().mkdirs();
+            UtilMethods.copy(plugin.getResource("hikari.properties"), hikariPropertiesFile);
+        }
 
-        dataSource.setServerName(dbHost);
-        dataSource.setPortNumber(dbPort);
-        dataSource.setDatabaseName(dbName);
-        dataSource.setUser(dbUsername);
-        dataSource.setPassword(dbPassword);
-        dataSource.setUseSSL(dbSSL);
+        HikariConfig config = new HikariConfig(hikariPropertiesFile.getPath());
+        dataSource = new HikariDataSource(config);
+        System.out.println(dataSource.toString());
     }
 
     public boolean log(Player player, AbstractShop shop, ShopType shopType, ShopActionType actionType){
@@ -107,38 +91,19 @@ public class LogHandler {
     }
 
     private boolean shouldLog(ShopType shopType, ShopActionType logType){
-        if(!dbEnabled)
+        if(!enabled)
             return false;
         return logTypeMap.get(shopType.toString().toLowerCase()+"_"+logType.toString().toLowerCase());
-    }
-
-    private void loadSettings(YamlConfiguration config){
-        this.dbEnabled = config.getBoolean("database.enabled");
-        this.dbName = config.getString("database.name");
-        this.dbHost = config.getString("database.host");
-        this.dbPort = config.getInt("database.port");
-        this.dbUsername = config.getString("database.username");
-        this.dbPassword = config.getString("database.password");
-        this.dbSSL = config.getBoolean("database.ssl");
-
-        this.historyNotifyUser = config.getBoolean("transaction_history.notify_user_on_join");
-        this.historyMaxRows = config.getInt("transaction_history.max_rows");
-
-        boolean value;
-        for(ShopType shopType : ShopType.values()){
-            for(ShopActionType logType : ShopActionType.values()){
-                value = config.getBoolean("logging."+shopType.toString()+"."+logType.toString().toLowerCase());
-                logTypeMap.put(shopType.toString().toLowerCase()+"_"+logType.toString().toLowerCase(), value);
-            }
-        }
     }
 
     private void testDataSource() throws SQLException {
         try (Connection conn = dataSource.getConnection()) {
             if (!conn.isValid(1000)) {
+                enabled = false;
                 throw new SQLException("Could not establish database connection.");
             }
             else{
+                enabled = true;
                 System.out.println("[Shop] Established connection to database. Logging is enabled.");
             }
         }
@@ -157,7 +122,6 @@ public class LogHandler {
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("[Shop] Could not read db setup file.");
-            this.dbEnabled = false;
             return;
         }
         // Mariadb can only handle a single query per statement. We need to split at ;.
