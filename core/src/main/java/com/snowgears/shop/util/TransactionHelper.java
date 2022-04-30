@@ -188,17 +188,20 @@ public class TransactionHelper {
         //this cleans up the while loop logic. If an order is on 2 and fails, they got 1 order. etc
         if(issue != TransactionError.NONE)
             orderNum = orderNum - 1;
+
+
         //the transaction has finished and the exchange event has not been cancelled
-        sendExchangeMessages(shop, player, actionType, orderNum);
+        sendExchangeMessagesAndLog(shop, player, actionType, orderNum);
         sendEffects(true, player, shop);
         //make sure to update the shop sign, but only if the sign lines use a variable that requires a refresh (like stock that is dynamically updated)
         if(shop.getSignLinesRequireRefresh())
             shop.updateSign();
     }
 
-    private void sendExchangeMessages(AbstractShop shop, Player player, ShopType transactionType, int orders) {
+    private void sendExchangeMessagesAndLog(AbstractShop shop, Player player, ShopType transactionType, int orders) {
 
-        String message = getMessageFromOrders(shop, player, transactionType, "user", orders);
+        double price = getPriceFromOrders(shop, transactionType, orders);
+        String message = getMessageFromOrders(shop, player, transactionType, "user", price, orders);
         if(plugin.getGuiHandler().getSettingsOption(player, PlayerSettings.Option.SALE_USER_NOTIFICATIONS)) {
             if(message != null && !message.isEmpty())
                 player.sendMessage(message);
@@ -207,30 +210,23 @@ public class TransactionHelper {
         Player owner = Bukkit.getPlayer(shop.getOwnerName());
         if ((owner != null) && (!shop.isAdmin())) {
 
-            message = getMessageFromOrders(shop, player, transactionType, "owner", orders);
+            message = getMessageFromOrders(shop, player, transactionType, "owner", price, orders);
             if(plugin.getGuiHandler().getSettingsOption(owner, PlayerSettings.Option.SALE_OWNER_NOTIFICATIONS)) {
                 if(message != null && !message.isEmpty())
                     owner.sendMessage(message);
             }
         }
+
+        plugin.getLogHandler().logTransaction(player, shop, transactionType, price, (shop.getAmount()*orders));
 //        if(shop.getType() == ShopType.GAMBLE)
 //            shop.shuffleGambleItem();
     }
 
-    private String getMessageFromOrders(AbstractShop shop, Player player, ShopType transactionType, String subKey, int orders){
-        String message;
-        if(shop.getType() == ShopType.COMBO && transactionType == ShopType.SELL){
-            message = ShopMessage.getUnformattedMessage(transactionType.toString(), subKey);
-            int price = (int) (((ComboShop)shop).getPriceSell() * orders);
-            String priceStr = Shop.getPlugin().getPriceString(price, false);
-            message = message.replace("[price]", priceStr);
-        }
-        else{
-            message = ShopMessage.getUnformattedMessage(transactionType.toString(), subKey);
-            int price = ((int) shop.getPrice()) * orders;
-            String priceStr = Shop.getPlugin().getPriceString(price, false);
-            message = message.replace("[price]", ""+priceStr);
-        }
+    private String getMessageFromOrders(AbstractShop shop, Player player, ShopType transactionType, String subKey, double price, int orders){
+        String message = ShopMessage.getUnformattedMessage(transactionType.toString(), subKey);
+        String priceStr = Shop.getPlugin().getPriceString(price, false);
+        message = message.replace("[price]", ""+priceStr);
+
         if(shop.getItemStack() != null) {
             int amount = shop.getItemStack().getAmount() * orders;
             message = message.replace("[item amount]", "" + amount);
@@ -241,6 +237,17 @@ public class TransactionHelper {
         }
         message = ShopMessage.formatMessage(message, shop, player, false);
         return message;
+    }
+
+    private double getPriceFromOrders(AbstractShop shop, ShopType transactionType, int orders){
+        double price;
+        if(shop.getType() == ShopType.COMBO && transactionType == ShopType.SELL){
+            price = (((ComboShop)shop).getPriceSell() * orders);
+        }
+        else{
+            price = shop.getPrice() * orders;
+        }
+        return price;
     }
 
     public void sendEffects(boolean success, Player player, AbstractShop shop){

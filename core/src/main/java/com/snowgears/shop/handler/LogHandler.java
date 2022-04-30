@@ -3,32 +3,36 @@ package com.snowgears.shop.handler;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
+import com.snowgears.shop.util.OfflineTransactions;
 import com.snowgears.shop.util.ShopActionType;
-import com.snowgears.shop.util.UtilMethods;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
-import java.io.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.sql.*;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.stream.Collectors;
 
 public class LogHandler {
 
     private Shop plugin;
 
-    private HashMap<String, Boolean> logTypeMap = new HashMap<>();
     private HikariDataSource dataSource;
+
     private boolean enabled;
 
-    public LogHandler(Shop plugin){
+    public LogHandler(Shop plugin, YamlConfiguration shopConfig){
         this.plugin = plugin;
-        defineDataSource();
+        defineDataSource(shopConfig);
+
+        if(!enabled)
+            return;
 
         try {
             testDataSource();
@@ -49,51 +53,190 @@ public class LogHandler {
         }
     }
 
-    public void defineDataSource(){
-        File hikariPropertiesFile = new File(plugin.getDataFolder(), "hikari.properties");
-        if (!hikariPropertiesFile.exists()) {
-            hikariPropertiesFile.getParentFile().mkdirs();
-            UtilMethods.copy(plugin.getResource("hikari.properties"), hikariPropertiesFile);
-        }
+    public void defineDataSource(YamlConfiguration shopConfig){
+        String type = shopConfig.getString("logging.type");
+        String serverName = shopConfig.getString("logging.serverName");
+        String databaseName = shopConfig.getString("logging.databaseName");
+        int port = shopConfig.getInt("logging.port");
+        String username = shopConfig.getString("logging.user");
+        String password = shopConfig.getString("logging.password");
 
-        HikariConfig config = new HikariConfig(hikariPropertiesFile.getPath());
-        dataSource = new HikariDataSource(config);
-        System.out.println(dataSource.toString());
+        this.enabled = enabled;
+
+        if(type.equalsIgnoreCase("OFF")) {
+            this.enabled = false;
+            return;
+        }
+        if(type.equalsIgnoreCase("MYSQL")){
+            dataSource = new HikariDataSource();
+            dataSource.setJdbcUrl("jdbc:mysql://"+serverName+":"+port+"/"+databaseName+"?useSSL=false");
+            dataSource.setUsername(username);
+            dataSource.setPassword(password);
+            dataSource.setLeakDetectionThreshold(10000);
+            dataSource.setMaximumPoolSize(10);
+        }
+        else{ //type.equalsIgnoreCase("MARIADB")
+            HikariConfig config = new HikariConfig();
+            config.setDataSourceClassName("org.mariadb.jdbc.MariaDbDataSource");
+            config.addDataSourceProperty("serverName", serverName);
+            config.addDataSourceProperty("portNumber", port);
+            config.addDataSourceProperty("databaseName", databaseName);
+            config.addDataSourceProperty("user", username);
+            config.addDataSourceProperty("password", password);
+            config.setLeakDetectionThreshold(10000);
+            config.setMaximumPoolSize(10);
+
+            dataSource = new HikariDataSource(config);
+        }
+        this.enabled = true;
     }
 
-    public boolean log(Player player, AbstractShop shop, ShopType shopType, ShopActionType actionType){
-        if(shouldLog(shopType, actionType)){
-
-            try {
-                Connection conn = dataSource.getConnection();
-                try {
-                    PreparedStatement stmt = conn.prepareStatement("INSERT INTO shop_action(ts, player_uuid, shop_location, player_action) VALUES(?, ?, ?, ?);");
-                    stmt.setTimestamp(1, new Timestamp(new Date().getTime()));
-                    stmt.setString(2, player.getUniqueId().toString());
-                    stmt.setString(3, UtilMethods.getCleanLocation(shop.getSignLocation(), true));
-                    stmt.setString(4, actionType.toString());
-                    stmt.execute();
-                    stmt.close();
-                    conn.close();
-                    return true;
-                } catch (SQLException e){
-                    System.out.println("[Shop] SQL error occurred while trying to log player action.");
-                    e.printStackTrace();
-                    return false;
-                }
-            } catch (SQLException e) {
-                System.out.println("[Shop] SQL error occurred while trying to log player action.");
-                e.printStackTrace();
-                return false;
-            }
-        }
-        return false;
-    }
-
-    private boolean shouldLog(ShopType shopType, ShopActionType logType){
+    public boolean logAction(Player player, AbstractShop shop, ShopActionType actionType){
         if(!enabled)
             return false;
-        return logTypeMap.get(shopType.toString().toLowerCase()+"_"+logType.toString().toLowerCase());
+
+        Connection conn;
+        try {
+            conn = dataSource.getConnection();
+            try {
+                PreparedStatement stmt = conn.prepareStatement("INSERT INTO shop_action(ts, player_uuid, owner_uuid, player_action, shop_world, shop_x, shop_y, shop_z) VALUES(?, ?, ?, ?, ?, ?, ?, ?);");
+                stmt.setTimestamp(1, new Timestamp(new Date().getTime()));
+                stmt.setString(2, player.getUniqueId().toString());
+                if(shop.getOwnerUUID().equals(plugin.getShopHandler().getAdminUUID()))
+                    stmt.setString(3, "admin");
+                else
+                    stmt.setString(3, shop.getOwnerUUID().toString());
+                stmt.setString(4, actionType.toString());
+                stmt.setString(5, shop.getSignLocation().getWorld().getName());
+                stmt.setInt(6, shop.getSignLocation().getBlockX());
+                stmt.setInt(7, shop.getSignLocation().getBlockY());
+                stmt.setInt(8, shop.getSignLocation().getBlockZ());
+                execute(stmt);
+                return true;
+            } catch (SQLException e){
+                System.out.println("[Shop] SQL error occurred while trying to log player action.");
+                e.printStackTrace();
+                conn.close();
+                return false;
+            }
+        } catch (SQLException e) {
+            System.out.println("[Shop] SQL error occurred while trying to log player action.");
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public void logTransaction(Player player, AbstractShop shop, ShopType transactionType, double price, int amount){
+        if(!enabled)
+            return;
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+            @Override
+            public void run() {
+                Connection conn;
+                try {
+                    conn = dataSource.getConnection();
+                    try {
+                        PreparedStatement stmt = conn.prepareStatement("INSERT INTO shop_transaction (t_type, price, amount, item, barter_item) VALUES(?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
+                        stmt.setString(1, transactionType.toString().toUpperCase());
+                        stmt.setDouble(2, price);
+                        stmt.setInt(3, amount);
+                        stmt.setString(4, shop.getItemStack().getType().toString());
+                        if (shop.getSecondaryItemStack() != null)
+                            stmt.setString(5, shop.getSecondaryItemStack().getType().toString());
+                        else
+                            stmt.setNull(5, Types.VARCHAR);
+
+                        stmt.execute();
+
+                        ResultSet keys = stmt.getGeneratedKeys();
+                        keys.next();
+                        int transactionID = keys.getInt(1);
+                        stmt.close();
+
+                        stmt = conn.prepareStatement("INSERT INTO shop_action(ts, player_uuid, owner_uuid, player_action, transaction_id, shop_world, shop_x, shop_y, shop_z) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
+                        stmt.setTimestamp(1, new Timestamp(new Date().getTime()));
+                        stmt.setString(2, player.getUniqueId().toString());
+                        if(shop.getOwnerUUID().equals(plugin.getShopHandler().getAdminUUID()))
+                            stmt.setString(3, "admin");
+                        else
+                            stmt.setString(3, shop.getOwnerUUID().toString());
+                        stmt.setString(4, ShopActionType.TRANSACT.toString());
+                        stmt.setInt(5, transactionID);
+                        stmt.setString(6, shop.getSignLocation().getWorld().getName());
+                        stmt.setInt(7, shop.getSignLocation().getBlockX());
+                        stmt.setInt(8, shop.getSignLocation().getBlockY());
+                        stmt.setInt(9, shop.getSignLocation().getBlockZ());
+                        stmt.execute();
+                        conn.close();
+                        return;
+                    } catch (SQLException e) {
+                        System.out.println("[Shop] SQL error occurred while trying to log transaction.");
+                        e.printStackTrace();
+                        conn.close();
+                        return;
+                    }
+                } catch(SQLException e){
+                    System.out.println("[Shop] SQL error occurred while trying to log transaction.");
+                    e.printStackTrace();
+                    return;
+                }
+            }
+        });
+    }
+
+    public void calculateOfflineTransactions(OfflineTransactions offlineTransactions){
+        if(!enabled) {
+            offlineTransactions.setIsCalculating(false);
+            return;
+        }
+        offlineTransactions.setIsCalculating(true);
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+            @Override
+            public void run() {
+                String query = "SELECT * from shop_action RIGHT JOIN shop_transaction on shop_action.transaction_id = shop_transaction.id where owner_uuid=? and ts > ?;";
+
+                Connection conn;
+                try {
+                    conn = dataSource.getConnection();
+                    try {
+                        PreparedStatement stmt = conn.prepareStatement(query);
+                        stmt.setString(1, offlineTransactions.getPlayerUUID().toString());
+                        //stmt.setString(1, "admin");
+                        stmt.setTimestamp(2, new Timestamp(offlineTransactions.getLastPlayed()));
+                        stmt.execute();
+
+                        ResultSet resultSet = stmt.getResultSet();
+                        int size = 0;
+                        if(resultSet != null){
+                            while(resultSet.next()){
+                                size++;
+                            }
+                        }
+
+                        conn.close();
+                        stmt.close();
+
+                        //TODO also calculate profits in the future or just save whole resultset in offlinetransactions object and print
+                        offlineTransactions.setNumTransactions(size);
+                        offlineTransactions.setIsCalculating(false);
+                        return;
+                    } catch (SQLException e){
+                        System.out.println("[Shop] SQL error occurred while trying to get offline transactions.");
+                        e.printStackTrace();
+                        conn.close();
+                        offlineTransactions.setIsCalculating(false);
+                        return;
+                    }
+                } catch (SQLException e) {
+                    System.out.println("[Shop] SQL error occurred while trying to get offline transactions.");
+                    e.printStackTrace();
+                    offlineTransactions.setIsCalculating(false);
+                    return;
+                }
+            }
+        });
     }
 
     private void testDataSource() throws SQLException {
@@ -105,6 +248,7 @@ public class LogHandler {
             else{
                 enabled = true;
                 System.out.println("[Shop] Established connection to database. Logging is enabled.");
+                conn.close();
             }
         }
     }
@@ -115,10 +259,8 @@ public class LogHandler {
         // it is located in the resources.
         String setup;
         try (InputStream in = plugin.getResource("dbsetup.sql")) { //TODO this is throwing an error. cannot access class jdk.xml.internal.SecuritySupport (in module java.xml) because module java.xml does not export jdk.xml.internal to unnamed module
-//            // Java 9+ way
-//            setup = new String(in.readAllBytes());
-            // Legacy way
-            setup = new BufferedReader(new InputStreamReader(in)).lines().collect(Collectors.joining("\n"));
+//            setup = new String(in.readAllBytes()); // Java 9+ way
+            setup = new BufferedReader(new InputStreamReader(in)).lines().collect(Collectors.joining("\n")); // Legacy way
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("[Shop] Could not read db setup file.");
@@ -131,11 +273,30 @@ public class LogHandler {
             // If you use the legacy way you have to check for empty queries here.
             //if (query.isBlank())) continue;
             if (query.isEmpty()) continue;
-            try (Connection conn = dataSource.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(query)) {
-                stmt.execute();
-            }
+
+            Connection conn = dataSource.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(query);
+            execute(stmt);
         }
         System.out.println("[Shop] Successfully initialized database.");
+    }
+
+    public void execute(final PreparedStatement preparedStatement) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    preparedStatement.execute();
+
+                    preparedStatement.getConnection().close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 }

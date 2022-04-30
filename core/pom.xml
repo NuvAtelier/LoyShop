@@ -101,6 +101,12 @@
             <version>5.0.1</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>2.7.5</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <!--  this shade plugin is to shade in hikari so that database connections can be used -->

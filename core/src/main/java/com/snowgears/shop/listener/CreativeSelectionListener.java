@@ -9,6 +9,7 @@ import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.PlayerData;
+import com.snowgears.shop.util.ShopActionType;
 import com.snowgears.shop.util.ShopCreationProcess;
 import com.snowgears.shop.util.ShopMessage;
 import org.bukkit.Bukkit;
@@ -200,6 +201,7 @@ public class CreativeSelectionListener implements Listener {
 
                             shop.setSecondaryItemStack(event.getCursor());
                             plugin.getShopCreationUtil().sendCreationSuccess(player, shop);
+                            plugin.getLogHandler().logAction(player, shop, ShopActionType.INIT);
                         }
                         removePlayerFromCreativeSelection(player);
                     }

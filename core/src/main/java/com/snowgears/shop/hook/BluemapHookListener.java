@@ -25,6 +25,22 @@ public class BluemapHookListener implements Listener {
     private String markerPreview;
     private String markerDescription;
 
+    //this is the section from the config file I will put back once I go add this BlueMap integration
+//    # If you use BlueMap, this controls how shops show up as markers #
+//            #bluemap-marker:
+//            #   enabled: true
+//            #   type: "extrude"
+//            #   label: "shop"
+//            #   detail: "Item: [item](x[item amount])<br />Owner: [owner]<br />Type: [shop type]<br />Price: [price]<br />Stock: [stock]<br />---------------<br />[location]<br />"
+//            #   shapeMinY: 66
+//            #   shapeMaxY: 88
+//            #   depthTest: true
+//            #   lineWidth: 3
+//            #   lineColor: '{ "r": 0, "g": 255, "b": 0, "a": 1 }'
+//            #   fillColor: '{ "r": 0, "g": 200, "b": 0, "a": 0.2 }'
+//            #   minDistance: 10.0
+//            #   maxDistance: 500.0
+
     //docs say to use BlueMapAPI.getInstance() at time of to always have the current valid API instance
 
     public BluemapHookListener(Shop plugin){

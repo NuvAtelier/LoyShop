@@ -167,29 +167,16 @@ dynmap-marker:
    preview: "[item](x[item amount]) - [shop type] - [price]"
    description: "Item: [item](x[item amount])<br />Owner: [owner]<br />Type: [shop type]<br />Price: [price]<br />Stock: [stock]<br />---------------<br />[location]<br />"
 
-# If you use BlueMap, this controls how shops show up as markers #
-#bluemap-marker:
-#   enabled: true
-#   type: "extrude"
-#   label: "shop"
-#   detail: "Item: [item](x[item amount])<br />Owner: [owner]<br />Type: [shop type]<br />Price: [price]<br />Stock: [stock]<br />---------------<br />[location]<br />"
-#   shapeMinY: 66
-#   shapeMaxY: 88
-#   depthTest: true
-#   lineWidth: 3
-#   lineColor: '{ "r": 0, "g": 255, "b": 0, "a": 1 }'
-#   fillColor: '{ "r": 0, "g": 200, "b": 0, "a": 0.2 }'
-#   minDistance: 10.0
-#   maxDistance: 500.0
-
 # =================================================================== #
 #                         LOGGING SETTINGS                            #
 # =================================================================== #
 
-# All logging functionality requires a Hikari compatible database to be defined and enabled #
-# Logging is optional, but if you do want to use logging, a database is required #
-
-# For a list of popular datasources that are compatible with Hikari, please see the link below #
-# https://github.com/brettwooldridge/HikariCP#popular-datasource-class-names #
-
-# TO ENABLE LOGGING -> fill out the hikari.properties file in the main Shop folder #
+# All logging functionality requires a compatible database to be defined and enabled #
+# options for type are: 'OFF', 'MYSQL', 'MARIADB'
+logging:
+   type: 'OFF'
+   serverName: "localhost"
+   databaseName: "test"
+   port: 3306
+   user: "test"
+   password: "test"

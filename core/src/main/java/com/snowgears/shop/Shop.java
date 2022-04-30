@@ -385,7 +385,7 @@ public class Shop extends JavaPlugin {
         shopHandler = new ShopHandler(plugin);
         guiHandler.loadIconsAndTitles();
         enderChestHandler = new EnderChestHandler(plugin);
-        logHandler = new LogHandler(plugin);
+        logHandler = new LogHandler(plugin, config);
 
         getServer().getPluginManager().registerEvents(displayListener, this);
         getServer().getPluginManager().registerEvents(shopListener, this);
@@ -728,5 +728,9 @@ public class Shop extends JavaPlugin {
 
     public NamespacedKey getPlayerUUIDNameSpacedKey(){
         return playerUUIDNameSpacedKey;
+    }
+
+    public LogHandler getLogHandler(){
+        return logHandler;
     }
 }

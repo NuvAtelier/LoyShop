@@ -191,6 +191,8 @@ public class ShopCreationUtil {
             PlayerCreateShopEvent e = new PlayerCreateShopEvent(player, shop);
             plugin.getServer().getPluginManager().callEvent(e);
 
+            plugin.getLogHandler().logAction(player, shop, ShopActionType.CREATE);
+
             if (e.isCancelled())
                 return null;
 
@@ -211,6 +213,7 @@ public class ShopCreationUtil {
                 shop.getDisplay().setType(DisplayType.LARGE_ITEM, false);
 
                 plugin.getShopCreationUtil().sendCreationSuccess(player, shop);
+                plugin.getLogHandler().logAction(player, shop, ShopActionType.INIT);
                 return null;
             }
 

@@ -224,6 +224,7 @@ public class MiscListener implements Listener {
 
                     if(initializedShop){
                         plugin.getShopCreationUtil().sendCreationSuccess(player, shop);
+                        plugin.getLogHandler().logAction(player, shop, ShopActionType.INIT);
                     }
                 }
                 event.setCancelled(true); //cancel event regardless
@@ -538,6 +539,8 @@ public class MiscListener implements Listener {
                     return;
                 }
 
+                plugin.getLogHandler().logAction(player, shop, ShopActionType.DESTROY);
+
                 if(shop.isFakeSign()){
                     event.setDropItems(false);
                 }
@@ -576,6 +579,9 @@ public class MiscListener implements Listener {
                         event.setCancelled(true);
                         return;
                     }
+
+                    plugin.getLogHandler().logAction(player, shop, ShopActionType.DESTROY);
+
                     if(shop.isFakeSign()){
                         event.setDropItems(false);
                     }

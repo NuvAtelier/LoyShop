@@ -5,10 +5,8 @@ import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.hook.WorldGuardHook;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
-import com.snowgears.shop.util.CurrencyType;
-import com.snowgears.shop.util.PlayerExperience;
-import com.snowgears.shop.util.ShopClickType;
-import com.snowgears.shop.util.ShopMessage;
+import com.snowgears.shop.util.*;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Tag;
@@ -29,9 +27,12 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.permissions.PermissionAttachmentInfo;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 
@@ -39,6 +40,7 @@ public class ShopListener implements Listener {
 
     private Shop plugin = Shop.getPlugin();
     private HashMap<String, Integer> shopBuildLimits = new HashMap<String, Integer>();
+    private HashMap<UUID, OfflineTransactions> transactionsWhileOffline = new HashMap<>();
 
     public ShopListener(Shop instance) {
         plugin = instance;
@@ -356,6 +358,43 @@ public class ShopListener implements Listener {
                 plugin.getShopHandler().processShopDisplaysNearPlayer(player);
             }
         }, 2L);
+
+        //setup a repeating task that checks if async sql calculations are still running, if they are done, send messages and cancel task
+        OfflineTransactions offlineTransactions = transactionsWhileOffline.get(player.getUniqueId());
+        if(offlineTransactions != null) {
+            new BukkitRunnable() {
+                public void run() {
+                    if (transactionsWhileOffline.containsKey(player.getUniqueId())) {
+                        if (offlineTransactions != null && !offlineTransactions.isCalculating()) {
+                            //only display the message if some transactions happened while they were offline
+                            if(offlineTransactions.getNumTransactions() > 0) {
+                                List<String> messageList = ShopMessage.getUnformattedMessageList("offline", "transactions");
+                                for (String message : messageList) {
+                                    message = ShopMessage.formatMessage(message, player, offlineTransactions);
+                                    message = ShopMessage.formatMessage(message, null, player, false);
+                                    if (message != null && !message.isEmpty())
+                                        player.sendMessage(message);
+                                }
+                            }
+                            transactionsWhileOffline.remove(player.getUniqueId());
+                            this.cancel();
+                        }
+                    }
+                }
+            }.runTaskTimer(plugin, 2L, 2L);
+        }
+    }
+
+    @EventHandler
+    public void onLogin(AsyncPlayerPreLoginEvent event){
+        OfflinePlayer player = Bukkit.getOfflinePlayer(event.getUniqueId());
+        long lastPlayed = player.getLastPlayed();
+
+        //create an object that will calculate offline transactions (if sql is being used)
+        if(plugin.getLogHandler().isEnabled()) {
+            OfflineTransactions offlineTransactions = new OfflineTransactions(player.getUniqueId(), lastPlayed);
+            transactionsWhileOffline.put(event.getUniqueId(), offlineTransactions);
+        }
     }
 
     @EventHandler
