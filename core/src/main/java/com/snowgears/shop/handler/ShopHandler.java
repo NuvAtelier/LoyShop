@@ -437,7 +437,7 @@ public class ShopHandler {
                 if (!oldShopsNearPlayer.contains(loc)) {
                     AbstractShop shop = this.getShop(loc);
                     plugin.getServer().getScheduler().runTask(plugin, () -> {
-                        if(shop != null && player != null && player.isOnline())
+                        if(shop != null && player != null && player.isOnline() && shop.isInitialized())
                             shop.getDisplay().spawn(player);
                     });
                 }
@@ -449,7 +449,7 @@ public class ShopHandler {
                 Location loc = iteratorNew.next();
                 AbstractShop shop = this.getShop(loc);
                 plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    if(shop != null && player != null && player.isOnline())
+                    if(shop != null && player != null && player.isOnline() && shop.isInitialized())
                         shop.getDisplay().spawn(player);
                 });
             }

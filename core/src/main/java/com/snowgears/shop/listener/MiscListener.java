@@ -32,6 +32,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -40,6 +41,7 @@ public class MiscListener implements Listener {
 
     public Shop plugin;
     private HashMap<UUID, ShopCreationProcess> playerChatCreationSteps = new HashMap<>();
+    private HashMap<UUID, Long> lastChatCreation = new HashMap<>();
 
     public MiscListener(Shop instance) {
         plugin = instance;
@@ -228,6 +230,7 @@ public class MiscListener implements Listener {
                     }
                 }
                 event.setCancelled(true); //cancel event regardless
+                shop.updateSign();
             }
             else if(plugin.getShopHandler().isChest(clicked)){
 
@@ -246,6 +249,16 @@ public class MiscListener implements Listener {
                             return;
                         }
                         else if (currentProcess == null && player.isSneaking()){
+                            Long lastCreatedProcess = lastChatCreation.get(player.getUniqueId());
+                            //if the player has created a new process in the last 5 seconds, block them from creating another
+                            if(lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < 5000) {
+                                String message = ShopMessage.getMessage("interactionIssue", "createCooldown", null, player);
+                                if (message != null && !message.isEmpty())
+                                    player.sendMessage(message);
+                                event.setCancelled(true);
+                                return;
+                            }
+
                             if(!plugin.getShopCreationUtil().shopCanBeCreated(player, clicked))
                                 return;
                             BlockFace signFacing = plugin.getShopCreationUtil().calculateBlockFaceForSign(player, clicked, event.getBlockFace());
@@ -256,6 +269,7 @@ public class MiscListener implements Listener {
 
                             ShopCreationProcess process = new ShopCreationProcess(player, clicked, signFacing);
                             playerChatCreationSteps.put(player.getUniqueId(), process);
+                            lastChatCreation.put(player.getUniqueId(), new Date().getTime());
                             plugin.getCreativeSelectionListener().putPlayerInCreativeSelection(player, clicked.getLocation(), false);
                             event.setCancelled(true);
                             return;
@@ -286,6 +300,16 @@ public class MiscListener implements Listener {
                 if(!player.isSneaking())
                     return;
 
+                Long lastCreatedProcess = lastChatCreation.get(player.getUniqueId());
+                //if the player has created a new process in the last 5 seconds, block them from creating another
+                if(lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < 5000) {
+                    String message = ShopMessage.getMessage("interactionIssue", "createCooldown", null, player);
+                    if (message != null && !message.isEmpty())
+                        player.sendMessage(message);
+                    event.setCancelled(true);
+                    return;
+                }
+
                 //dont let players create shops via chest on shops that already exist
                 //TODO come back to this and allow players to create double chest shops via chest creation method
                 AbstractShop existingShop = plugin.getShopHandler().getShopByChest(clicked);
@@ -295,7 +319,6 @@ public class MiscListener implements Listener {
 
                 if(!plugin.getShopCreationUtil().shopCanBeCreated(player, clicked))
                     return;
-
 
                 event.setCancelled(true);
 
@@ -307,6 +330,7 @@ public class MiscListener implements Listener {
                 ShopCreationProcess process = new ShopCreationProcess(player, clicked, signFacing);
                 process.setItemStack(event.getItem());
                 playerChatCreationSteps.put(player.getUniqueId(), process);
+                lastChatCreation.put(player.getUniqueId(), new Date().getTime());
 
                 //send player text prompts after they have clicked the chest with the item they want to create a shop with
                 String message = ShopMessage.getUnformattedMessage("createHitChest", null);
@@ -483,21 +507,22 @@ public class MiscListener implements Listener {
     }
 
     //player destroys shop, call PlayerDestroyShopEvent or PlayerResizeShopEvent
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void shopDestroy(BlockBreakEvent event) {
+        //removing this since itemstacks now have no gravity and are client side
         //refresh the shop display even if the event was cancelled as sometimes items can bug out and fall through chest
-        if (event.isCancelled()) {
-            Block b = event.getBlock();
-            if (b.getBlockData() instanceof WallSign) {
-                AbstractShop shop = plugin.getShopHandler().getShop(b.getLocation());
-                if (shop != null) {
-                    if (shop.getDisplay().getType() == DisplayType.ITEM) {
-                        shop.getDisplay().spawn(event.getPlayer());
-                        shop.updateSign();
-                    }
-                }
-            }
-        }
+//        if (event.isCancelled()) {
+//            Block b = event.getBlock();
+//            if (b.getBlockData() instanceof WallSign) {
+//                AbstractShop shop = plugin.getShopHandler().getShop(b.getLocation());
+//                if (shop != null) {
+//                    if (shop.getDisplay().getType() == DisplayType.ITEM) {
+//                        shop.getDisplay().spawn(event.getPlayer());
+//                        shop.updateSign();
+//                    }
+//                }
+//            }
+//        }
 
         Block b = event.getBlock();
         Player player = event.getPlayer();

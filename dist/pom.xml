@@ -60,6 +60,11 @@
             <artifactId>shop-v1_18_R2</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.snowgears.shop</groupId>
+            <artifactId>shop-v1_19_R1</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
