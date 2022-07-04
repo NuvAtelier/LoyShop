@@ -17,6 +17,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -380,6 +381,13 @@ public class Shop extends JavaPlugin {
         //this.getCommand(commandAlias).setExecutor(new CommandHandler(this));
         //this.getCommand(commandAlias).setTabCompleter(new CommandTabCompleter());
         //this.getCommand(commandAlias).setAliases(new ArrayList<>())
+
+        //check for unregistered enchantments when new MC updates come out
+        /*for (Enchantment enchantment : Enchantment.values()){
+            if(UtilMethods.getEnchantmentName(enchantment).equals("Unknown")){
+                System.out.println("[Shop] warning: unregistered enchantment: "+enchantment.getName());
+            }
+        }*/
 
         guiHandler = new ShopGuiHandler(plugin);
         shopHandler = new ShopHandler(plugin);
