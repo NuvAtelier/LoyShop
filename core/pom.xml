@@ -130,6 +130,10 @@
                                     <pattern>com.zaxxer.hikari</pattern>
                                     <shadedPattern>com.snowgears.shop.artifact.hikari</shadedPattern>
                                 </relocation>
+                                <relocation>
+                                    <pattern>org.mariadb.jdbc</pattern>
+                                    <shadedPattern>com.snowgears.shop.artifact.mariadbjdbc</shadedPattern>
+                                </relocation>
                             </relocations>
                         </configuration>
                     </execution>
