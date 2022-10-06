@@ -316,7 +316,9 @@ public abstract class AbstractShop {
     //TODO may have to call runTask when setting this from main loader
     public void setGuiIcon(){
         //also set marker in here if using a marker integration
-        Shop.getPlugin().getBluemapHookListener().updateMarker(this);
+        if(Shop.getPlugin().getBluemapHookListener() != null) {
+            Shop.getPlugin().getBluemapHookListener().updateMarker(this);
+        }
 
         if(this.type != ShopType.GAMBLE) {
             if (this.getItemStack() == null)
