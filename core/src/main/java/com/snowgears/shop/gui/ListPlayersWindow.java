@@ -2,9 +2,13 @@ package com.snowgears.shop.gui;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.handler.ShopGuiHandler;
+import com.snowgears.shop.util.ItemstackNameComparator;
+import com.snowgears.shop.util.ShopItemComparator;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,14 +34,16 @@ public class ListPlayersWindow extends ShopGuiWindow {
         //List<OfflinePlayer> owners = Shop.getPlugin().getShopHandler().getShopOwners();
         //owners.sort(new OfflinePlayerNameComparator());
 
-        List<UUID> owners = Shop.getPlugin().getShopHandler().getShopOwnerUUIDs();
+        //List<UUID> owners = Shop.getPlugin().getShopHandler().getShopOwnerUUIDs();
+        ArrayList<ItemStack> shopOwnerHeads = Shop.getPlugin().getGuiHandler().getShopOwnerHeads();
+        shopOwnerHeads.sort(new ItemstackNameComparator());
 
         int startIndex = pageIndex * 36; //36 items is a full page in the inventory
         ItemStack icon;
         boolean added = true;
 
-        for (int i=startIndex; i< owners.size(); i++) {
-            icon = createIcon(owners.get(i));
+        for (int i=startIndex; i< shopOwnerHeads.size(); i++) {
+            icon = shopOwnerHeads.get(i);
 
             if(!this.addIcon(icon)){
                 added = false;
@@ -53,7 +59,7 @@ public class ListPlayersWindow extends ShopGuiWindow {
         }
     }
 
-    private ItemStack createIcon(UUID ownerUUID){
+    private ItemStack getPlayerIcon(UUID ownerUUID){
         //System.out.println("[Shop] creating icon for "+ownerUUID);
         if(Shop.getPlugin().getShopHandler().getAdminUUID().equals(ownerUUID)) {
             return Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, ownerUUID, null);

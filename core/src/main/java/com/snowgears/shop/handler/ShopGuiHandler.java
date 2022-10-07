@@ -22,12 +22,13 @@ import org.bukkit.persistence.PersistentDataType;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ShopGuiHandler {
 
     public enum GuiIcon {
         MENUBAR_BACK, HOME_SEARCH, MENUBAR_LAST_PAGE, MENUBAR_NEXT_PAGE,
-        HOME_LIST_OWN_SHOPS, HOME_LIST_PLAYERS, HOME_SETTINGS, HOME_COMMANDS,
+        HOME_LIST_ALL_SHOPS, HOME_LIST_PLAYERS, HOME_SETTINGS, HOME_COMMANDS,
         LIST_SHOP, LIST_PLAYER, LIST_PLAYER_ADMIN,
         SETTINGS_NOTIFY_OWNER_ON, SETTINGS_NOTIFY_OWNER_OFF, SETTINGS_NOTIFY_USER_ON, SETTINGS_NOTIFY_USER_OFF, SETTINGS_NOTIFY_STOCK_ON, SETTINGS_NOTIFY_STOCK_OFF,
         COMMANDS_CURRENCY, COMMANDS_SET_CURRENCY, COMMANDS_SET_GAMBLE, COMMANDS_REFRESH_DISPLAYS, COMMANDS_RELOAD, COMMANDS_ITEMLIST_ALLOW_ADD, COMMANDS_ITEMLIST_ALLOW_REMOVE, COMMANDS_ITEMLIST_DENY_ADD, COMMANDS_ITEMLIST_DENY_REMOVE,
@@ -35,7 +36,7 @@ public class ShopGuiHandler {
     }
 
     public enum GuiTitle {
-        HOME, LIST_PLAYERS, SETTINGS, COMMANDS, LIST_SEARCH_RESULTS
+        HOME, LIST_PLAYERS, LIST_SHOPS, SETTINGS, COMMANDS, LIST_SEARCH_RESULTS
 
     }
 
@@ -138,6 +139,12 @@ public class ShopGuiHandler {
         if(playerHeads.containsKey(playerUUID))
             return playerHeads.get(playerUUID);
         return new ItemStack(Material.AIR);
+    }
+
+    public ArrayList<ItemStack> getShopOwnerHeads(){
+        return playerHeads.values().stream().collect(
+                Collectors.toCollection(ArrayList::new)
+        );
     }
 
     //TODO have a change window to type method here that can be called from the button listener to clean things up?

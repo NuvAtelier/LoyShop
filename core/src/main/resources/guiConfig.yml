@@ -25,7 +25,8 @@
 
 titles:
    home: "Shop Menu"
-   list_players: "All Player Shops"
+   list_players: "Shops By Player"
+   list_shops: "Shops"
    settings: "Your Settings"
    list_search_results: "Search Results"
    commands: "Commands"
@@ -70,12 +71,12 @@ icons:
          lore:
             - "&7Go forward."
    home:
-      list_own_shops:
+      list_all_shops:
          type: "CHEST"
-         name: "Your Shops"
+         name: "All Shops"
          lore:
             - "&7List all shops"
-            - "&7you own on the server."
+            - "&7on the server."
       list_players:
          type: "PLAYER_HEAD"
          name: "Player Shops"

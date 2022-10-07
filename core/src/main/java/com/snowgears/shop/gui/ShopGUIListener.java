@@ -75,16 +75,22 @@ public class ShopGUIListener implements Listener {
                     }
 
                     if(window instanceof HomeWindow){
-                        ItemStack listShopsIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_LIST_OWN_SHOPS, null, null);
+                        ItemStack listOwnShopsIcon = plugin.getGuiHandler().getPlayerHeadIcon(player.getUniqueId());
+                        ItemStack listAllShopsIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_LIST_ALL_SHOPS, null, null);
                         ItemStack listPlayersIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_LIST_PLAYERS, null, null);
                         ItemStack searchIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SEARCH, null, null);
                         ItemStack settingsIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SETTINGS, null, null);
                         ItemStack commandsIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_COMMANDS, null, null);
 
-                        if(clicked.getType() == listShopsIcon.getType()){
+                        if(clicked.getType() == listOwnShopsIcon.getType() && clicked.getItemMeta().getDisplayName().equals(listOwnShopsIcon.getItemMeta().getDisplayName())){
                             ListShopsWindow shopsWindow = new ListShopsWindow(player.getUniqueId(), player.getUniqueId());
                             shopsWindow.setPrevWindow(window);
                             plugin.getGuiHandler().setWindow(player, shopsWindow);
+                            return;
+                        }
+                        else if(clicked.getType() == listAllShopsIcon.getType()){
+                            //TODO get list of all shops on server and return to player here with saved filters applied
+
                             return;
                         }
                         else if(clicked.getType() == listPlayersIcon.getType()){
