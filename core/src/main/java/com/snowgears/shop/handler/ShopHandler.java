@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 
 public class ShopHandler {
@@ -309,6 +310,12 @@ public class ShopHandler {
             shopLocations.add(shop.getSignLocation());
             unloadedShopsByChunk.put(chunkKey, shopLocations);
         }
+    }
+
+    public List<AbstractShop> getAllShops(){
+        return allShops.values().stream().collect(
+                Collectors.toCollection(ArrayList::new)
+        );
     }
 
     public List<AbstractShop> getShops(UUID player){

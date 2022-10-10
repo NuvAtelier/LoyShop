@@ -2,14 +2,11 @@ package com.snowgears.shop.gui;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.handler.ShopGuiHandler;
-import com.snowgears.shop.util.ItemstackNameComparator;
-import com.snowgears.shop.util.ShopItemComparator;
+import com.snowgears.shop.util.ComparatorItemstackName;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 
 public class ListPlayersWindow extends ShopGuiWindow {
@@ -36,7 +33,7 @@ public class ListPlayersWindow extends ShopGuiWindow {
 
         //List<UUID> owners = Shop.getPlugin().getShopHandler().getShopOwnerUUIDs();
         ArrayList<ItemStack> shopOwnerHeads = Shop.getPlugin().getGuiHandler().getShopOwnerHeads();
-        shopOwnerHeads.sort(new ItemstackNameComparator());
+        shopOwnerHeads.sort(new ComparatorItemstackName());
 
         int startIndex = pageIndex * 36; //36 items is a full page in the inventory
         ItemStack icon;
