@@ -178,6 +178,8 @@ public class ShopGUIListener implements Listener {
 
                         if(window instanceof ListShopsWindow){
 
+                            //SORTING
+
                             ItemStack sortNameLow = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW, null, null);
                             ItemStack sortNameHigh = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_HIGH, null, null);
                             ItemStack sortPriceLow = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_LOW, null, null);
@@ -200,6 +202,8 @@ public class ShopGUIListener implements Listener {
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW);
                                 reloadPage = true;
                             }
+
+                            //FILTERING SHOP TYPES
 
                             ItemStack filterTypeAll = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_ALL, null, null);
                             ItemStack filterTypeSell = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_SELL, null, null);
@@ -228,10 +232,31 @@ public class ShopGUIListener implements Listener {
                                 reloadPage = true;
                             }
 
+                            //FILTERING SHOP STOCK
+
+                            ItemStack filterStockAll = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_ALL, null, null);
+                            ItemStack filterStockIn = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_IN, null, null);
+                            ItemStack filterStockOut = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_OUT, null, null);
+
+                            if(clicked.getType() == filterStockAll.getType()){
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_STOCK, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_IN);
+                                reloadPage = true;
+                            }
+                            else if(clicked.getType() == filterStockIn.getType()){
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_STOCK, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_OUT);
+                                reloadPage = true;
+                            }
+                            else if(clicked.getType() == filterStockOut.getType()){
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_STOCK, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_ALL);
+                                reloadPage = true;
+                            }
+
                             //reload the page with new sorts and filters applied
                             if(reloadPage){
                                 window.initInvContents();
                             }
+
+                            //SEARCHING
 
                             ItemStack searchIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SEARCH, null, null);
 

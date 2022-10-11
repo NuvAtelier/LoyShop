@@ -115,6 +115,22 @@ icons:
          name: "&l&6Filter shop type"
          lore:
             - "&7Gamble shops"
+      filter_stock_all:
+         type: "WHITE_STAINED_GLASS"
+         name: "&l&6Filter by stock"
+         lore:
+            - "&7All shops"
+      filter_stock_in:
+         type: "GREEN_STAINED_GLASS"
+         name: "&l&6Filter by stock"
+         lore:
+            - "&7Shops in stock"
+      filter_stock_out:
+         type: "RED_STAINED_GLASS"
+         name: "&l&6Filter by stock"
+         lore:
+            - "&7Shops out of stock"
+
    home:
       list_all_shops:
          type: "CHEST"

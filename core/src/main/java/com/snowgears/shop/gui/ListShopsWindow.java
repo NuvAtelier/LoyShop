@@ -44,10 +44,8 @@ public class ListShopsWindow extends ShopGuiWindow {
         makeMenuBarUpper();
         makeMenuBarLower();
 
-        //first do filtering
+        //first do shop type filtering
         ShopGuiHandler.GuiIcon guiFilterTypeIcon = Shop.getPlugin().getGuiHandler().getIconFromOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE);
-        //TODO
-
         List<AbstractShop> filteredShops;
         switch(guiFilterTypeIcon){
             case MENUBAR_FILTER_TYPE_ALL:
@@ -74,6 +72,21 @@ public class ListShopsWindow extends ShopGuiWindow {
                 break;
         }
 
+        //first do shop type filtering
+        ShopGuiHandler.GuiIcon guiFilterStockIcon = Shop.getPlugin().getGuiHandler().getIconFromOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_STOCK);
+        switch(guiFilterStockIcon){
+            case MENUBAR_FILTER_STOCK_IN:
+                filteredShops = filteredShops.stream()
+                        .filter(shop -> (shop.getStock() > 0)).collect(Collectors.toList());
+                break;
+            case MENUBAR_FILTER_STOCK_OUT:
+                filteredShops = filteredShops.stream()
+                        .filter(shop -> (shop.getStock() <= 0)).collect(Collectors.toList());
+                break;
+            default:
+                break;
+        }
+
         //now do sorting
         ShopGuiHandler.GuiIcon guiSortIcon = Shop.getPlugin().getGuiHandler().getIconFromOption(player, PlayerSettings.Option.GUI_SORT);
         switch (guiSortIcon){
@@ -90,12 +103,6 @@ public class ListShopsWindow extends ShopGuiWindow {
                 Collections.sort(filteredShops, new ComparatorShopItemNameLow());
                 break;
         }
-
-        //Collections.sort(shops, new ShopTypeComparator());
-
-        //System.out.println(player.toString()+" number of shops "+shops.size());
-
-        //TODO break up inventory into sections by type (by default. More sorting options to come)
 
         int startIndex = pageIndex * 36; //36 items is a full page in the inventory
         ItemStack icon;
@@ -134,8 +141,10 @@ public class ListShopsWindow extends ShopGuiWindow {
         page.setItem(5, filterTypeIcon);
 
         //filter stock - in stock, out of stock, all
-        // TODO this will also need to have stock variable calculated every time the shop is used
-        // TODO also save and read this variable from shop files
+        guiIcon = Shop.getPlugin().getGuiHandler().getIconFromOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_STOCK);
+        System.out.println("SHOP - "+guiIcon);
+        ItemStack filterStockIcon = Shop.getPlugin().getGuiHandler().getIcon(guiIcon, player, null);
+        page.setItem(6, filterStockIcon);
 
         //search icon
         ItemStack searchIcon = Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SEARCH, null, null);

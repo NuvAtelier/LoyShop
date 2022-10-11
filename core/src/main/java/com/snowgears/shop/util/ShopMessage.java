@@ -227,7 +227,7 @@ public class ShopMessage {
                 }
             }
             if(unformattedMessage.contains("[stock color]")) {
-                if(shop.getStock() > 0 || shop.isAdmin())
+                if(shop.getStock() > 0)
                     unformattedMessage = unformattedMessage.replace("[stock color]", "" + ChatColor.GREEN);
                 else
                     unformattedMessage = unformattedMessage.replace("[stock color]", "" + ChatColor.DARK_RED);
