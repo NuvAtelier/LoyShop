@@ -201,6 +201,33 @@ public class ShopGUIListener implements Listener {
                                 reloadPage = true;
                             }
 
+                            ItemStack filterTypeAll = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_ALL, null, null);
+                            ItemStack filterTypeSell = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_SELL, null, null);
+                            ItemStack filterTypeBuy = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_BUY, null, null);
+                            ItemStack filterTypeBarter = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_BARTER, null, null);
+                            ItemStack filterTypeGamble = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_GAMBLE, null, null);
+
+                            if(clicked.getType() == filterTypeAll.getType()){
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_SELL);
+                                reloadPage = true;
+                            }
+                            else if(clicked.getType() == filterTypeSell.getType()){
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_BUY);
+                                reloadPage = true;
+                            }
+                            else if(clicked.getType() == filterTypeBuy.getType()){
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_BARTER);
+                                reloadPage = true;
+                            }
+                            else if(clicked.getType() == filterTypeBarter.getType()){
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_GAMBLE);
+                                reloadPage = true;
+                            }
+                            else if(clicked.getType() == filterTypeGamble.getType()){
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_ALL);
+                                reloadPage = true;
+                            }
+
                             //reload the page with new sorts and filters applied
                             if(reloadPage){
                                 window.initInvContents();

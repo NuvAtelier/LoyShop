@@ -14,7 +14,7 @@ public class PlayerSettings {
 
     public enum Option{
         NOTIFICATION_SALE_OWNER, NOTIFICATION_SALE_USER, NOTIFICATION_STOCK,
-        GUI_SORT, GUI_FILTER_TYPE
+        GUI_SORT, GUI_FILTER_SHOP_TYPE
     }
 
     private UUID player;
@@ -37,6 +37,7 @@ public class PlayerSettings {
         this.optionsMap.put(Option.NOTIFICATION_STOCK, ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON);
 
         this.optionsMap.put(Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW);
+        this.optionsMap.put(Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_ALL);
     }
 
     private PlayerSettings (UUID player, HashMap<Option, ShopGuiHandler.GuiIcon> optionsMap){
@@ -148,6 +149,8 @@ public class PlayerSettings {
                         case GUI_SORT:
                             optionsMap.put(option, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW);
                             break;
+                        case GUI_FILTER_SHOP_TYPE:
+                            optionsMap.put(Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_ALL);
                         default:
                             break;
                     }

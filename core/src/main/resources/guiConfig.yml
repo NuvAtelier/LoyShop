@@ -72,24 +72,49 @@ icons:
             - "&7Go forward."
       sort_price_low:
          type: "EMERALD"
-         name: "Click to sort"
+         name: "&l&6Sort"
          lore:
             - "&7Ordered by price - low to high."
       sort_price_high:
          type: "DIAMOND"
-         name: "Click to sort"
+         name: "&l&6Sort"
          lore:
             - "&7Ordered by price - high to low."
       sort_name_low:
          type: "BOOK"
-         name: "Click to sort"
+         name: "&l&6Sort"
          lore:
             - "&7Ordered by item name - A-Z."
       sort_name_high:
          type: "WRITABLE_BOOK"
-         name: "Click to sort"
+         name: "&l&6Sort"
          lore:
             - "&7Ordered by item name - Z-A."
+      filter_type_all:
+         type: "WHITE_DYE"
+         name: "&l&6Filter shop type"
+         lore:
+            - "&7All shop types"
+      filter_type_sell:
+         type: "GREEN_DYE"
+         name: "&l&6Filter shop type"
+         lore:
+            - "&7Sell shops"
+      filter_type_buy:
+         type: "RED_DYE"
+         name: "&l&6Filter shop type"
+         lore:
+            - "&7Buy shops"
+      filter_type_barter:
+         type: "BLUE_DYE"
+         name: "&l&6Filter shop type"
+         lore:
+            - "&7Barter shops"
+      filter_type_gamble:
+         type: "ORANGE_DYE"
+         name: "&l&6Filter shop type"
+         lore:
+            - "&7Gamble shops"
    home:
       list_all_shops:
          type: "CHEST"
