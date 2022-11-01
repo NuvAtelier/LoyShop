@@ -121,7 +121,7 @@ icons:
          lore:
             - "&7All shops"
       filter_stock_in:
-         type: "GREEN_STAINED_GLASS"
+         type: "LIME_STAINED_GLASS"
          name: "&l&6Filter by stock"
          lore:
             - "&7Shops in stock"

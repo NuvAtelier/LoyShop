@@ -142,7 +142,6 @@ public class ListShopsWindow extends ShopGuiWindow {
 
         //filter stock - in stock, out of stock, all
         guiIcon = Shop.getPlugin().getGuiHandler().getIconFromOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_STOCK);
-        System.out.println("SHOP - "+guiIcon);
         ItemStack filterStockIcon = Shop.getPlugin().getGuiHandler().getIcon(guiIcon, player, null);
         page.setItem(6, filterStockIcon);
 
