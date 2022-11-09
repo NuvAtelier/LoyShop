@@ -66,7 +66,6 @@ public class Shop extends JavaPlugin {
     private String commandAlias;
     private DisplayType displayType;
     private DisplayTagOption displayTagOption;
-    private int displayTagLifespan;
     private DisplayType[] displayCycle;
     private boolean checkItemDurability;
     private boolean allowCreativeSelection;
@@ -217,15 +216,6 @@ public class Shop extends JavaPlugin {
         try {
             displayTagOption = DisplayTagOption.valueOf(config.getString("displayNameTags"));
         } catch (Exception e){ displayTagOption = DisplayTagOption.NONE; }
-
-        try {
-            displayTagLifespan = config.getInt("displayNameTagsLifespan");
-            // Catch missing or negative config entry and default to 10
-            if (displayTagLifespan <= 0) {
-                displayTagLifespan = 1;
-            }
-        // This exception will only occur if text is entered in the config
-        } catch (Exception e){ displayTagLifespan = 10; }
 
         try {
             List<String> cycle = config.getStringList("displayCycle");
@@ -557,10 +547,6 @@ public class Shop extends JavaPlugin {
 
     public DisplayTagOption getDisplayTagOption(){
         return displayTagOption;
-    }
-
-    public int getDisplayTagLifespan(){
-        return displayTagLifespan;
     }
 
     public DisplayType[] getDisplayCycle(){

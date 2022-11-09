@@ -12,7 +12,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
@@ -182,6 +181,8 @@ public abstract class AbstractDisplay {
         //shop.updateSign();
     }
 
+    //DISPLAY TAGS
+
     public void showDisplayTags(Player player){
         if(displayTagsVisible(player) || !getShop().isInitialized() || Shop.getPlugin().getDisplayTagOption() == DisplayTagOption.NONE || getShop().getFacing() == null) {
             return;
@@ -225,8 +226,11 @@ public abstract class AbstractDisplay {
                 verticalAddition += 0.3;
             }
 
+            Shop.getPlugin().getShopHandler().addActiveShopDisplayTag(player, this.shopSignLocation);
+
             //this handles getting rid of the display tags after a configured amount of time after the player looks away from the shop sign
-            kickoffViewSignTask(player);
+            removeDisplayTagsDelayedTask(player);
+
         } catch (NullPointerException e){
             e.printStackTrace();
         }
@@ -449,37 +453,51 @@ public abstract class AbstractDisplay {
         return offset;
     }
 
-    protected boolean playerIsViewingSign(Player player) {
-        Block block = player.getTargetBlock(null, 8);
-        if (block.getBlockData() instanceof WallSign) {
-            AbstractShop shopObj = Shop.getPlugin().getShopHandler().getShop(block.getLocation());
-            if (shopObj != null) {
-                AbstractShop ownShopObj = Shop.getPlugin().getShopHandler().getShop(this.shopSignLocation);
-                if (ownShopObj != null) {
-                    if (block.getLocation().equals(this.shopSignLocation))
-                        return true;
-                }
-            }
+//    protected boolean playerIsViewingSign(Player player) {
+//        Block block = player.getTargetBlock(null, 8);
+//        if (block.getBlockData() instanceof WallSign) {
+//            AbstractShop shopObj = Shop.getPlugin().getShopHandler().getShop(block.getLocation());
+//            if (shopObj != null) {
+//                AbstractShop ownShopObj = Shop.getPlugin().getShopHandler().getShop(this.shopSignLocation);
+//                if (ownShopObj != null) {
+//                    if (block.getLocation().equals(this.shopSignLocation))
+//                        return true;
+//                }
+//            }
+//        }
+//        return false;
+//    }
+
+    protected boolean playerIsLookingTowardShop(Player player) {
+        if(player.getLocation().distanceSquared(this.shopSignLocation) > 64) { //player is more than 8 blocks away
+            return false;
         }
-        return false;
+        Vector lookDirection = player.getEyeLocation().getDirection();
+        Location displayLocation = this.getItemDropLocation(false);
+        Vector blockDirection = displayLocation.subtract(player.getEyeLocation()).toVector().normalize();
+        double angle = blockDirection.angle(lookDirection);
+        //return true if angle (in radians) is less than 1
+        //System.out.println("Angle to shop: "+angle);
+        return angle < 1.5;
     }
 
-    protected void kickoffViewSignTask(Player player) {
+    protected void removeDisplayTagsDelayedTask(Player player) {
         //remove all armor stand name tag entities after x seconds
         new BukkitRunnable() {
             @Override
             public void run() {
-                if(Shop.getPlugin().getDisplayTagOption() == DisplayTagOption.VIEW_SIGN) {
-                    if (playerIsViewingSign(player))
-                        kickoffViewSignTask(player);
-                    else
-                        removeDisplayEntities(player, true);
+                if(!displayTagsVisible(player)){
+                    removeDisplayEntities(player, true);
+                    return;
                 }
-                else{
+                if (playerIsLookingTowardShop(player)) {
+                    removeDisplayTagsDelayedTask(player);
+                }
+                else {
                     removeDisplayEntities(player, true);
                 }
             }
-        }.runTaskLater(Shop.getPlugin(), (Shop.getPlugin().getDisplayTagLifespan() * 20));
+        }.runTaskLater(Shop.getPlugin(), 20);
     }
 
     protected boolean displayTagsVisible(Player player){

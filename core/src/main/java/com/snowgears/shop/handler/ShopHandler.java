@@ -44,6 +44,7 @@ public class ShopHandler {
     private ConcurrentHashMap<String, List<Location>> chunkShops = new ConcurrentHashMap<>(); //String key = world_x_z
     private ConcurrentHashMap<UUID, HashSet<Location>> playersWithActiveShopDisplays = new ConcurrentHashMap<>();
     private HashSet<UUID> playersProcessingShopDisplays = new HashSet<>();
+    private HashMap<UUID, Location> playersActiveShopDisplayTag = new HashMap<>();
 
     //all loading of shops happens async at onEnable()
     //shops that still need to calculate their facing direction based on sign are considered "unloaded"
@@ -490,6 +491,21 @@ public class ShopHandler {
             shops = new HashSet<>();
         }
         playersWithActiveShopDisplays.put(player.getUniqueId(), shops);
+    }
+
+    public void addActiveShopDisplayTag(Player player, Location shopSignLocation){
+
+        if(playersActiveShopDisplayTag.containsKey(player.getUniqueId())){
+            Location oldShopSignLocation = playersActiveShopDisplayTag.get(player.getUniqueId());
+
+            if(!oldShopSignLocation.equals(shopSignLocation)) {
+                AbstractShop oldShop = getShop(oldShopSignLocation);
+                if (oldShop != null && oldShop.getDisplay() != null) {
+                    oldShop.getDisplay().removeDisplayEntities(player, true);
+                }
+            }
+        }
+        playersActiveShopDisplayTag.put(player.getUniqueId(), shopSignLocation);
     }
 
 
