@@ -186,19 +186,19 @@ public class ShopGUIListener implements Listener {
                             ItemStack sortPriceHigh = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_HIGH, null, null);
 
                             boolean reloadPage = false;
-                            if(clicked.getType() == sortNameLow.getType()){
+                            if(clicked.isSimilar(sortNameLow)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_HIGH);
                                 reloadPage = true;
                             }
-                            else if(clicked.getType() == sortNameHigh.getType()){
+                            else if(clicked.isSimilar(sortNameHigh)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_LOW);
                                 reloadPage = true;
                             }
-                            else if(clicked.getType() == sortPriceLow.getType()){
+                            else if(clicked.isSimilar(sortPriceLow)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_HIGH);
                                 reloadPage = true;
                             }
-                            else if(clicked.getType() == sortPriceHigh.getType()){
+                            else if(clicked.isSimilar(sortPriceHigh)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW);
                                 reloadPage = true;
                             }
@@ -211,23 +211,23 @@ public class ShopGUIListener implements Listener {
                             ItemStack filterTypeBarter = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_BARTER, null, null);
                             ItemStack filterTypeGamble = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_GAMBLE, null, null);
 
-                            if(clicked.getType() == filterTypeAll.getType()){
+                            if(clicked.isSimilar(filterTypeAll)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_SELL);
                                 reloadPage = true;
                             }
-                            else if(clicked.getType() == filterTypeSell.getType()){
+                            else if(clicked.isSimilar(filterTypeSell)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_BUY);
                                 reloadPage = true;
                             }
-                            else if(clicked.getType() == filterTypeBuy.getType()){
+                            else if(clicked.isSimilar(filterTypeBuy)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_BARTER);
                                 reloadPage = true;
                             }
-                            else if(clicked.getType() == filterTypeBarter.getType()){
+                            else if(clicked.isSimilar(filterTypeBarter)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_GAMBLE);
                                 reloadPage = true;
                             }
-                            else if(clicked.getType() == filterTypeGamble.getType()){
+                            else if(clicked.isSimilar(filterTypeGamble)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_TYPE, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_TYPE_ALL);
                                 reloadPage = true;
                             }
@@ -238,15 +238,15 @@ public class ShopGUIListener implements Listener {
                             ItemStack filterStockIn = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_IN, null, null);
                             ItemStack filterStockOut = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_OUT, null, null);
 
-                            if(clicked.getType() == filterStockAll.getType()){
+                            if(clicked.isSimilar(filterStockAll)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_STOCK, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_IN);
                                 reloadPage = true;
                             }
-                            else if(clicked.getType() == filterStockIn.getType()){
+                            else if(clicked.isSimilar(filterStockIn)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_STOCK, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_OUT);
                                 reloadPage = true;
                             }
-                            else if(clicked.getType() == filterStockOut.getType()){
+                            else if(clicked.isSimilar(filterStockOut)){
                                 plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_FILTER_SHOP_STOCK, ShopGuiHandler.GuiIcon.MENUBAR_FILTER_STOCK_ALL);
                                 reloadPage = true;
                             }

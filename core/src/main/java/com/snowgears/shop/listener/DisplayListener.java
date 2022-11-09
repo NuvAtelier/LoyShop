@@ -172,12 +172,13 @@ public class DisplayListener implements Listener {
                     return;
                 }
 
+                //set the GUI icon again (in case stock var needs to be updated in the GUI)
+                shop.setGuiIcon();
+
                 //if the sign lines use a variable that requires a refresh (like stock that is dynamically updated), then refresh sign
                 if(shop.getSignLinesRequireRefresh())
                     shop.updateSign();
 
-                //set the GUI icon again (in case stock var needs to be updated in the GUI)
-                shop.setGuiIcon();
                 //make sure to set gamble item again if player set it to new custom items
                 if(shop.getType() == ShopType.GAMBLE){
                     ((GambleShop)shop).setGambleItem();

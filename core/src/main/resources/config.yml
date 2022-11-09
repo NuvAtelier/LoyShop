@@ -93,6 +93,30 @@ enableGUI: true
 # This is the command alias that will be used as the base for all shop commands #
 commandAlias: shop
 
+# These are the different types of containers that can be used for shops #
+enabledContainers:
+   - 'BARREL'
+   - 'CHEST'
+   - 'ENDER_CHEST'
+   - 'TRAPPED_CHEST'
+   - 'SHULKER_BOX'
+   - 'BLACK_SHULKER_BOX'
+   - 'BLUE_SHULKER_BOX'
+   - 'BROWN_SHULKER_BOX'
+   - 'CYAN_SHULKER_BOX'
+   - 'GRAY_SHULKER_BOX'
+   - 'GREEN_SHULKER_BOX'
+   - 'LIGHT_BLUE_SHULKER_BOX'
+   - 'LIGHT_GRAY_SHULKER_BOX'
+   - 'LIME_SHULKER_BOX'
+   - 'MAGENTA_SHULKER_BOX'
+   - 'ORANGE_SHULKER_BOX'
+   - 'PINK_SHULKER_BOX'
+   - 'PURPLE_SHULKER_BOX'
+   - 'RED_SHULKER_BOX'
+   - 'WHITE_SHULKER_BOX'
+   - 'YELLOW_SHULKER_BOX'
+
 # These are the methods players are able to use to create shops #
 # placeSign - players can place signs on chests and fill out the info on the sign itself #
 # hitChest - players can hit a chest and they will be prompted to fill out the info in chat. A sign will be created. #
@@ -114,9 +138,6 @@ deletePlayerShopsAfterXHoursOffline: 0
 # These will need to be set to false if your server is running anything less than Minecraft 1.9 #
 playSounds: true
 playEffects: true
-
-# This controls whether or not ender chests are able to be used as shops on the server #
-enableEnderChests: false
 
 # If this is set to true, LEFT side of combo shop signs will BUY items and RIGHT side will SELL items #
 # If this is set to false, LEFT side of combo shop signs will SELL items and RIGHT side will BUY items #

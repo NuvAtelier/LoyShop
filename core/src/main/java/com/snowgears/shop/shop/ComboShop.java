@@ -216,4 +216,20 @@ public class ComboShop extends AbstractShop {
     public double getPriceSell(){
         return priceSell;
     }
+
+    @Override
+    protected int calculateStock(){
+        if(this.isAdmin) {
+            stock = Integer.MAX_VALUE;
+        }
+        else {
+            double funds = EconomyUtils.getFunds(this.getOwner(), this.getInventory());
+            if (this.getPrice() == 0)
+                stock = Integer.MAX_VALUE;
+            else{
+                stock = (int)(funds / this.getPrice());
+            }
+        }
+        return stock;
+    }
 }

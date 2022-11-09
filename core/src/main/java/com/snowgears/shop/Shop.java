@@ -87,7 +87,7 @@ public class Shop extends JavaPlugin {
     private String currencyName = "";
     private String currencyFormat = "";
     private Economy econ = null;
-    private boolean useEnderchests;
+    private List<Material> enabledContainers;
     private boolean inverseComboShops;
     private double creationCost;
     private double destructionCost;
@@ -241,6 +241,22 @@ public class Shop extends JavaPlugin {
             }
         } catch (Exception e){ e.printStackTrace(); }
 
+        //TODO in the future read the Skull Texture for display item directly from a value in the config file instead of its own serialized item file
+//        ItemStack gambleDisplayItem = new ItemStack(Material.PLAYER_HEAD);
+//        SkullMeta gambleDisplayItemMeta = (SkullMeta) gambleDisplayItem.getItemMeta();
+//        GameProfile profile = new GameProfile(UUID.randomUUID(), "");
+//
+//        profile.getProperties().put("textures", new Property("texture", headTextureID));
+//        try {
+//            Field profileField = gambleDisplayItemMeta.getClass().getDeclaredField("profile");
+//            profileField.setAccessible(true);
+//            profileField.set(gambleDisplayItemMeta, profile);
+//        } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+//            e.printStackTrace();
+//        }
+//        gambleDisplayItem.setItemMeta(gambleDisplayItemMeta);
+
+
         shopMessage = new ShopMessage(this);
         itemNameUtil = new ItemNameUtil();
         priceUtil = new PriceUtil();
@@ -339,7 +355,12 @@ public class Shop extends JavaPlugin {
         currencyName = config.getString("currency.name");
         currencyFormat = config.getString("currency.format");
 
-        useEnderchests = config.getBoolean("enableEnderChests");
+        enabledContainers = new ArrayList<>();
+        for(String materialString : config.getStringList("enabledContainers")){
+            try{
+                enabledContainers.add(Material.valueOf(materialString));
+            } catch(IllegalArgumentException e) {}
+        }
 
         inverseComboShops = config.getBoolean("inverseComboShops");
 
@@ -698,8 +719,12 @@ public class Shop extends JavaPlugin {
         return econ;
     }
 
+    public List<Material> getEnabledContainers(){
+        return enabledContainers;
+    }
+
     public boolean useEnderChests(){
-        return useEnderchests;
+        return enabledContainers.contains(Material.ENDER_CHEST);
     }
 
     public boolean inverseComboShops(){

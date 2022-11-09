@@ -118,11 +118,17 @@ public class BuyShop extends AbstractShop {
 
     @Override
     protected int calculateStock(){
-        if(this.isAdmin)
-            return Integer.MAX_VALUE;
-        double funds = EconomyUtils.getFunds(this.getOwner(), this.getInventory());
-        if(this.getPrice() == 0)
-            return Integer.MAX_VALUE;
-        return (int)(funds / this.getPrice());
+        if(this.isAdmin) {
+            stock = Integer.MAX_VALUE;
+        }
+        else {
+            double funds = EconomyUtils.getFunds(this.getOwner(), this.getInventory());
+            if (this.getPrice() == 0)
+                stock = Integer.MAX_VALUE;
+            else{
+                stock = (int)(funds / this.getPrice());
+            }
+        }
+        return stock;
     }
 }

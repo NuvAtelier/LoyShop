@@ -49,7 +49,6 @@ public class ShopHandler {
     //shops that still need to calculate their facing direction based on sign are considered "unloaded"
     //we will be loading these shops at time of chunkload and resaving them so they are saved with the 'facing' variable
     private ConcurrentHashMap<String, List<Location>> unloadedShopsByChunk = new ConcurrentHashMap<>();
-    private ArrayList<Material> chestMaterials = new ArrayList<>();
     private UUID adminUUID;
     private BlockFace[] directions = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
 
@@ -61,7 +60,6 @@ public class ShopHandler {
         plugin = instance;
         adminUUID = UUID.randomUUID();
         initDisplayClass();
-        initChestMaterials();
         initItemList();
 
         new BukkitRunnable() {
@@ -570,6 +568,13 @@ public class ShopHandler {
                 }
             }
         }
+        for(UUID shopOwnerUUID : plugin.getShopHandler().getShopOwnerUUIDs()){
+            for(AbstractShop shop : plugin.getShopHandler().getShops(shopOwnerUUID)){
+                if(shop.getChestLocation().getChunk().isLoaded()) {
+                    shop.updateSign();
+                }
+            }
+        }
     }
 
     public void saveShops(final UUID player){
@@ -901,24 +906,7 @@ public class ShopHandler {
     }
 
     public boolean isChest(Block b){
-        return chestMaterials.contains(b.getType());
-    }
-
-    public void initChestMaterials(){
-        chestMaterials.add(Material.CHEST);
-        chestMaterials.add(Material.TRAPPED_CHEST);
-        if(plugin.useEnderChests())
-            chestMaterials.add(Material.ENDER_CHEST);
-
-        try{
-            for(Material m : Tag.SHULKER_BOXES.getValues()){
-                chestMaterials.add(m);
-            }
-        } catch (NoClassDefFoundError e) {} catch (NoSuchFieldError e) {}
-
-        try{
-            chestMaterials.add(Material.BARREL);
-        } catch (NoSuchFieldError e) {}
+        return plugin.getEnabledContainers().contains(b.getType());
     }
 
     public boolean passesItemListCheck(ItemStack is){

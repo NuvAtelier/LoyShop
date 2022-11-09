@@ -129,6 +129,17 @@ public abstract class AbstractShop {
             try {
                 facing = ((WallSign) signLocation.getBlock().getBlockData()).getFacing();
                 chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
+
+                //ignoring this check for now as it will slow down loading a bit and I havent seen much improvement here
+                //check to make sure the shop being loaded is still made out of an enabled container
+//                if(chestLocation != null) {
+//                    if (!Shop.getPlugin().getShopHandler().isChest(chestLocation.getBlock())){
+//                        //if shop is made out of a container that is no longer enabled, delete it
+//                        this.delete();
+//                        return false;
+//                    }
+//                }
+
                 this.setGuiIcon();
                 return true;
             } catch (ClassCastException cce) {
@@ -146,6 +157,7 @@ public abstract class AbstractShop {
     public abstract TransactionError executeTransaction(Player player, boolean isCheck, ShopType transactionType);
 
     protected int calculateStock() {
+        int oldStock = stock;
         if(this.isAdmin) {
             stock = Integer.MAX_VALUE;
             return stock;
@@ -159,6 +171,9 @@ public abstract class AbstractShop {
             return stock;
         }
         stock = InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / this.getAmount();
+        if(stock != oldStock){
+            signLinesRequireRefresh = true;
+        }
         return stock;
     }
 
@@ -433,6 +448,7 @@ public abstract class AbstractShop {
                 }
 
                 signBlock.update(true);
+                signLinesRequireRefresh = false;
             }
         }, 2L);
     }

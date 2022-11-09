@@ -99,7 +99,7 @@ public class PlayerSettings {
 
             config.set("player.UUID", this.player.toString());
             for(Map.Entry<Option, ShopGuiHandler.GuiIcon> entry : optionsMap.entrySet()){
-                config.set("player."+entry.getKey().toString(), entry.getValue());
+                config.set("player."+entry.getKey().toString(), entry.getValue().toString());
             }
 
             config.save(playerSettingsFile);
