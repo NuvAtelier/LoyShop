@@ -334,6 +334,9 @@ public class UtilMethods {
         int i=0;
         for(Map.Entry<Enchantment, Integer> entry : enchantsMap.entrySet()){
             enchants += getEnchantmentName(entry.getKey()) + " " + entry.getValue();
+
+            //TODO if enchantment name is Unknown, look up enchantment by namedSpaceKey? Looks like other plugins can register enchantments to server similar to Recipes
+
             i++;
             if(i != enchantsMap.size())
                 enchants += ", ";

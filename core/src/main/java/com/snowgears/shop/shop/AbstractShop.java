@@ -130,15 +130,13 @@ public abstract class AbstractShop {
                 facing = ((WallSign) signLocation.getBlock().getBlockData()).getFacing();
                 chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
 
-                //ignoring this check for now as it will slow down loading a bit and I havent seen much improvement here
-                //check to make sure the shop being loaded is still made out of an enabled container
-//                if(chestLocation != null) {
-//                    if (!Shop.getPlugin().getShopHandler().isChest(chestLocation.getBlock())){
-//                        //if shop is made out of a container that is no longer enabled, delete it
-//                        this.delete();
-//                        return false;
-//                    }
-//                }
+                //if shop is made out of a container that is no longer enabled, delete it
+                if(chestLocation != null) {
+                    if (!Shop.getPlugin().getShopHandler().isChest(chestLocation.getBlock())){
+                        this.delete();
+                        return false;
+                    }
+                }
                 this.updateSign();
                 this.setGuiIcon();
                 return true;

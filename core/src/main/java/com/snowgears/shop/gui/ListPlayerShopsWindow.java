@@ -5,6 +5,7 @@ import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.ComparatorShopItemNameLow;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Collections;
@@ -22,8 +23,25 @@ public class ListPlayerShopsWindow extends ShopGuiWindow {
             ItemStack is = Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, Shop.getPlugin().getShopHandler().getAdminUUID(), null);
             this.title = is.getItemMeta().getDisplayName();
         }
-        else
+        else {
             this.title = Bukkit.getOfflinePlayer(playerToList).getName();
+
+            //TODO in the future, might add total shops / allowed shops in title of own player
+//            if(Shop.getPlugin().usePerms() && player.equals(playerToList)){
+//                Player playerObj = Bukkit.getPlayer(player);
+//                if(playerObj != null) {
+//                    int totalShops = Shop.getPlugin().getShopHandler().getNumberOfShops(player);
+//                    String numShops = " ("+totalShops+" / ";
+//                    if (playerObj.isOp() || playerObj.hasPermission("shop.operator")) {
+//                        numShops += "*)";
+//                    }
+//                    else{
+//                        numShops += Shop.getPlugin().getShopListener().getBuildLimit(playerObj)+")";
+//                    }
+//                    this.title += numShops;
+//                }
+//            }
+        }
 
         this.page = Bukkit.createInventory(null, INV_SIZE, this.title);
         this.playerToList = playerToList;

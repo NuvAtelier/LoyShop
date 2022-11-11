@@ -48,27 +48,40 @@ public class ShopListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event){
         plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
             public void run() {
-                if(plugin.usePerms()){
-                    Player player = event.getPlayer();
-                    int buildPermissionNumber = -1;
-                    for(PermissionAttachmentInfo permInfo : player.getEffectivePermissions()){
-                        if(permInfo.getPermission().contains("shop.buildlimit.")){
-                            try {
-                                int tempNum = Integer.parseInt(permInfo.getPermission().substring(permInfo.getPermission().lastIndexOf(".") + 1));
-                                if(tempNum > buildPermissionNumber) {
-                                    buildPermissionNumber = tempNum;
-                                }
-                            } catch (Exception e) {}
-                        }
-                    }
-                    if(buildPermissionNumber == -1)
-                        shopBuildLimits.put(player.getName(), 10000);
-                    else {
-                        shopBuildLimits.put(player.getName(), buildPermissionNumber);
-                    }
-                }
+                recalculateShopPerms(event.getPlayer());
             }
         }, 5L);
+    }
+
+    public void recalculateShopPerms(Player player){
+        if(plugin.usePerms()){
+            int buildPermissionNumber = -1;
+            //calculate base buildlimit permission first (highest number)
+            for(PermissionAttachmentInfo permInfo : player.getEffectivePermissions()){
+                if(permInfo.getPermission().contains("shop.buildlimit.")){
+                    try {
+                        int tempNum = Integer.parseInt(permInfo.getPermission().substring(permInfo.getPermission().lastIndexOf(".") + 1));
+                        if(tempNum > buildPermissionNumber) {
+                            buildPermissionNumber = tempNum;
+                        }
+                    } catch (NumberFormatException e) {}
+                }
+            }
+            //add all extra build limits next
+            for(PermissionAttachmentInfo permInfo : player.getEffectivePermissions()){
+                if(permInfo.getPermission().contains("shop.buildlimitextra.")){
+                    try {
+                        int extraNum = Integer.parseInt(permInfo.getPermission().substring(permInfo.getPermission().lastIndexOf(".") + 1));
+                        buildPermissionNumber += extraNum;
+                    } catch (NumberFormatException e) {}
+                }
+            }
+            if(buildPermissionNumber == -1)
+                shopBuildLimits.put(player.getName(), 10000);
+            else {
+                shopBuildLimits.put(player.getName(), buildPermissionNumber);
+            }
+        }
     }
 
     public int getBuildLimit(Player player){
