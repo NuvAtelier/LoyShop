@@ -16,6 +16,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 public class ShopGUIListener implements Listener {
@@ -150,16 +151,27 @@ public class ShopGUIListener implements Listener {
                             if(shop != null){
                                 if(Shop.getPlugin().usePerms()){
                                     if(player.hasPermission("shop.operator") || player.hasPermission("shop.gui.teleport")){
-                                        if(!player.isOp() && plugin.getTeleportCost() > 0){
-                                            if(EconomyUtils.hasSufficientFunds(player, player.getInventory(), plugin.getTeleportCost())){
-                                                EconomyUtils.removeFunds(player, player.getInventory(), plugin.getTeleportCost());
+                                        if(!player.isOp()){
+                                            if(plugin.getTeleportCost() > 0) {
+                                                if (EconomyUtils.hasSufficientFunds(player, player.getInventory(), plugin.getTeleportCost())) {
+                                                    EconomyUtils.removeFunds(player, player.getInventory(), plugin.getTeleportCost());
+                                                } else {
+                                                    String message = ShopMessage.getMessage("interactionIssue", "teleportInsufficientFunds", shop, player);
+                                                    if (message != null && !message.isEmpty())
+                                                        player.sendMessage(message);
+                                                    plugin.getGuiHandler().closeWindow(player);
+                                                    return;
+                                                }
                                             }
-                                            else{
-                                                String message = ShopMessage.getMessage("interactionIssue", "teleportInsufficientFunds", shop, player);
-                                                if(message != null && !message.isEmpty())
-                                                    player.sendMessage(message);
-                                                plugin.getGuiHandler().closeWindow(player);
-                                                return;
+                                            if(plugin.getTeleportCooldown() > 0){
+                                                int secondsRemaining = plugin.getShopListener().getTeleportCooldownRemaining(player);
+                                                if(secondsRemaining > 0){
+                                                    String message = ShopMessage.getMessage("interactionIssue", "teleportInsufficientCooldown", shop, player);
+                                                    if (message != null && !message.isEmpty())
+                                                        player.sendMessage(message);
+                                                    plugin.getGuiHandler().closeWindow(player);
+                                                    return;
+                                                }
                                             }
                                         }
                                         shop.teleportPlayer(player);

@@ -90,6 +90,7 @@ public class Shop extends JavaPlugin {
     private double creationCost;
     private double destructionCost;
     private double teleportCost;
+    private double teleportCooldown;
     private boolean returnCreationCost;
     private double taxPercent;
     private ItemListType itemListType;
@@ -370,6 +371,7 @@ public class Shop extends JavaPlugin {
         creationCost = config.getDouble("creationCost");
         destructionCost = config.getDouble("destructionCost");
         teleportCost = config.getDouble("teleportCost");
+        teleportCooldown = config.getDouble("teleportCooldown");
         returnCreationCost = config.getBoolean("returnCreationCost");
 
         try {
@@ -404,7 +406,7 @@ public class Shop extends JavaPlugin {
                 log.info("[Shop] Shops will use " + itemCurrency.getType().name().replace("_", " ").toLowerCase() + " as the currency on the server.");
         }
 
-        commandHandler = new CommandHandler(this, "shop.use", commandAlias, "Base command for the Shop plugin", "/shop", new ArrayList(Arrays.asList(commandAlias)));
+        commandHandler = new CommandHandler(this, null, commandAlias, "Base command for the Shop plugin", "/shop", new ArrayList(Arrays.asList(commandAlias)));
         //this.getCommand(commandAlias).setExecutor(new CommandHandler(this));
         //this.getCommand(commandAlias).setTabCompleter(new CommandTabCompleter());
         //this.getCommand(commandAlias).setAliases(new ArrayList<>())
@@ -752,6 +754,10 @@ public class Shop extends JavaPlugin {
 
     public double getTeleportCost(){
         return teleportCost;
+    }
+
+    public double getTeleportCooldown(){
+        return teleportCooldown;
     }
 
     public boolean returnCreationCost(){

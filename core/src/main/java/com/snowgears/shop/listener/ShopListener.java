@@ -6,10 +6,7 @@ import com.snowgears.shop.hook.WorldGuardHook;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.*;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.Tag;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.WallSign;
@@ -41,6 +38,7 @@ public class ShopListener implements Listener {
     private Shop plugin = Shop.getPlugin();
     private HashMap<String, Integer> shopBuildLimits = new HashMap<String, Integer>();
     private HashMap<UUID, OfflineTransactions> transactionsWhileOffline = new HashMap<>();
+    private HashMap<UUID, Long> playerLastShopTeleport = new HashMap<>();
 
     public ShopListener(Shop instance) {
         plugin = instance;
@@ -422,5 +420,24 @@ public class ShopListener implements Listener {
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event){
         plugin.getShopHandler().processUnloadedShopsInChunk(event.getChunk());
+    }
+
+    public int getTeleportCooldownRemaining(Player player){
+        if(plugin.getTeleportCooldown() <= 0)
+            return 0;
+        Long lastTeleport = playerLastShopTeleport.get(player.getUniqueId());
+        if(lastTeleport != null) {
+            long secondsSinceLastTeleport = (System.currentTimeMillis() - lastTeleport) / 1000;
+            int secondsLeft = (int)plugin.getTeleportCooldown() - (int)secondsSinceLastTeleport;
+            if(secondsLeft <= 0)
+                return 0;
+            else
+                return secondsLeft;
+        }
+        return 0;
+    }
+
+    public void addTeleportCooldown(Player player){
+        playerLastShopTeleport.put(player.getUniqueId(), System.currentTimeMillis());
     }
 }

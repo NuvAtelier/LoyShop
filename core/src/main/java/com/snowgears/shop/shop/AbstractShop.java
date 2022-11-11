@@ -493,6 +493,7 @@ public abstract class AbstractShop {
 
             player.teleport(loc);
         }
+        Shop.getPlugin().getShopListener().addTeleportCooldown(player);
     }
 
     public void printSalesInfo(Player player) {
