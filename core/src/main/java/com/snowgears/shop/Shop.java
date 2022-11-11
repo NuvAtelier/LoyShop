@@ -25,10 +25,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class Shop extends JavaPlugin {
@@ -73,6 +70,8 @@ public class Shop extends JavaPlugin {
     private int displayLightLevel;
     private boolean setGlowingItemFrame;
     private boolean setGlowingSignText;
+    private NavigableMap<Double, String> priceSuffixes;
+    private Double priceSuffixMinimumValue;
     private boolean destroyShopRequiresSneak;
     private int hoursOfflineToRemoveShops;
     private boolean playSounds;
@@ -280,6 +279,20 @@ public class Shop extends JavaPlugin {
         playSounds = config.getBoolean("playSounds");
         playEffects = config.getBoolean("playEffects");
         setGlowingSignText = config.getBoolean("setGlowingSignText");
+        priceSuffixes = new TreeMap<>();
+        for(String suffixKey : config.getConfigurationSection("priceSuffixes").getKeys(false)){
+            if(suffixKey.equals("minimumValue")){
+                priceSuffixMinimumValue = config.getDouble("priceSuffixes.minimumValue");
+            }
+            else {
+                boolean enabled = config.getBoolean("priceSuffixes." + suffixKey + ".enabled");
+                if (enabled) {
+                    Double suffixValue = config.getDouble("priceSuffixes." + suffixKey + ".value");
+                    priceSuffixes.put(suffixValue, suffixKey);
+                }
+            }
+        }
+
         destroyShopRequiresSneak = config.getBoolean("destroyShopRequiresSneak");
 
         try {
@@ -587,6 +600,14 @@ public class Shop extends JavaPlugin {
 
     public boolean getGlowingSignText(){
         return setGlowingSignText;
+    }
+
+    public NavigableMap<Double, String> getPriceSuffixes(){
+        return priceSuffixes;
+    }
+
+    public Double getPriceSuffixMinimumValue(){
+        return priceSuffixMinimumValue;
     }
 
     public boolean useGUI(){

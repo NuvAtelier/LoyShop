@@ -375,7 +375,7 @@ public abstract class AbstractDisplay {
     private Location getItemDropLocation(boolean isBarterItem) {
         AbstractShop shop = this.getShop();
 
-        if(shop.getFacing() == null)
+        if(shop == null || shop.getFacing() == null)
             return null;
 
         //calculate which x,z to drop items at depending on direction of the shop sign
@@ -474,6 +474,8 @@ public abstract class AbstractDisplay {
         }
         Vector lookDirection = player.getEyeLocation().getDirection();
         Location displayLocation = this.getItemDropLocation(false);
+        if(displayLocation == null)
+            return false;
         Vector blockDirection = displayLocation.subtract(player.getEyeLocation()).toVector().normalize();
         double angle = blockDirection.angle(lookDirection);
         //return true if angle (in radians) is less than 1

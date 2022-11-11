@@ -139,7 +139,7 @@ public abstract class AbstractShop {
 //                        return false;
 //                    }
 //                }
-
+                this.updateSign();
                 this.setGuiIcon();
                 return true;
             } catch (ClassCastException cce) {

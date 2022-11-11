@@ -73,6 +73,29 @@ setGlowingItemFrame: false
 # THIS CAN ONLY BE USED IN MINECRAFT 1.17 OR ABOVE #
 setGlowingSignText: false
 
+# This formats suffixes for large numbers like (5,000 = 5k) or (5,000,000 = 5M) #
+# minimumValue = minimum value to start formatting strings #
+priceSuffixes:
+   minimumValue: 10000
+   k:
+      enabled: true
+      value: 1000
+   M:
+      enabled: true
+      value: 1000000
+   B:
+      enabled: true
+      value: 1000000000
+   T:
+      enabled: true
+      value: 1000000000000
+   P:
+      enabled: true
+      value: 1000000000000000
+   E:
+      enabled: true
+      value: 1000000000000000000
+
 
 # =================================================================== #
 #                         GENERAL SETTINGS                            #
