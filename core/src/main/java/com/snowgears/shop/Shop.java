@@ -4,10 +4,7 @@ import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.gui.ShopGUIListener;
 import com.snowgears.shop.handler.*;
-import com.snowgears.shop.hook.BluemapHookListener;
-import com.snowgears.shop.hook.DynmapHookListener;
-import com.snowgears.shop.hook.LWCHookListener;
-import com.snowgears.shop.hook.WorldGuardHook;
+import com.snowgears.shop.hook.*;
 import com.snowgears.shop.listener.CreativeSelectionListener;
 import com.snowgears.shop.listener.DisplayListener;
 import com.snowgears.shop.listener.MiscListener;
@@ -26,6 +23,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Shop extends JavaPlugin {
@@ -42,6 +40,8 @@ public class Shop extends JavaPlugin {
     private LWCHookListener lwcHookListener;
     private DynmapHookListener dynmapHookListener;
     private BluemapHookListener bluemapHookListener;
+    private BentoBoxHookListener bentoBoxHookListener;
+    private ARMHookListener armHookListener;
 
     private ShopHandler shopHandler;
     private CommandHandler commandHandler;
@@ -92,6 +92,7 @@ public class Shop extends JavaPlugin {
     private double teleportCost;
     private double teleportCooldown;
     private boolean returnCreationCost;
+    private boolean allowPartialSales;
     private double taxPercent;
     private ItemListType itemListType;
     private List<String> worldBlackList;
@@ -373,6 +374,7 @@ public class Shop extends JavaPlugin {
         teleportCost = config.getDouble("teleportCost");
         teleportCooldown = config.getDouble("teleportCooldown");
         returnCreationCost = config.getBoolean("returnCreationCost");
+        allowPartialSales = config.getBoolean("allowPartialSales");
 
         try {
             itemListType = ItemListType.valueOf(config.getString("itemList"));
@@ -429,6 +431,8 @@ public class Shop extends JavaPlugin {
         getServer().getPluginManager().registerEvents(miscListener, this);
         getServer().getPluginManager().registerEvents(creativeSelectionListener, this);
         getServer().getPluginManager().registerEvents(guiListener, this);
+
+        //only define different listener hooks if the plugins are present on the server
         if(getServer().getPluginManager().getPlugin("LWC") != null){
             lwcHookListener = new LWCHookListener(this);
             getServer().getPluginManager().registerEvents(lwcHookListener, this);
@@ -442,6 +446,16 @@ public class Shop extends JavaPlugin {
         if(getServer().getPluginManager().getPlugin("BlueMap") != null){
             bluemapHookListener = new BluemapHookListener(this);
             getServer().getPluginManager().registerEvents(bluemapHookListener, this);
+        }
+
+        if(getServer().getPluginManager().getPlugin("BentoBox") != null){
+            bentoBoxHookListener = new BentoBoxHookListener(this);
+            getServer().getPluginManager().registerEvents(bentoBoxHookListener, this);
+        }
+
+        if(getServer().getPluginManager().getPlugin("AdvancedRegionMarket") != null){
+            armHookListener = new ARMHookListener(this);
+            getServer().getPluginManager().registerEvents(armHookListener, this);
         }
 
         displayListener.startRepeatingDisplayViewTask();
@@ -472,6 +486,12 @@ public class Shop extends JavaPlugin {
         if(bluemapHookListener != null){
             //bluemapHookListener.deleteMarkers();
             HandlerList.unregisterAll(bluemapHookListener);
+        }
+        if(bentoBoxHookListener != null){
+            HandlerList.unregisterAll(bentoBoxHookListener);
+        }
+        if(armHookListener != null){
+            HandlerList.unregisterAll(armHookListener);
         }
 
         plugin.getShopHandler().removeAllDisplays(null);
@@ -762,6 +782,11 @@ public class Shop extends JavaPlugin {
 
     public boolean returnCreationCost(){
         return returnCreationCost;
+    }
+
+    public boolean getAllowPartialSales(){
+        return allowPartialSales;
+
     }
 
     public ItemNameUtil getItemNameUtil(){

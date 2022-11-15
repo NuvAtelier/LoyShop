@@ -5,7 +5,6 @@ import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.ComparatorShopItemNameLow;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Collections;

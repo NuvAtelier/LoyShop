@@ -152,7 +152,7 @@ public abstract class AbstractShop {
 
     //abstract methods that must be implemented in each shop subclass
 
-    public abstract TransactionError executeTransaction(Player player, boolean isCheck, ShopType transactionType);
+    public abstract TransactionError executeTransaction(Transaction transaction);
 
     protected int calculateStock() {
         int oldStock = stock;
