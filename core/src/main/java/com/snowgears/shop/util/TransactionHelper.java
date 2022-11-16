@@ -20,13 +20,11 @@ import java.util.UUID;
 
 public class TransactionHelper {
 
-    private Shop plugin = Shop.getPlugin();
+    private Shop plugin;
     private HashMap<Location, UUID> shopMessageCooldown = new HashMap<>(); //shop location, shop owner
-//    private Logger exchangeLogger;
 
     public TransactionHelper(Shop instance) {
         plugin = instance;
-//        initializeLogger(); //TODO
     }
 
     //TODO will need to update ender chest contents at the end of every transaction involving an ender chest
@@ -136,9 +134,16 @@ public class TransactionHelper {
             //System.out.println("MaxOrders - "+orderSizeMax+", OrderNum - "+orderNum+", issue - "+issue.toString());
             issue = shop.executeTransaction(transaction);
 
-            //TODO
             if(plugin.getAllowPartialSales()){
                 processTransactionPartialSale(transaction);
+
+                //in the case that a shop can do partial AND player can do partial, process both cases
+                if(issue == TransactionError.INSUFFICIENT_FUNDS_SHOP && transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_PLAYER) {
+                    processTransactionPartialSale(transaction);
+                }
+                else if(issue == TransactionError.INSUFFICIENT_FUNDS_PLAYER && transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_SHOP) {
+                    processTransactionPartialSale(transaction);
+                }
                 issue = transaction.getError();
             }
 
@@ -230,7 +235,6 @@ public class TransactionHelper {
                     int maxItems = InventoryUtils.getAmount(shop.getInventory(), transaction.getItemStack());
                     if(maxItems > 0) {
                         processAgain = transaction.setAmountCalculatePrice(maxItems);
-                        //processAgain = true;
                     }
                     break;
                 case BUY:
@@ -264,7 +268,6 @@ public class TransactionHelper {
                     break;
                 case BARTER:
                     int maxSecondaryItems = InventoryUtils.getAmount(player.getInventory(), transaction.getSecondaryItemStack());
-                    System.out.println("Max amount of secondary items: "+maxSecondaryItems);
                     if(maxSecondaryItems > 0) {
                         processAgain = transaction.setSecondaryAmountCalculatePrice(maxSecondaryItems);
                         //processAgain = true;
@@ -282,7 +285,7 @@ public class TransactionHelper {
 
     private void sendExchangeMessagesAndLog(AbstractShop shop, Player player, ShopType transactionType, ArrayList<Transaction> transactions) {
 
-        double price = getPriceFromOrders(shop, transactionType, transactions);
+        double price = getPriceFromOrders(transactions);
         String message = getMessageFromOrders(shop, player, transactionType, "user", price, transactions);
 
         ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_SALE_USER);
@@ -302,7 +305,12 @@ public class TransactionHelper {
             }
         }
 
-        plugin.getLogHandler().logTransaction(player, shop, transactionType, price, (shop.getAmount()*transactions.size())); //TODO need to come back and finish the secondaryItemStack on transactions. THIS WILL BE WRONG RIGHT NOW
+        int amount = 0;
+        for(Transaction transaction : transactions){
+            amount += transaction.getItemStack().getAmount();
+        }
+
+        plugin.getLogHandler().logTransaction(player, shop, transactionType, price, amount);
 //        if(shop.getType() == ShopType.GAMBLE)
 //            shop.shuffleGambleItem();
     }
@@ -332,15 +340,7 @@ public class TransactionHelper {
         return message;
     }
 
-    private double getPriceFromOrders(AbstractShop shop, ShopType transactionType, ArrayList<Transaction> transactions){
-//        double price;
-//        if(shop.getType() == ShopType.COMBO && transactionType == ShopType.SELL){
-//            price = (((ComboShop)shop).getPriceSell() * orders);
-//        }
-//        else{
-//            price = shop.getPrice() * orders;
-//        }
-//        return price;
+    private double getPriceFromOrders(ArrayList<Transaction> transactions){
         double price = 0;
         for(Transaction transaction : transactions){
             price += transaction.getPrice();
@@ -350,22 +350,19 @@ public class TransactionHelper {
 
     public void sendEffects(boolean success, Player player, AbstractShop shop){
         try {
-            //only send effects to player if server is above MC 1.8 (when OFF_HAND was introduced)
-            if(EquipmentSlot.OFF_HAND == EquipmentSlot.OFF_HAND) {
-                if (success) {
-                    if (plugin.playSounds()) {
-                        try {
-                            player.playSound(shop.getSignLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
-                        } catch (NoSuchFieldError e) {}
-                    }
-                    if (plugin.playEffects())
-                        player.getWorld().playEffect(shop.getChestLocation(), Effect.STEP_SOUND, Material.EMERALD_BLOCK);
-                } else {
-                    if (plugin.playSounds())
-                        player.playSound(shop.getSignLocation(), Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
-                    if (plugin.playEffects())
-                        player.getWorld().playEffect(shop.getChestLocation(), Effect.STEP_SOUND, Material.REDSTONE_BLOCK);
+            if (success) {
+                if (plugin.playSounds()) {
+                    try {
+                        player.playSound(shop.getSignLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+                    } catch (NoSuchFieldError e) {}
                 }
+                if (plugin.playEffects())
+                    player.getWorld().playEffect(shop.getChestLocation(), Effect.STEP_SOUND, Material.EMERALD_BLOCK);
+            } else {
+                if (plugin.playSounds())
+                    player.playSound(shop.getSignLocation(), Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
+                if (plugin.playEffects())
+                    player.getWorld().playEffect(shop.getChestLocation(), Effect.STEP_SOUND, Material.REDSTONE_BLOCK);
             }
         } catch (Error e){
         } catch (Exception e) {}

@@ -169,6 +169,12 @@ public abstract class AbstractShop {
             return stock;
         }
         stock = InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / this.getAmount();
+        if(stock == 0 && Shop.getPlugin().getAllowPartialSales()){
+            float remaining = (float)InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / (float)this.getAmount();
+            if(remaining > 0){
+                stock = 1;
+            }
+        }
         if(stock != oldStock){
             signLinesRequireRefresh = true;
         }

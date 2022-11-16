@@ -1,5 +1,6 @@
 package com.snowgears.shop.shop;
 
+import com.snowgears.shop.Shop;
 import com.snowgears.shop.event.PlayerExchangeShopEvent;
 import com.snowgears.shop.util.*;
 import org.bukkit.Bukkit;
@@ -125,6 +126,12 @@ public class BuyShop extends AbstractShop {
                 stock = Integer.MAX_VALUE;
             else{
                 stock = (int)(funds / this.getPrice());
+                if(stock == 0 && Shop.getPlugin().getAllowPartialSales()){
+                    double pricePer = this.getPrice() / this.getItemStack().getAmount();
+                    if(funds >= pricePer){
+                        stock = 1;
+                    }
+                }
             }
         }
         return stock;

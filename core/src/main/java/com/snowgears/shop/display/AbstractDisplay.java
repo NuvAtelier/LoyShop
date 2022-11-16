@@ -480,7 +480,7 @@ public abstract class AbstractDisplay {
         double angle = blockDirection.angle(lookDirection);
         //return true if angle (in radians) is less than 1
         //System.out.println("Angle to shop: "+angle);
-        return angle < 1.5;
+        return angle < 1;
     }
 
     protected void removeDisplayTagsDelayedTask(Player player) {

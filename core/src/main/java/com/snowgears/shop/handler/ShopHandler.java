@@ -508,6 +508,14 @@ public class ShopHandler {
         playersActiveShopDisplayTag.put(player.getUniqueId(), shopSignLocation);
     }
 
+//    public boolean shopDisplayTagIsActive(Player player, Location shopSignLocation){
+//
+//        if(playersActiveShopDisplayTag.containsKey(player.getUniqueId())){
+//            Location oldShopSignLocation = playersActiveShopDisplayTag.get(player.getUniqueId());
+//            return oldShopSignLocation.equals(shopSignLocation);
+//        }
+//        return false;
+//    }
 
     private List<Location> getUnloadedShopsByChunk(String chunkKey){
         List<Location> unloadedShopsInChunk;

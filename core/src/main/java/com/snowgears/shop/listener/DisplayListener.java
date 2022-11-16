@@ -43,8 +43,8 @@ public class DisplayListener implements Listener {
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
                     if (player != null) {
                             try {
-                                Block block = player.getTargetBlock(null, 8);
-                                if (block.getBlockData() instanceof WallSign) {
+                                Block block = player.getTargetBlockExact(8);
+                                if (block != null && block.getBlockData() instanceof WallSign) {
                                     AbstractShop shopObj = plugin.getShopHandler().getShop(block.getLocation());
                                     if (shopObj != null) {
                                         shopObj.getDisplay().showDisplayTags(player);

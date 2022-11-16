@@ -1,6 +1,7 @@
 package com.snowgears.shop.util;
 
 import com.snowgears.shop.shop.AbstractShop;
+import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -25,7 +26,12 @@ public class Transaction {
         if(shop.getType() == ShopType.BARTER){
             this.secondaryItemStack = shop.getSecondaryItemStack();
         }
-        this.price = shop.getPrice();
+        if(shop instanceof ComboShop && transactionType == ShopType.SELL) {
+            this.price = ((ComboShop)shop).getPriceSell();
+        }
+        else{
+            this.price = shop.getPrice();
+        }
         this.error = null;
     }
 
@@ -66,7 +72,12 @@ public class Transaction {
             this.itemStack.setAmount(primaryItemAmount);
             return (primaryItemAmount > 0 && secondaryItemAmount > 0);
         }
-        else {
+//        else if(shop instanceof ComboShop && transactionType == ShopType.SELL) {
+//            float percentage = (float) primaryItemAmount / (float) itemStack.getAmount();
+//            this.itemStack.setAmount(primaryItemAmount);
+//            this.price = ((ComboShop)shop).getPriceSell();
+//        }
+        else{
             float percentage = (float) primaryItemAmount / (float) itemStack.getAmount();
             this.itemStack.setAmount(primaryItemAmount);
             this.price = price * percentage;
@@ -77,7 +88,7 @@ public class Transaction {
     public boolean setSecondaryAmountCalculatePrice(int secondaryItemAmount){
         float crossProductX = (float)secondaryItemAmount / ((float)shop.getSecondaryItemStack().getAmount() / (float)shop.getItemStack().getAmount());
         int primaryItemAmount = (int)Math.floor(crossProductX);
-        System.out.println("Max amount of primary items that equals: "+crossProductX);
+        //System.out.println("Max amount of primary items that equals: "+crossProductX);
         this.price = secondaryItemAmount;
         this.secondaryItemStack.setAmount(secondaryItemAmount);
         this.itemStack.setAmount(primaryItemAmount);
