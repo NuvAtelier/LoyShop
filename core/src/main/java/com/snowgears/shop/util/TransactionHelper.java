@@ -5,12 +5,10 @@ import com.snowgears.shop.Shop;
 import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.hook.WorldGuardHook;
 import com.snowgears.shop.shop.AbstractShop;
-import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
@@ -239,10 +237,9 @@ public class TransactionHelper {
                     break;
                 case BUY:
                     double pricePerItem = transaction.getPricePerItem();
-                    double maxItemsWithFunds = Math.floor(EconomyUtils.getFunds(shop.getOwner(), shop.getInventory()) / pricePerItem);
+                    double maxItemsWithFunds = Math.floor((float)EconomyUtils.getFunds(shop.getOwner(), shop.getInventory()) / pricePerItem);
                     if(maxItemsWithFunds > 0) {
                         processAgain = transaction.setAmountCalculatePrice((int) maxItemsWithFunds);
-                        //processAgain = true;
                     }
                     break;
                 default:
@@ -253,24 +250,25 @@ public class TransactionHelper {
             switch (transaction.getType()){
                 case SELL:
                     double pricePerItem = transaction.getPricePerItem();
-                    double maxItemsWithFunds = Math.floor(EconomyUtils.getFunds(player, player.getInventory()) / pricePerItem);
+                    double maxItemsWithFunds = Math.floor((float)EconomyUtils.getFunds(player, player.getInventory()) / pricePerItem);
+                    System.out.println("getFunds(player): "+EconomyUtils.getFunds(player, player.getInventory()));
+                    System.out.println("pricePerItem: "+pricePerItem);
+                    System.out.println("maxItemsWithFunds: "+maxItemsWithFunds);
                     if(maxItemsWithFunds > 0) {
                         processAgain = transaction.setAmountCalculatePrice((int) maxItemsWithFunds);
-                        //processAgain = true;
                     }
                     break;
                 case BUY:
                     int maxItems = InventoryUtils.getAmount(player.getInventory(), transaction.getItemStack());
+                    System.out.println("maxItems: "+maxItems);
                     if(maxItems > 0) {
                         processAgain = transaction.setAmountCalculatePrice(maxItems);
-                        //processAgain = true;
                     }
                     break;
                 case BARTER:
                     int maxSecondaryItems = InventoryUtils.getAmount(player.getInventory(), transaction.getSecondaryItemStack());
                     if(maxSecondaryItems > 0) {
                         processAgain = transaction.setSecondaryAmountCalculatePrice(maxSecondaryItems);
-                        //processAgain = true;
                     }
                     break;
                 default:

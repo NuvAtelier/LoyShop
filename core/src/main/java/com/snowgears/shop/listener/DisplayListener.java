@@ -31,7 +31,7 @@ import java.util.*;
 
 public class DisplayListener implements Listener {
 
-    public Shop plugin = Shop.getPlugin();
+    public Shop plugin;
     private ArrayList<ItemStack> allServerRecipeResults = new ArrayList<>();
     private int repeatingViewTask;
     private int repeatingDisplayTask;

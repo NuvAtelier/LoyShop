@@ -1,5 +1,6 @@
 package com.snowgears.shop.util;
 
+import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
@@ -81,6 +82,9 @@ public class Transaction {
             float percentage = (float) primaryItemAmount / (float) itemStack.getAmount();
             this.itemStack.setAmount(primaryItemAmount);
             this.price = price * percentage;
+            if(Shop.getPlugin().getCurrencyType() == CurrencyType.ITEM){
+                return this.price >= 1;
+            }
             return true;
         }
     }
@@ -103,8 +107,8 @@ public class Transaction {
         return amount;
     }
 
-    public double getPricePerItem(){
-        double pricePer = this.getPrice() / this.getItemStack().getAmount();
+    public float getPricePerItem(){
+        float pricePer = (float)this.getPrice() / (float)this.getItemStack().getAmount();
         return pricePer;
     }
 

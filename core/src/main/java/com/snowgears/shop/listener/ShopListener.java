@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ShopListener implements Listener {
 
-    private Shop plugin = Shop.getPlugin();
+    private Shop plugin;
     private HashMap<String, Integer> shopBuildLimits = new HashMap<String, Integer>();
     private HashMap<UUID, OfflineTransactions> transactionsWhileOffline = new HashMap<>();
     private HashMap<UUID, Long> playerLastShopTeleport = new HashMap<>();

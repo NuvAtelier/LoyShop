@@ -45,13 +45,13 @@ public class BuyShop extends AbstractShop {
             //check if shop has enough currency
             if(!this.isAdmin()) {
                 if(transaction.isCheck()) {
-                    boolean hasFunds = EconomyUtils.hasSufficientFunds(this.getOwner(), this.getInventory(), this.getPrice());
+                    boolean hasFunds = EconomyUtils.hasSufficientFunds(this.getOwner(), this.getInventory(), transaction.getPrice());
                     if (!hasFunds) {
                         transaction.setError(TransactionError.INSUFFICIENT_FUNDS_SHOP);
                     }
                 }
                 else {
-                    EconomyUtils.removeFunds(this.getOwner(), this.getInventory(), this.getPrice());
+                    EconomyUtils.removeFunds(this.getOwner(), this.getInventory(), transaction.getPrice());
                 }
             }
         }
@@ -59,14 +59,14 @@ public class BuyShop extends AbstractShop {
         if(transaction.getError() == null) {
             if(transaction.isCheck()) {
                 //check if player has enough room to accept currency
-                boolean hasRoom = EconomyUtils.canAcceptFunds(player, player.getInventory(), this.getPrice());
+                boolean hasRoom = EconomyUtils.canAcceptFunds(player, player.getInventory(), transaction.getPrice());
                 if (!hasRoom) {
                     transaction.setError(TransactionError.INVENTORY_FULL_PLAYER);
                 }
             }
             else {
                 //add currency to player
-                EconomyUtils.addFunds(player, player.getInventory(), this.getPrice());
+                EconomyUtils.addFunds(player, player.getInventory(), transaction.getPrice());
             }
         }
 

@@ -2,16 +2,13 @@ package com.snowgears.shop.hook;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.AbstractShop;
-import net.alex9849.arm.events.RemoveRegionEvent;
 import net.alex9849.arm.events.RestoreRegionEvent;
-import net.alex9849.arm.events.UnsellRegionEvent;
 import net.alex9849.arm.regions.Region;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
 import java.util.UUID;
-import java.util.logging.Level;
 
 public class ARMHookListener implements Listener {
 

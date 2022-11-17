@@ -20,7 +20,7 @@ import java.util.UUID;
 
 public class ShopGUIListener implements Listener {
 
-    private Shop plugin = Shop.getPlugin();
+    private Shop plugin;
 
     public ShopGUIListener(Shop instance) {
         plugin = instance;

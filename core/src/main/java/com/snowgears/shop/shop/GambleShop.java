@@ -58,13 +58,13 @@ public class GambleShop extends AbstractShop {
         if(transaction.getError() == null) {
             if (transaction.isCheck()) {
                 //check if player has enough currency
-                boolean hasFunds = EconomyUtils.hasSufficientFunds(player, player.getInventory(), this.getPrice());
+                boolean hasFunds = EconomyUtils.hasSufficientFunds(player, player.getInventory(), transaction.getPrice());
                 if (!hasFunds) {
                     transaction.setError(TransactionError.INSUFFICIENT_FUNDS_PLAYER);
                 }
             } else {
                 //remove currency from player
-                EconomyUtils.removeFunds(player, player.getInventory(), this.getPrice());
+                EconomyUtils.removeFunds(player, player.getInventory(), transaction.getPrice());
             }
         }
 
