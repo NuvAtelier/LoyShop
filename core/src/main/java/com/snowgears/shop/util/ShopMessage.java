@@ -8,6 +8,7 @@ import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
@@ -110,7 +111,7 @@ public class ShopMessage {
         }
 
         if (player != null) {
-            unformattedMessage = unformattedMessage.replace("[owner]", "" + Bukkit.getOfflinePlayer(process.getPlayerUUID().toString()));
+            unformattedMessage = unformattedMessage.replace("[owner]", "" + Bukkit.getOfflinePlayer(process.getPlayerUUID()));
 
             if (unformattedMessage.contains("[shop types]")) {
                 List<ShopType> typeList = new ArrayList(Arrays.asList(ShopType.values()));
