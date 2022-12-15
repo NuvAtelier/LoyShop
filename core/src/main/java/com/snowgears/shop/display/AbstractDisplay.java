@@ -469,7 +469,11 @@ public abstract class AbstractDisplay {
 //    }
 
     protected boolean playerIsLookingTowardShop(Player player) {
-        if(player.getLocation().distanceSquared(this.shopSignLocation) > 64) { //player is more than 8 blocks away
+        try {
+            if (player.getLocation().distanceSquared(this.shopSignLocation) > 64) { //player is more than 8 blocks away
+                return false;
+            }
+        } catch (IllegalArgumentException e) {
             return false;
         }
         Vector lookDirection = player.getEyeLocation().getDirection();

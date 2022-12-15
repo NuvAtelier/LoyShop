@@ -73,8 +73,28 @@ public class EnderChestHandler {
                 currentFile.createNewFile();
 
             YamlConfiguration config = YamlConfiguration.loadConfiguration(currentFile);
-            config.set("enderchest", this.getInventory(player).getContents());
-            config.save(currentFile);
+
+            ItemStack[] contents = this.getInventory(player).getContents();
+            try {
+                config.set("enderchest", contents);
+                config.save(currentFile);
+            } catch (NullPointerException npe) {
+                //somehow an item in the inventory has a null tag or something that can't be serialized
+                ItemStack[] strippedContents = new ItemStack[contents.length];
+                //go through all the items and delete the ones that can't be serialized
+                for(int i=0; i < contents.length; i++){
+                    try {
+                        ItemStack itemStack = contents[i];
+                        itemStack.serialize();
+                        strippedContents[i] = itemStack;
+                    } catch (NullPointerException npeNest) {
+                        strippedContents[i] = null;
+                    }
+                }
+
+                config.set("enderchest", strippedContents);
+                config.save(currentFile);
+            }
 
         } catch (Exception e){
             e.printStackTrace();

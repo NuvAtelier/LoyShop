@@ -32,7 +32,7 @@ public class Shop extends JavaPlugin {
 
     private ShopListener shopListener;
     private DisplayListener displayListener;
-    private TransactionHelper transactionHelper;
+    private TransactionHandler transactionHandler;
     private MiscListener miscListener;
     private CreativeSelectionListener creativeSelectionListener;
     private ShopGUIListener guiListener;
@@ -200,7 +200,7 @@ public class Shop extends JavaPlugin {
 //        }
 
         shopListener = new ShopListener(this);
-        transactionHelper = new TransactionHelper(this);
+        transactionHandler = new TransactionHandler(this);
         miscListener = new MiscListener(this);
         creativeSelectionListener = new CreativeSelectionListener(this);
         displayListener = new DisplayListener(this);
@@ -531,8 +531,8 @@ public class Shop extends JavaPlugin {
         return bluemapHookListener;
     }
 
-    public TransactionHelper getTransactionHelper() {
-        return transactionHelper;
+    public TransactionHandler getTransactionHelper() {
+        return transactionHandler;
     }
 
     public ShopHandler getShopHandler() {

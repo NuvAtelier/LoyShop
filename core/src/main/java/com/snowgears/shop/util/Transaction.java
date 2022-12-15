@@ -3,6 +3,7 @@ package com.snowgears.shop.util;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
+import com.snowgears.shop.shop.GambleShop;
 import com.snowgears.shop.shop.ShopType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -24,6 +25,11 @@ public class Transaction {
         this.transactionType = transactionType;
         this.isCheck = true;
         this.itemStack = shop.getItemStack();
+
+        if(shop instanceof GambleShop){
+            ((GambleShop)shop).setGambleItem();
+            this.itemStack = ((GambleShop) shop).getGambleItem();
+        }
         if(shop.getType() == ShopType.BARTER){
             this.secondaryItemStack = shop.getSecondaryItemStack();
         }
