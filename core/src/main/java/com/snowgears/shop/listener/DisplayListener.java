@@ -157,8 +157,12 @@ public class DisplayListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockPlace(BlockPlaceEvent event) {
         AbstractShop shop = plugin.getShopHandler().getShopByChest(event.getBlock().getRelative(BlockFace.DOWN));
-        if (shop != null && shop.getDisplay().getType() != DisplayType.NONE)
-            event.setCancelled(true);
+        if(shop != null){
+            if(shop.getDisplay().getType() == null && plugin.getDisplayType() != DisplayType.NONE)
+                event.setCancelled(true);
+            else if (shop.getDisplay().getType() != null && shop.getDisplay().getType() != DisplayType.NONE)
+                event.setCancelled(true);
+        }
     }
 
     @EventHandler (priority = EventPriority.HIGHEST)

@@ -90,6 +90,12 @@ public class GambleShop extends AbstractShop {
                 boolean hasRoom = InventoryUtils.hasRoom(player.getInventory(), gambleItem, player);
                 if (!hasRoom)
                     transaction.setError(TransactionError.INVENTORY_FULL_PLAYER);
+
+                //additional check for a free slot, as to not allow a player to cheat the system with a full inventory and only allow for the item they want
+                if (player.getInventory().firstEmpty() == -1){
+                    transaction.setError(TransactionError.INVENTORY_FULL_PLAYER);
+                }
+
             } else {
                 //add items to player's inventory
                 InventoryUtils.addItem(player.getInventory(), gambleItem, player);

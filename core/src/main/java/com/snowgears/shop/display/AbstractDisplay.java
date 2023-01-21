@@ -80,7 +80,7 @@ public abstract class AbstractDisplay {
         ItemStack item = shop.getItemStack().clone();
         item.setAmount(1);
 
-        DisplayType displayType = this.type;
+        DisplayType displayType = this.getType();
         if(displayType == null)
             displayType = Shop.getPlugin().getDisplayType();
 
