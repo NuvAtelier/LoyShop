@@ -5,6 +5,7 @@ import com.snowgears.shop.event.PlayerExchangeShopEvent;
 import com.snowgears.shop.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -112,6 +113,11 @@ public class BuyShop extends AbstractShop {
         this.isPerformingTransaction = false;
         setGuiIcon();
         transaction.setError(TransactionError.NONE);
+
+        //if the shop is connected to an ender inventory, save the contents as needed
+        if(!isAdmin && this.chestLocation != null && this.chestLocation.getBlock().getType() == Material.ENDER_CHEST){
+            Shop.getPlugin().getEnderChestHandler().saveInventory(this.getOwner());
+        }
         return TransactionError.NONE;
     }
 

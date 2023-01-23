@@ -323,17 +323,17 @@ public class ShopListener implements Listener {
     //              ENDER CHEST HANDLING EVENTS
     //===================================================================================//
 
-    @EventHandler
-    public void onCloseEnderChest(InventoryCloseEvent event){
-        if(event.getPlayer() instanceof Player) {
-            Player player = (Player)event.getPlayer();
-            if (event.getInventory().getType() == InventoryType.ENDER_CHEST) {
-                if(plugin.useEnderChests()) {
-                    plugin.getEnderChestHandler().saveInventory(player, event.getInventory());
-                }
-            }
-        }
-    }
+//    @EventHandler
+//    public void onCloseEnderChest(InventoryCloseEvent event){
+//        if(event.getPlayer() instanceof Player) {
+//            Player player = (Player)event.getPlayer();
+//            if (event.getInventory().getType() == InventoryType.ENDER_CHEST) {
+//                if(plugin.useEnderChests()) {
+//                    plugin.getEnderChestHandler().saveInventory(player, event.getInventory());
+//                }
+//            }
+//        }
+//    }
 
     @EventHandler
     public void onLogin(PlayerLoginEvent event){
@@ -355,7 +355,7 @@ public class ShopListener implements Listener {
         }
         final Player player = event.getPlayer();
 
-        final Inventory inv = plugin.getEnderChestHandler().getInventory(player);
+        //final Inventory inv = plugin.getEnderChestHandler().getInventory(player);
 
         plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
             public void run() {
@@ -365,10 +365,10 @@ public class ShopListener implements Listener {
                         exp.apply();
                     }
                 }
-                if(plugin.useEnderChests() && inv != null){
-                    player.getEnderChest().setContents(inv.getContents());
-                    plugin.getEnderChestHandler().saveInventory(player, inv);
-                }
+//                if(plugin.useEnderChests() && inv != null){
+//                    player.getEnderChest().setContents(inv.getContents());
+//                    plugin.getEnderChestHandler().saveInventory(player, inv);
+//                }
 
                 plugin.getShopHandler().clearShopDisplaysNearPlayer(player);
                 plugin.getShopHandler().processShopDisplaysNearPlayer(player);
