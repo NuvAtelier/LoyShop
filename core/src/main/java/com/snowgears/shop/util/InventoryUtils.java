@@ -4,7 +4,6 @@ package com.snowgears.shop.util;
 import com.snowgears.shop.Shop;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
