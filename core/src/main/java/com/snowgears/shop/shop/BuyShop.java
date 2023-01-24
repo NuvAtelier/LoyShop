@@ -110,14 +110,15 @@ public class BuyShop extends AbstractShop {
             transaction.passCheck();
             return executeTransaction(transaction);
         }
-        this.isPerformingTransaction = false;
-        setGuiIcon();
-        transaction.setError(TransactionError.NONE);
 
         //if the shop is connected to an ender inventory, save the contents as needed
         if(!isAdmin && this.chestLocation != null && this.chestLocation.getBlock().getType() == Material.ENDER_CHEST){
             Shop.getPlugin().getEnderChestHandler().saveInventory(this.getOwner());
         }
+
+        this.isPerformingTransaction = false;
+        setGuiIcon();
+        transaction.setError(TransactionError.NONE);
         return TransactionError.NONE;
     }
 

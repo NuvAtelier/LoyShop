@@ -35,13 +35,14 @@ public class ComboShop extends AbstractShop {
         else{
             executeBuyTransaction(transaction);
         }
-        this.isPerformingTransaction = false;
-        setGuiIcon();
 
         //if the shop is connected to an ender inventory, save the contents as needed
         if(!isAdmin && this.chestLocation != null && this.chestLocation.getBlock().getType() == Material.ENDER_CHEST){
             Shop.getPlugin().getEnderChestHandler().saveInventory(this.getOwner());
         }
+
+        this.isPerformingTransaction = false;
+        setGuiIcon();
         return transaction.getError();
     }
 

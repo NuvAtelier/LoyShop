@@ -23,6 +23,7 @@ import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -197,12 +198,33 @@ public class DisplayListener implements Listener {
                     return;
                 }
 
+                //set the GUI icon again (in case stock var needs to be updated in the GUI)
+                shop.setGuiIcon();
+
                 //if the sign lines use a variable that requires a refresh (like stock that is dynamically updated), then refresh sign
                 if(shop.getSignLinesRequireRefresh())
                     shop.updateSign();
 
+                //make sure to set gamble item again if player set it to new custom items
+                if(shop.getType() == ShopType.GAMBLE){
+                    ((GambleShop)shop).setGambleItem();
+                }
+            }
+            //for some reason, EnderChest also does not extend Container
+            else if(event.getInventory().getType() == InventoryType.ENDER_CHEST){
+                AbstractShop shop = plugin.getShopHandler().getShopByChest(event.getInventory().getLocation().getBlock());
+
+                if(shop == null) {
+                    return;
+                }
+
                 //set the GUI icon again (in case stock var needs to be updated in the GUI)
                 shop.setGuiIcon();
+
+                //if the sign lines use a variable that requires a refresh (like stock that is dynamically updated), then refresh sign
+                if(shop.getSignLinesRequireRefresh())
+                    shop.updateSign();
+
                 //make sure to set gamble item again if player set it to new custom items
                 if(shop.getType() == ShopType.GAMBLE){
                     ((GambleShop)shop).setGambleItem();

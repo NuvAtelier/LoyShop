@@ -125,6 +125,8 @@ commandAlias: shop
 enabledContainers:
    - BARREL
    - CHEST
+   - ENDER_CHEST
+   - TRAPPED_CHEST
    - SHULKER_BOX
    - BLACK_SHULKER_BOX
    - BLUE_SHULKER_BOX
@@ -142,7 +144,6 @@ enabledContainers:
    - RED_SHULKER_BOX
    - WHITE_SHULKER_BOX
    - YELLOW_SHULKER_BOX
-   - TRAPPED_CHEST
 
 # These are the methods players are able to use to create shops #
 # placeSign - players can place signs on chests and fill out the info on the sign itself #
