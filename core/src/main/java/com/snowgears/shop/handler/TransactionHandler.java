@@ -25,8 +25,6 @@ public class TransactionHandler {
         plugin = instance;
     }
 
-    //TODO will need to update ender chest contents at the end of every transaction involving an ender chest
-
     public void executeTransactionFromEvent(PlayerInteractEvent event, AbstractShop shop, boolean fullStackOrder){
         Player player = event.getPlayer();
 
