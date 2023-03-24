@@ -1,6 +1,6 @@
 package com.snowgears.shop.util;
 
-
+import net.md_5.bungee.api.ChatColor;
 import com.snowgears.shop.Shop;
 import org.bukkit.*;
 import org.bukkit.block.Block;

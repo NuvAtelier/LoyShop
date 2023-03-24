@@ -525,7 +525,7 @@ public abstract class AbstractShop {
 
         for(String part : parts){
             ComponentBuilder builder = new ComponentBuilder("");
-            org.bukkit.ChatColor cc = UtilMethods.getChatColor(part);
+            net.md_5.bungee.api.ChatColor cc = UtilMethods.getChatColor(part);
             if(cc != null)
                 part = part.substring(2, part.length());
             boolean barterItem = false;

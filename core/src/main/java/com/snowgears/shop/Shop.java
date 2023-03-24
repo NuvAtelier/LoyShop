@@ -11,7 +11,7 @@ import com.snowgears.shop.listener.MiscListener;
 import com.snowgears.shop.listener.ShopListener;
 import com.snowgears.shop.util.*;
 import net.milkbowl.vault.economy.Economy;
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.YamlConfiguration;
