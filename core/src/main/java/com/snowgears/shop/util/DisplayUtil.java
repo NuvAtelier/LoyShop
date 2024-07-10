@@ -502,7 +502,7 @@ public class DisplayUtil {
 
     private static boolean isDisplayLegacy(Entity entity){
         try {
-            if (entity.getType() == EntityType.DROPPED_ITEM) {
+            if (entity.getType() == EntityType.ITEM) {
                 ItemMeta itemMeta = ((Item) entity).getItemStack().getItemMeta();
                 if (itemMeta != null && UtilMethods.containsLocation(itemMeta.getDisplayName())) {
                     return true;

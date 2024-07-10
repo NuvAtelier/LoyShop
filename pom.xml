@@ -12,7 +12,7 @@
         <module>v1_20_R4</module>
         <module>v1_20_R3</module>
         <module>v1_20_R2</module>
-        <module>v1_20_R1</module>
+        <!-- <module>v1_20_R1</module> -->
         <module>v1_19_R3</module>
         <module>v1_19_R2</module>
         <module>v1_19_R1</module>
@@ -36,11 +36,25 @@
     </build>
 
     <properties>
-        <revision>1.8.4.7</revision>
+        <revision>1.8.5.0</revision>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>local-m2-repo</id>
+            <url>file://${project.basedir}/../SpigotBuildTools/maven/repository</url>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>local-m2-repo</id>
+            <url>file://${project.basedir}/../SpigotBuildTools/maven/repository</url>
+        </pluginRepository>
+    </pluginRepositories>
 
 </project>
 

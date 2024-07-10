@@ -73,26 +73,44 @@ public class ShopHandler {
 
     private boolean initDisplayClass(){
         String packageName = plugin.getServer().getClass().getPackage().getName();
-        String nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
 
-        // version did remap even though version number didn't increase
-        String mcVersion = Bukkit.getBukkitVersion().substring(0, Bukkit.getBukkitVersion().indexOf('-'));
-        //im not doing this right now. I'm only going to support 1.17.1 for now
-//        if (mcVersion.equals("1.17.1")) {
-//            nmsVersion =  "v1_17_R1_2";
-//        }
-
-        try {
-            System.out.println("[Shop] Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
-            final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display_" + nmsVersion);
-            if (AbstractDisplay.class.isAssignableFrom(clazz)) {
-                this.displayClass = clazz;
-                return true;
+        // Check if we are on a Paper MC 1.20.5+ server
+        if (packageName.equals("org.bukkit.craftbukkit")) {
+            // We are on a newer version that does not relocate CB classes, load the default display package
+            try {
+                System.out.println("[Shop] Using default display class - com.snowgears.shop.display.Display");
+                final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display");
+                if (AbstractDisplay.class.isAssignableFrom(clazz)) {
+                    this.displayClass = clazz;
+                    return true;
+                }
+            } catch (final Exception e) {
+                return false;
             }
-        } catch (final Exception e) {
+            return false;
+        } else {
+            // We are still on an older version, so go ahead
+            String nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
+
+            // version did remap even though version number didn't increase
+            String mcVersion = Bukkit.getBukkitVersion().substring(0, Bukkit.getBukkitVersion().indexOf('-'));
+            //im not doing this right now. I'm only going to support 1.17.1 for now
+            //        if (mcVersion.equals("1.17.1")) {
+            //            nmsVersion =  "v1_17_R1_2";
+            //        }
+
+            try {
+                System.out.println("[Shop] Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
+                final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display_" + nmsVersion);
+                if (AbstractDisplay.class.isAssignableFrom(clazz)) {
+                    this.displayClass = clazz;
+                    return true;
+                }
+            } catch (final Exception e) {
+                return false;
+            }
             return false;
         }
-        return false;
     }
 
     public AbstractDisplay createDisplay(Location loc){
@@ -584,7 +602,7 @@ public class ShopHandler {
                     entity.remove();
                 }
                 //make to sure to clear items from old version of plugin too
-                else if (entity.getType() == EntityType.DROPPED_ITEM) {
+                else if (entity.getType() == EntityType.ITEM) {
                     ItemMeta itemMeta = ((Item) entity).getItemStack().getItemMeta();
                     if (UtilMethods.stringStartsWithUUID(itemMeta.getDisplayName())) {
                         entity.remove();
