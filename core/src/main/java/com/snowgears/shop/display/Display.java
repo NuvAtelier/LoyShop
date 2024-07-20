@@ -193,11 +193,11 @@ public class Display extends AbstractDisplay {
                     this.addEntityID(player, entityID);
                     itemFrame.setPos(location.getX(), location.getY(), location.getZ());
 
-                    Object craftItemStack = Shop.getPlugin().getNmsBullshitHandler().getCraftItemStackClass().cast(location.getWorld());
-                    if (craftItemStack != null) {
-                        Method itemStackasNMSCopy = craftItemStack.getClass().getMethod("asNMSCopy");
+                    Method asNMSCopy = Shop.getPlugin().getNmsBullshitHandler().getCraftItemStackClass().getMethod("asNMSCopy", ItemStack.class);
+                    net.minecraft.world.item.ItemStack itemStack = (net.minecraft.world.item.ItemStack) asNMSCopy.invoke(asNMSCopy.getClass(), is);
 
-                        itemFrame.setItem((net.minecraft.world.item.ItemStack) itemStackasNMSCopy.invoke(is));
+                    if (itemStack != null) {
+                        itemFrame.setItem(itemStack);
                         itemFrame.setDirection(getMojangDirection(facing));
 
                         Shop.getPlugin().getLogger().log(java.util.logging.Level.FINE, "ItemFrame Location: " + location);
@@ -206,7 +206,8 @@ public class Display extends AbstractDisplay {
                         // Directly calling the API like this will allow us to set "Fine Positions" using doubles that are not cast to ints
                         // OLD WAY: ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(itemFrame, 0, itemFrame.blockPosition());
                         // NEW WAY:
-                        ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(itemFrame, 0, itemFrame.blockPosition());
+//                        ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(itemFrame, 0, itemFrame.blockPosition());
+                        ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(itemFrame.getId(), itemFrame.getUUID(), location.getX(), location.getY(), location.getZ(), itemFrame.getXRot(), itemFrame.getYRot(), itemFrame.getType(), itemFrame.getDirection().get3DDataValue(), itemFrame.getDeltaMovement(), itemFrame.getYHeadRot());
                         ClientboundSetEntityDataPacket entityMetadataPacket = new ClientboundSetEntityDataPacket(entityID, itemFrame.getEntityData().packDirty());
 
                         sendPacket(player, entitySpawnPacket);
