@@ -145,10 +145,10 @@ public class Display extends AbstractDisplay {
                     //armor stand only going to have equipment if text is not populated
                     if(text == null){
                         ArrayList equipmentList = new ArrayList();
-                        Object craftItemStack = Shop.getPlugin().getNmsBullshitHandler().getCraftItemStackClass().cast(location.getWorld());
-                        if (craftItemStack != null) {
-                            Method itemStackasNMSCopy = craftItemStack.getClass().getMethod("asNMSCopy");
-                            equipmentList.add(new Pair(getMojangEquipmentSlot(armorStandData.getEquipmentSlot()), itemStackasNMSCopy.invoke(armorStandData.getEquipment())));
+                        Method asNMSCopy = Shop.getPlugin().getNmsBullshitHandler().getCraftItemStackClass().getMethod("asNMSCopy", ItemStack.class);
+                        if (asNMSCopy != null) {
+                            net.minecraft.world.item.ItemStack itemStack = (net.minecraft.world.item.ItemStack) asNMSCopy.invoke(asNMSCopy.getClass(), armorStandData.getEquipment());
+                            equipmentList.add(new Pair(getMojangEquipmentSlot(armorStandData.getEquipmentSlot()), itemStack));
                         }
 
                         spawnEntityEquipmentPacket = new ClientboundSetEquipmentPacket(armorStand.getId(), equipmentList);
