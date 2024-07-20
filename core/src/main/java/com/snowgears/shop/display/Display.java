@@ -62,8 +62,14 @@ public class Display extends AbstractDisplay {
                             entityItem.setPickUpDelay(32767);
                             entityItem.setTicksFrozen(2147483647);
 
+                            Shop.getPlugin().getLogger().log(java.util.logging.Level.FINE, "Item Location: " + location);
+
                             ClientboundRemoveEntitiesPacket entityDestroyPacket = new ClientboundRemoveEntitiesPacket(entityID);
-                            ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(entityItem, 0, entityItem.blockPosition());
+                            // Floating Item locations are not displaying at the correct height due to BlockPos only allowing integers instead of doubles.
+                            // Directly calling the API like this will allow us to set "Fine Positions" using doubles that are not cast to ints
+                            // OLD WAY: ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(entityItem, 0, entityItem.blockPosition());
+                            // NEW WAY:
+                            ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(entityItem.getId(), entityItem.getUUID(), location.getX(), location.getY(), location.getZ(), entityItem.getXRot(), entityItem.getYRot(), entityItem.getType(), 0, entityItem.getDeltaMovement(), entityItem.getYHeadRot());
                             ClientboundSetEntityMotionPacket entityVelocityPacket = new ClientboundSetEntityMotionPacket(entityItem);
                             ClientboundSetEntityDataPacket entityMetadataPacket = new ClientboundSetEntityDataPacket(entityID, entityItem.getEntityData().packDirty());
 
@@ -126,7 +132,13 @@ public class Display extends AbstractDisplay {
                         armorStand.setSmall(true);
                     }
 
-                    ClientboundAddEntityPacket spawnEntityLivingPacket = new ClientboundAddEntityPacket(armorStand, 0, armorStand.blockPosition());
+                    Shop.getPlugin().getLogger().log(java.util.logging.Level.FINE, "Floating Tag Label Location: " + location);
+
+                    // Floating Tag locations are not displaying at the correct height due to BlockPos only allowing integers instead of doubles.
+                    // Directly calling the API like this will allow us to set "Fine Positions" using doubles that are not cast to ints
+                    // OLD WAY: ClientboundAddEntityPacket spawnEntityLivingPacket = new ClientboundAddEntityPacket(armorStand, 0, location);
+                    // NEW WAY:
+                    ClientboundAddEntityPacket spawnEntityLivingPacket = new ClientboundAddEntityPacket(armorStand.getId(), armorStand.getUUID(), location.getX(), location.getY(), location.getZ(), armorStand.getXRot(), armorStand.getYRot(), armorStand.getType(), 0, armorStand.getDeltaMovement(), armorStand.getYHeadRot());
                     ClientboundSetEntityDataPacket spawnEntityMetadataPacket = new ClientboundSetEntityDataPacket(armorStand.getId(), armorStand.getEntityData().packDirty());
                     ClientboundSetEquipmentPacket spawnEntityEquipmentPacket = null;
 
@@ -188,6 +200,12 @@ public class Display extends AbstractDisplay {
                         itemFrame.setItem((net.minecraft.world.item.ItemStack) itemStackasNMSCopy.invoke(is));
                         itemFrame.setDirection(getMojangDirection(facing));
 
+                        Shop.getPlugin().getLogger().log(java.util.logging.Level.FINE, "ItemFrame Location: " + location);
+
+                        // Item Frame locations are not displaying at the correct height due to BlockPos only allowing integers instead of doubles.
+                        // Directly calling the API like this will allow us to set "Fine Positions" using doubles that are not cast to ints
+                        // OLD WAY: ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(itemFrame, 0, itemFrame.blockPosition());
+                        // NEW WAY:
                         ClientboundAddEntityPacket entitySpawnPacket = new ClientboundAddEntityPacket(itemFrame, 0, itemFrame.blockPosition());
                         ClientboundSetEntityDataPacket entityMetadataPacket = new ClientboundSetEntityDataPacket(entityID, itemFrame.getEntityData().packDirty());
 
