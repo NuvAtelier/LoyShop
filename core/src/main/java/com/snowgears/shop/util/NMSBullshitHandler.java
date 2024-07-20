@@ -23,7 +23,7 @@ public class NMSBullshitHandler {
 
     public void init() {
         String mcVersion = plugin.getServer().getClass().getPackage().getName();
-        Shop.getPlugin().getLogger().log(Level.INFO, "mcVersion: " + mcVersion);
+        Shop.getPlugin().getLogger().log(Level.FINE, "mcVersion: " + mcVersion);
 
         String versionString = "";
 
@@ -35,16 +35,16 @@ public class NMSBullshitHandler {
             // If we do not have direct access to the version, extract it and load it
             // and set the version string to include the cb relocation string
             nmsVersionString = mcVersion.substring(mcVersion.lastIndexOf('.') + 2);
-            Shop.getPlugin().getLogger().log(Level.INFO, "nmsVersionString: " + nmsVersionString);
+            Shop.getPlugin().getLogger().log(Level.FINE, "nmsVersionString: " + nmsVersionString);
 
             serverVersion = Double.parseDouble(plugin.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3].replace("_R", ".").replaceAll("[rvV_]*", ""));
             versionString = (".v" + String.valueOf(this.getServerVersion()).charAt(0) + "_" + String.valueOf(this.getServerVersion()).substring(1)).replace(".", "_R");
         }
 
         // log the server version we are on, it will be empty in versions 1.20.5 and later
-        Shop.getPlugin().getLogger().log(Level.INFO, "versionString: " + versionString);
-        Shop.getPlugin().getLogger().log(Level.INFO, "Server Version: " + this.getServerVersion());
-        Shop.getPlugin().getLogger().log(Level.INFO, "Is Server Version over 117.0D: " + (Math.floor(this.getServerVersion()) >= 117.0D));
+        Shop.getPlugin().getLogger().log(Level.FINE, "versionString: " + versionString);
+        Shop.getPlugin().getLogger().log(Level.FINE, "Server Version: " + this.getServerVersion());
+        Shop.getPlugin().getLogger().log(Level.FINE, "Is Server Version over 117.0D: " + (Math.floor(this.getServerVersion()) >= 117.0D));
 
 
         try {
@@ -56,9 +56,9 @@ public class NMSBullshitHandler {
 
                 // java.lang.ClassNotFoundException: net.minecraft.server.v1_17_R1.ItemStack
 
-                Shop.getPlugin().getLogger().log(Level.INFO, "CraftItemStack: " + this.craftItemStackClass.toString());
-                Shop.getPlugin().getLogger().log(Level.INFO, "CraftWorld: " + this.craftWorldClass.toString());
-                Shop.getPlugin().getLogger().log(Level.INFO, "CraftPlayer: " + this.craftPlayerClass.toString());
+                Shop.getPlugin().getLogger().log(Level.FINE, "CraftItemStack: " + this.craftItemStackClass.toString());
+                Shop.getPlugin().getLogger().log(Level.FINE, "CraftWorld: " + this.craftWorldClass.toString());
+                Shop.getPlugin().getLogger().log(Level.FINE, "CraftPlayer: " + this.craftPlayerClass.toString());
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();

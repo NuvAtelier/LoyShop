@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 
@@ -78,7 +79,7 @@ public class ShopHandler {
         if (packageName.equals("org.bukkit.craftbukkit")) {
             // We are on a newer version that does not relocate CB classes, load the default display package
             try {
-                System.out.println("[Shop] Using default display class - com.snowgears.shop.display.Display");
+                Shop.getPlugin().getLogger().log(Level.INFO, "[Shop] Using default display class (Spigot) - com.snowgears.shop.display.Display");
                 final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display");
                 if (AbstractDisplay.class.isAssignableFrom(clazz)) {
                     this.displayClass = clazz;
@@ -100,7 +101,7 @@ public class ShopHandler {
             //        }
 
             try {
-                System.out.println("[Shop] Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
+                Shop.getPlugin().getLogger().log(Level.INFO, "[Shop] Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
                 final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display_" + nmsVersion);
                 if (AbstractDisplay.class.isAssignableFrom(clazz)) {
                     this.displayClass = clazz;

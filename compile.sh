@@ -8,4 +8,4 @@ cp target/Shop-1.8.5.0.jar ../paper-test-1.21/plugins
 # Startup latest minecraft server version to test
 cd ../paper-test-1.21/
 rm -r plugins/.paper-remapped
-java -jar paper-1.21-44.jar --nogui
+java -jar paper-1.21-99.jar --nogui
