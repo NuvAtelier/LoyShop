@@ -31,8 +31,11 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public class CreativeSelectionListener implements Listener {
 
@@ -143,8 +146,18 @@ public class CreativeSelectionListener implements Listener {
         if (!(event.getPlayer() instanceof Player))
             return;
         //don't remove player data if they just clicked the search icon
-        if(event.getView().getTitle().equals(Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.HOME)) || event.getView().getTitle().equals(Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.LIST_SHOPS))){
-            return;
+        try {
+            Object view = event.getView();
+            Method getTitle = view.getClass().getMethod("getTitle");
+            if(getTitle.invoke(view).equals(Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.HOME)) || getTitle.invoke(view).equals(Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.LIST_SHOPS))){
+                return;
+            }
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
         }
         //for some reason this event is also called now on PlayerQuitEvent. Check that player didnt quit
         plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {

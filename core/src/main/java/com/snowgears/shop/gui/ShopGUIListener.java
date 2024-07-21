@@ -16,6 +16,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.UUID;
 
 public class ShopGUIListener implements Listener {
@@ -26,6 +28,20 @@ public class ShopGUIListener implements Listener {
         plugin = instance;
     }
 
+    public String getInventoryViewTitle(InventoryClickEvent event) {
+        try {
+            Object view = event.getView();
+            Method getTitle = view.getClass().getMethod("getTitle");
+            return (String) getTitle.invoke(view);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @EventHandler (ignoreCancelled = true)
     public void onInvClick(InventoryClickEvent event){
         if(event.getWhoClicked() instanceof Player){
@@ -33,7 +49,7 @@ public class ShopGUIListener implements Listener {
 
             ShopGuiWindow window = plugin.getGuiHandler().getWindow(player);
 
-            if(event.getView().getTitle().equals(window.getTitle())){
+            if(getInventoryViewTitle(event).equals(window.getTitle())){
 
                 if(event.getClick() == ClickType.NUMBER_KEY) {
                     event.setCancelled(true);
