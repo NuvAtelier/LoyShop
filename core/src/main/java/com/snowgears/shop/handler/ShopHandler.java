@@ -79,7 +79,7 @@ public class ShopHandler {
         if (packageName.equals("org.bukkit.craftbukkit")) {
             // We are on a newer version that does not relocate CB classes, load the default display package
             try {
-                Shop.getPlugin().getLogger().log(Level.INFO, "[Shop] Using default display class (Spigot) - com.snowgears.shop.display.Display");
+                Shop.getPlugin().getLogger().log(Level.INFO, "[Shop] Using default display class (PaperMC) - com.snowgears.shop.display.Display");
                 final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display");
                 if (AbstractDisplay.class.isAssignableFrom(clazz)) {
                     this.displayClass = clazz;
