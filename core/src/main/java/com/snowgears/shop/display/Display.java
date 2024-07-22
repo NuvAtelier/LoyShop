@@ -276,8 +276,19 @@ public class Display extends AbstractDisplay {
                 if (getHandle != null) {
                     Object entityPlayer = getHandle.invoke(craftPlayer);
                     if (entityPlayer != null) {
-                        Field playerConnection = entityPlayer.getClass().getField("connection");
-                        return (ServerPlayerConnection) playerConnection.get(entityPlayer);
+                        try {
+                            Field playerConnection = entityPlayer.getClass().getDeclaredField("connection");
+                            return (ServerPlayerConnection) playerConnection.get(entityPlayer);
+                        } catch (NoSuchFieldException e) {
+                            // Try to access the obfuscated field directly on CraftBukkit
+                            try {
+                                Field playerConnection = entityPlayer.getClass().getField("c");
+                                return (ServerPlayerConnection) playerConnection.get(entityPlayer);
+                            } catch (NoSuchFieldException err) {
+                                Shop.getPlugin().getLogger().log(java.util.logging.Level.SEVERE, "Unable to get player connection! Are you using a supported Spigot version? We suggest you use PaperMC for running Shop!");
+                                err.printStackTrace();
+                            }
+                        }
                     }
                 }
             }
@@ -286,8 +297,6 @@ public class Display extends AbstractDisplay {
         } catch(IllegalAccessException e){
             e.printStackTrace();
         } catch(InvocationTargetException e){
-            e.printStackTrace();
-        } catch (NoSuchFieldException e){
             e.printStackTrace();
         }
         return null;

@@ -75,11 +75,13 @@ public class ShopHandler {
     private boolean initDisplayClass(){
         String packageName = plugin.getServer().getClass().getPackage().getName();
 
-        // Check if we are on a Paper MC 1.20.5+ server
-        if (packageName.equals("org.bukkit.craftbukkit")) {
+        // Check if we are on a Paper 1.20.6+ server, or if we are running Spigot v1.20.6 or later :)
+        // Now that our new Display class purely uses Class loading to get the appropriate class, we don't
+        // need to load a specific revision version class (unless we are old)
+        if (packageName.equals("org.bukkit.craftbukkit") || plugin.getNmsBullshitHandler().getServerVersion() >= 120.6D) {
             // We are on a newer version that does not relocate CB classes, load the default display package
             try {
-                Shop.getPlugin().getLogger().log(Level.INFO, "[Shop] Using default display class (PaperMC) - com.snowgears.shop.display.Display");
+                Shop.getPlugin().getLogger().log(Level.INFO, "[Shop] Using default display class - com.snowgears.shop.display.Display");
                 final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display");
                 if (AbstractDisplay.class.isAssignableFrom(clazz)) {
                     this.displayClass = clazz;
@@ -101,6 +103,7 @@ public class ShopHandler {
             //        }
 
             try {
+                Shop.getPlugin().getLogger().log(Level.WARNING, "[Shop] Minecraft version is old or Spigot, watch out for bugs!");
                 Shop.getPlugin().getLogger().log(Level.INFO, "[Shop] Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
                 final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display_" + nmsVersion);
                 if (AbstractDisplay.class.isAssignableFrom(clazz)) {

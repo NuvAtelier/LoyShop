@@ -27,18 +27,20 @@ public class NMSBullshitHandler {
 
         String versionString = "";
 
-        // Check if we are on Paper 1.20.5 or later, it will not include the
-        // CB relocation version (i.e. "1_20_R3")
+        // Check if we are on Paper 1.20.5 or later, it will not include the CB relocation version (i.e. "1_20_R3")
         if (!mcVersion.equals("org.bukkit.craftbukkit")) {
-            Shop.getPlugin().getLogger().log(Level.WARNING, "Minecraft version is old, loaded version is: " + mcVersion);
+            Shop.getPlugin().getLogger().log(Level.WARNING, "Minecraft version is old or Spigot, loaded version is: " + mcVersion);
 
             // If we do not have direct access to the version, extract it and load it
             // and set the version string to include the cb relocation string
             nmsVersionString = mcVersion.substring(mcVersion.lastIndexOf('.') + 2);
             Shop.getPlugin().getLogger().log(Level.FINE, "nmsVersionString: " + nmsVersionString);
 
-            serverVersion = Double.parseDouble(plugin.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3].replace("_R", ".").replaceAll("[rvV_]*", ""));
-            versionString = (".v" + String.valueOf(this.getServerVersion()).charAt(0) + "_" + String.valueOf(this.getServerVersion()).substring(1)).replace(".", "_R");
+//            serverVersion = Double.parseDouble(plugin.getServer().getClass().getPackage().getName().replace(".", ",").split(",")[3].replace("_R", ".").replaceAll("[rvV_]*", ""));
+//            versionString = (".v" + String.valueOf(this.getServerVersion()).charAt(0) + "_" + String.valueOf(this.getServerVersion()).substring(1)).replace(".", "_R");
+            String[] mcVersionSplit = mcVersion.replace(".", ",").split(",");
+            // Convert mcVersion into a number like 120.4 (1_20_R4) or 121.1 (1_21_R1) so that we can use it later
+            serverVersion = Double.parseDouble(mcVersionSplit[mcVersionSplit.length-1].replace("_R", ".").replaceAll("[rvV_]*", ""));
         }
 
         // log the server version we are on, it will be empty in versions 1.20.5 and later
@@ -48,10 +50,11 @@ public class NMSBullshitHandler {
 
 
         try {
-            this.craftItemStackClass = Class.forName("org.bukkit.craftbukkit" + versionString + ".inventory.CraftItemStack");
+            this.craftItemStackClass = Class.forName(mcVersion + ".inventory.CraftItemStack");
+            // Server Version will be 0 for Paper
             if (Math.floor(this.getServerVersion()) >= 117.0D || this.getServerVersion() == 0) {
-                this.craftWorldClass = Class.forName("org.bukkit.craftbukkit" + versionString + ".CraftWorld");
-                this.craftPlayerClass = Class.forName("org.bukkit.craftbukkit" + versionString + ".entity.CraftPlayer");
+                this.craftWorldClass = Class.forName(mcVersion + ".CraftWorld");
+                this.craftPlayerClass = Class.forName(mcVersion + ".entity.CraftPlayer");
                 //this.craftPlayerClass = Class.forName("org.bukkit.craftbukkit." + versionString + ".entity.CraftPlayer");
 
                 // java.lang.ClassNotFoundException: net.minecraft.server.v1_17_R1.ItemStack
@@ -64,10 +67,6 @@ public class NMSBullshitHandler {
             e.printStackTrace();
             Shop.getPlugin().getLogger().log(Level.SEVERE, "Unable to retrieve a NMS class used for NBT data.");
         }
-    }
-
-    public String getNmsVersion(){
-        return nmsVersionString;
     }
 
     public double getServerVersion() {
