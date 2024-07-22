@@ -81,7 +81,7 @@ public class ShopHandler {
         if (packageName.equals("org.bukkit.craftbukkit") || plugin.getNmsBullshitHandler().getServerVersion() >= 120.6D) {
             // We are on a newer version that does not relocate CB classes, load the default display package
             try {
-                Shop.getPlugin().getLogger().log(Level.INFO, "[Shop] Using default display class - com.snowgears.shop.display.Display");
+                Shop.getPlugin().getLogger().log(Level.INFO, "Using default display class - com.snowgears.shop.display.Display");
                 final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display");
                 if (AbstractDisplay.class.isAssignableFrom(clazz)) {
                     this.displayClass = clazz;
@@ -103,8 +103,8 @@ public class ShopHandler {
             //        }
 
             try {
-                Shop.getPlugin().getLogger().log(Level.WARNING, "[Shop] Minecraft version is old or Spigot, watch out for bugs!");
-                Shop.getPlugin().getLogger().log(Level.INFO, "[Shop] Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
+                Shop.getPlugin().getLogger().log(Level.WARNING, "Minecraft version is old or Spigot, watch out for bugs!");
+                Shop.getPlugin().getLogger().log(Level.INFO, "Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
                 final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display_" + nmsVersion);
                 if (AbstractDisplay.class.isAssignableFrom(clazz)) {
                     this.displayClass = clazz;
