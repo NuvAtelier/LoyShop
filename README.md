@@ -1,7 +1,9 @@
-# Shop Plugin by Snowgears
+# [Shop - the intuitive shop plugin by Snowgears](https://www.spigotmc.org/resources/shop-the-intuitive-shop-plugin.9628/)
 
 ## Description
-This repository contains the source code for the "Shop" Spigot Plugin. This plugin enhances the Minecraft server experience by providing a customizable shop feature. Follow the instructions below to compile and build the plugin.
+Allows players to quickly create shops to buy, sell, barter, or gamble items seamlessly!
+
+By focusing on ease of use, players of any skill level can create in-game shops in a way that feels like a native feature.
 
 ## Compiling Prerequisites
 Before you begin, ensure you have met the following requirements:
@@ -40,3 +42,4 @@ The compiled plugin will be stored in the target directory with the filename Sho
 
 ## Usage
 After compiling, you can find the plugin jar file in the target directory. Copy this jar file into the plugins folder of your Spigot server to use the Shop plugin.
+
