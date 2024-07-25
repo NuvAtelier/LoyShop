@@ -539,17 +539,17 @@ public abstract class AbstractShop {
             }
 
             if(part.startsWith("[")) {
-                String itemJson;
-                if (barterItem) {
-                    itemJson = ReflectionUtil.convertItemStackToJson(this.secondaryItem);
-                } else {
-                    itemJson = ReflectionUtil.convertItemStackToJson(this.item);
-                }
-                // Prepare a BaseComponent array with the itemJson as a text component
-                BaseComponent[] hoverEventComponents = new BaseComponent[]{ new TextComponent(itemJson) }; // The only element of the hover events basecomponents is the item json
-                HoverEvent event = new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents);
-
-                builder.event(event);
+//                String itemJson;
+//                if (barterItem) {
+//                    itemJson = ReflectionUtil.convertItemStackToJson(this.secondaryItem);
+//                } else {
+//                    itemJson = ReflectionUtil.convertItemStackToJson(this.item);
+//                }
+//                // Prepare a BaseComponent array with the itemJson as a text component
+//                BaseComponent[] hoverEventComponents = new BaseComponent[]{ new TextComponent(itemJson) }; // The only element of the hover events basecomponents is the item json
+//                HoverEvent event = new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents);
+//
+//                builder.event(event);
             }
 
             for(BaseComponent b : builder.create()) {

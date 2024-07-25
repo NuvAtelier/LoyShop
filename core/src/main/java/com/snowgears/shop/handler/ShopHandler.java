@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 
@@ -73,26 +74,47 @@ public class ShopHandler {
 
     private boolean initDisplayClass(){
         String packageName = plugin.getServer().getClass().getPackage().getName();
-        String nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
 
-        // version did remap even though version number didn't increase
-        String mcVersion = Bukkit.getBukkitVersion().substring(0, Bukkit.getBukkitVersion().indexOf('-'));
-        //im not doing this right now. I'm only going to support 1.17.1 for now
-//        if (mcVersion.equals("1.17.1")) {
-//            nmsVersion =  "v1_17_R1_2";
-//        }
-
-        try {
-            System.out.println("[Shop] Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
-            final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display_" + nmsVersion);
-            if (AbstractDisplay.class.isAssignableFrom(clazz)) {
-                this.displayClass = clazz;
-                return true;
+        // Check if we are on a Paper 1.20.6+ server, or if we are running Spigot v1.20.6 or later :)
+        // Now that our new Display class purely uses Class loading to get the appropriate class, we don't
+        // need to load a specific revision version class (unless we are old)
+        if (packageName.equals("org.bukkit.craftbukkit") || plugin.getNmsBullshitHandler().getServerVersion() >= 120.6D) {
+            // We are on a newer version that does not relocate CB classes, load the default display package
+            try {
+                Shop.getPlugin().getLogger().log(Level.INFO, "Using default display class - com.snowgears.shop.display.Display");
+                final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display");
+                if (AbstractDisplay.class.isAssignableFrom(clazz)) {
+                    this.displayClass = clazz;
+                    return true;
+                }
+            } catch (final Exception e) {
+                return false;
             }
-        } catch (final Exception e) {
+            return false;
+        } else {
+            // We are still on an older version, so go ahead
+            String nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
+
+            // version did remap even though version number didn't increase
+            String mcVersion = Bukkit.getBukkitVersion().substring(0, Bukkit.getBukkitVersion().indexOf('-'));
+            //im not doing this right now. I'm only going to support 1.17.1 for now
+            //        if (mcVersion.equals("1.17.1")) {
+            //            nmsVersion =  "v1_17_R1_2";
+            //        }
+
+            try {
+                Shop.getPlugin().getLogger().log(Level.WARNING, "Minecraft version is old or Spigot, watch out for bugs!");
+                Shop.getPlugin().getLogger().log(Level.INFO, "Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
+                final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display_" + nmsVersion);
+                if (AbstractDisplay.class.isAssignableFrom(clazz)) {
+                    this.displayClass = clazz;
+                    return true;
+                }
+            } catch (final Exception e) {
+                return false;
+            }
             return false;
         }
-        return false;
     }
 
     public AbstractDisplay createDisplay(Location loc){
@@ -454,10 +476,10 @@ public class ShopHandler {
             while(iteratorNew.hasNext()) {
                 Location loc = iteratorNew.next();
                 AbstractShop shop = this.getShop(loc);
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if(shop != null && player != null && player.isOnline() && shop.isInitialized())
                         shop.getDisplay().spawn(player);
-                });
+                }, 50L); // Delay of 50 ticks to allow player to finish logging in, otherwise the item display doesn't appear!
             }
         }
         playersWithActiveShopDisplays.put(player.getUniqueId(), shopsNearPlayer);
@@ -584,7 +606,7 @@ public class ShopHandler {
                     entity.remove();
                 }
                 //make to sure to clear items from old version of plugin too
-                else if (entity.getType() == EntityType.DROPPED_ITEM) {
+                else if (entity.getType() == EntityType.ITEM) {
                     ItemMeta itemMeta = ((Item) entity).getItemStack().getItemMeta();
                     if (UtilMethods.stringStartsWithUUID(itemMeta.getDisplayName())) {
                         entity.remove();
