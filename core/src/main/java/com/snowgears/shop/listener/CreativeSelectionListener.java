@@ -149,6 +149,7 @@ public class CreativeSelectionListener implements Listener {
         try {
             Object view = event.getView();
             Method getTitle = view.getClass().getMethod("getTitle");
+            getTitle.setAccessible(true);
             if(getTitle.invoke(view).equals(Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.HOME)) || getTitle.invoke(view).equals(Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.LIST_SHOPS))){
                 return;
             }
