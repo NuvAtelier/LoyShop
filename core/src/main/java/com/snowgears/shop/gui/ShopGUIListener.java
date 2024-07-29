@@ -32,6 +32,7 @@ public class ShopGUIListener implements Listener {
         try {
             Object view = event.getView();
             Method getTitle = view.getClass().getMethod("getTitle");
+            getTitle.setAccessible(true);
             return (String) getTitle.invoke(view);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
