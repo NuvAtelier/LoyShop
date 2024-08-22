@@ -2,9 +2,9 @@
 
 mvn clean compile package -o
 # Copy latest plugin in
-cp target/Shop-1.9.0.1.jar ../paper-test-1.20.6/plugins
-cp target/Shop-1.9.0.1.jar ../paper-test-1.21/plugins
-cp target/Shop-1.9.0.1.jar ../spigot-test-1.21/plugins
+cp target/Shop-1.9.0.2.jar ../paper-test-1.20.6/plugins
+cp target/Shop-1.9.0.2.jar ../paper-test-1.21/plugins
+cp target/Shop-1.9.0.2.jar ../spigot-test-1.21/plugins
 
 # Startup latest minecraft server version to test
 # cd ../paper-test-1.20.6/
