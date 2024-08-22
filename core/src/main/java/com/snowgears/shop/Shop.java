@@ -10,6 +10,7 @@ import com.snowgears.shop.listener.DisplayListener;
 import com.snowgears.shop.listener.MiscListener;
 import com.snowgears.shop.listener.ShopListener;
 import com.snowgears.shop.util.*;
+import de.bluecolored.bluemap.api.BlueMapAPI;
 import net.milkbowl.vault.economy.Economy;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
@@ -19,10 +20,12 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Shop extends JavaPlugin {
@@ -39,6 +42,7 @@ public class Shop extends JavaPlugin {
     private LWCHookListener lwcHookListener;
     private DynmapHookListener dynmapHookListener;
     private BluemapHookListener bluemapHookListener;
+    private boolean bluemapEnabled;
     private BentoBoxHookListener bentoBoxHookListener;
     private ARMHookListener armHookListener;
 
@@ -270,6 +274,7 @@ public class Shop extends JavaPlugin {
         enableGUI = config.getBoolean("enableGUI");
         hookWorldGuard = config.getBoolean("hookWorldGuard");
         hookTowny = config.getBoolean("hookTowny");
+        bluemapEnabled = config.getBoolean("bluemap-marker.enabled");
         commandAlias = config.getString("commandAlias");
         checkItemDurability = config.getBoolean("checkItemDurability");
         allowCreativeSelection = config.getBoolean("allowCreativeSelection");
@@ -442,9 +447,22 @@ public class Shop extends JavaPlugin {
             getServer().getPluginManager().registerEvents(dynmapHookListener, this);
         }
 
-        if(getServer().getPluginManager().getPlugin("BlueMap") != null){
-            bluemapHookListener = new BluemapHookListener(this);
-            getServer().getPluginManager().registerEvents(bluemapHookListener, this);
+        if(getServer().getPluginManager().getPlugin("BlueMap") != null && bluemapEnabled){
+            // Wait for 2 minutes for BlueMap to become available/boot up, then initialize listener.
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    BlueMapAPI.getInstance().ifPresent(api -> {
+                        plugin.getLogger().log(Level.INFO, "BlueMap is ready, creating BlueMap listener");
+                        bluemapHookListener = new BluemapHookListener(plugin);
+                        getServer().getPluginManager().registerEvents(bluemapHookListener, plugin);
+                        // Make sure we load the markers in case there are shops that BlueMap doesn't know about
+                        bluemapHookListener.reloadMarkers(shopHandler);
+                        // Mark the task as complete and cancel the timer
+                        cancel();
+                    });
+                }
+            }.runTaskTimer(plugin, 20, 20); // Check every second (20 ticks) until BlueMap is booted
         }
 
         if(getServer().getPluginManager().getPlugin("BentoBox") != null){
