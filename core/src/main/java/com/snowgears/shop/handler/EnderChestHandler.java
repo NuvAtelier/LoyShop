@@ -16,6 +16,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public class EnderChestHandler {
 
@@ -71,7 +72,8 @@ public class EnderChestHandler {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Unable to load EnderChest inventory! There might be an issue with EnderChestHandler/NBTAPI.");
+//            e.printStackTrace();
         }
         return null;
     }
@@ -131,7 +133,8 @@ public class EnderChestHandler {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Shop.getPlugin().getLogger().log(Level.SEVERE, "Unable to save enderchest to file!");
+//            e.printStackTrace();
         }
 
     }
