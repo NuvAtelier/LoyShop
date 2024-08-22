@@ -307,6 +307,15 @@ public class CreativeSelectionListener implements Listener {
         return false;
     }
 
+    // Check if the player logged out, if so, put them back in survival before they finish logging out
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        final Player player = event.getPlayer();
+        if(playerDataMap.containsKey(player.getUniqueId())) {
+            this.removePlayerFromCreativeSelection(player);
+        }
+    }
+
     //make sure that if player somehow quit without getting their old data back, return it to them when they login next
     @EventHandler
     public void onLogin(PlayerLoginEvent event){
