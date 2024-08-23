@@ -2,9 +2,12 @@
 
 mvn clean compile package -o
 # Copy latest plugin in
-cp target/Shop-1.9.0.2.jar ../paper-test-1.20.6/plugins
-cp target/Shop-1.9.0.2.jar ../paper-test-1.21/plugins
-cp target/Shop-1.9.0.2.jar ../spigot-test-1.21/plugins
+rm ../paper-test-1.20.6/plugins/Shop-*.jar 
+cp target/Shop-*.jar ../paper-test-1.20.6/plugins
+rm ../paper-test-1.21/plugins/Shop-*.jar 
+cp target/Shop-*.jar ../paper-test-1.21/plugins
+rm ../spigot-test-1.21/plugins/Shop-*.jar 
+cp target/Shop-*.jar ../spigot-test-1.21/plugins
 
 # Startup latest minecraft server version to test
 # cd ../paper-test-1.20.6/
@@ -13,7 +16,7 @@ cp target/Shop-1.9.0.2.jar ../spigot-test-1.21/plugins
 
 cd ../paper-test-1.21/
 # rm -r plugins/.paper-remapped
-java -jar paper-1.21-123.jar --nogui
+java -jar paper-1.21*.jar --nogui
 
 # cd ../spigot-test-1.21/
 # java -jar spigot-1.21.jar --nogui

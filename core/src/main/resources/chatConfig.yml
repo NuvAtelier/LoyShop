@@ -164,6 +164,7 @@ interaction_issue:
    createOtherShop: "&cYou may not create a shop on the same chest as another player."
    createInsufficientFunds: "&cYou do not have the funds required to create this shop."
    createCooldown: "&cYou can only create a shop every few seconds."
+   createCancel: "&cCancelled shop creation."
    destroyInsufficientFunds: "&cYou do not have the funds required to destroy this shop."
    teleportInsufficientFunds: "&cYou do not have the funds required to teleport to this shop."
    teleportInsufficientCooldown: "&cYou must wait another [tp time remaining] seconds to teleport to a shop."
