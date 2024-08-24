@@ -86,7 +86,7 @@ public class ShopCreationUtil {
         //do a check for the WorldGuard region (optional hook)
         boolean canCreateShopInRegion = true;
         try {
-            if(plugin.hookWorldGuard()) {
+            if(plugin.worldGuardExists()) {
                 canCreateShopInRegion = WorldGuardHook.canCreateShop(player, chest.getLocation());
             }
         } catch (NoClassDefFoundError e) {

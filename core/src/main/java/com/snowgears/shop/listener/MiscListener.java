@@ -595,7 +595,7 @@ public class MiscListener implements Listener {
             else {
                 boolean isRegionOwner = false;
                 //check if the player is a world guard region owner
-                if (Shop.getPlugin().hookWorldGuard()) {
+                if (Shop.getPlugin().worldGuardExists()) {
                     isRegionOwner = WorldGuardHook.isRegionOwner(player, shop.getSignLocation());
                 }
                 if (isRegionOwner || player.isOp() || (plugin.usePerms() && (player.hasPermission("shop.operator") || player.hasPermission("shop.destroy.other")))) {

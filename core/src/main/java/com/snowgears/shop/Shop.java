@@ -39,6 +39,7 @@ public class Shop extends JavaPlugin {
     private MiscListener miscListener;
     private CreativeSelectionListener creativeSelectionListener;
     private ShopGUIListener guiListener;
+    private Boolean worldGuardExists;
     private LWCHookListener lwcHookListener;
     private DynmapHookListener dynmapHookListener;
     private BluemapHookListener bluemapHookListener;
@@ -121,9 +122,22 @@ public class Shop extends JavaPlugin {
         config = YamlConfiguration.loadConfiguration(configFile);
 
         hookWorldGuard = config.getBoolean("hookWorldGuard");
-
-        if(hookWorldGuard){
-            WorldGuardHook.registerAllowShopFlag();
+        // Check if WorldGuard exists
+        // Note: If WorldGuard exists we will check to verify a user can build in the region
+        if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
+            this.getLogger().log(Level.INFO, "WorldGuard detected, Shop will respect `passthrough`, `build`, and `chest-access` region flags during shop creation!");
+            // Store for later
+            this.worldGuardExists = true;
+            // Check if we want to require `allow-shop: true` to exist on regions
+            if(hookWorldGuard){
+                this.getLogger().log(Level.INFO, "WorldGuard `allow-shop` flag restriction enabled, Shops can only be created in regions with the `allow-shop` flag set!");
+                // Register flag for WorldGuard if we are hooking into the flag system
+                WorldGuardHook.registerAllowShopFlag();
+            } else {
+                this.getLogger().log(Level.INFO, "WorldGuard `allow-shop` flag restriction is disabled, if you want to only allow shops in regions with the `allow-shop` flag, please set `hookWorldGuard` to `true` in `config.yml`");
+            }
+        } else {
+            this.worldGuardExists = false;
         }
     }
 
@@ -588,6 +602,8 @@ public class Shop extends JavaPlugin {
     public boolean hookWorldGuard(){
         return hookWorldGuard;
     }
+
+    public boolean worldGuardExists() { return worldGuardExists; }
 
     public boolean hookTowny(){
         return hookTowny;

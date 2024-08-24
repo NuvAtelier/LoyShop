@@ -15,7 +15,7 @@ cp target/Shop-*.jar ../spigot-test-1.21/plugins
 # java -jar paper-1.20.6-148.jar --nogui
 
 cd ../paper-test-1.21/
-# rm -r plugins/.paper-remapped
+rm -r plugins/.paper-remapped
 java -jar paper-1.21*.jar --nogui
 
 # cd ../spigot-test-1.21/
