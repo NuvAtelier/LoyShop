@@ -772,6 +772,8 @@ public class ShopHandler {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
             @Override
             public void run() {
+                int numShopsLoaded = 0;
+
                 boolean convertLegacySaves = false;
                 File fileDirectory = new File(plugin.getDataFolder(), "Data");
                 if (!fileDirectory.exists())
@@ -806,7 +808,7 @@ public class ShopHandler {
                                 convertLegacySaves = true;
                                 playerUUID = uidFromString(fileNameNoExt);
                             }
-                            loadShopsFromConfig(config, isLegacyConfig);
+                            numShopsLoaded += loadShopsFromConfig(config, isLegacyConfig);
                             if(isLegacyConfig){
                                 //save new file
                                 saveShops(playerUUID);
@@ -818,6 +820,8 @@ public class ShopHandler {
                 }
                 if(convertLegacySaves)
                     convertLegacyShopSaves();
+
+                Shop.getPlugin().getLogger().log(Level.INFO, "Loaded " + numShopsLoaded + " Shops!");
 
                 //dont refresh displays at load time anymore. they are now loaded in client side on login
 //                new BukkitRunnable() {
@@ -831,9 +835,11 @@ public class ShopHandler {
     }
 
 
-    private void loadShopsFromConfig(YamlConfiguration config, boolean isLegacy) {
+    private int loadShopsFromConfig(YamlConfiguration config, boolean isLegacy) {
         if (config.getConfigurationSection("shops") == null)
-            return;
+            return 0;
+
+        int numShopsLoaded = 0;
         Set<String> allShopOwners = config.getConfigurationSection("shops").getKeys(false);
 
         for (String shopOwner : allShopOwners) {
@@ -912,10 +918,14 @@ public class ShopHandler {
                             addUnloadedShopToChunkList(shop);
                             addShop(shop);
                         }
+
+                        numShopsLoaded++;
                     } catch (NullPointerException e) {e.printStackTrace();}
                 }
             }
         }
+
+        return numShopsLoaded;
     }
 
     public UUID getAdminUUID(){

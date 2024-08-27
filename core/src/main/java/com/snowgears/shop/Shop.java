@@ -130,9 +130,10 @@ public class Shop extends JavaPlugin {
             this.worldGuardExists = true;
             // Check if we want to require `allow-shop: true` to exist on regions
             if(hookWorldGuard){
-                this.getLogger().log(Level.INFO, "WorldGuard `allow-shop` flag restriction enabled, Shops can only be created in regions with the `allow-shop` flag set!");
+                this.getLogger().log(Level.INFO, "Registering WorldGuard `allow-shop` flag...");
                 // Register flag for WorldGuard if we are hooking into the flag system
                 WorldGuardHook.registerAllowShopFlag();
+                this.getLogger().log(Level.INFO, "WorldGuard `allow-shop` flag restriction enabled, Shops can only be created in regions with the `allow-shop` flag set!");
             } else {
                 this.getLogger().log(Level.INFO, "WorldGuard `allow-shop` flag restriction is disabled, if you want to only allow shops in regions with the `allow-shop` flag, please set `hookWorldGuard` to `true` in `config.yml`");
             }
@@ -451,14 +452,34 @@ public class Shop extends JavaPlugin {
         getServer().getPluginManager().registerEvents(guiListener, this);
 
         //only define different listener hooks if the plugins are present on the server
+        if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
+            this.getLogger().log(Level.INFO, "WorldGuard is installed, creating WorldGuard listener");
+            this.getLogger().log(Level.INFO, "Shop will respect WorldGuard `passthrough`, `build`, and `chest-access` region flags during shop creation!");
+            // Store for later
+            this.worldGuardExists = true;
+            // Check if we want to require `allow-shop: true` to exist on regions
+            if(hookWorldGuard){
+                this.getLogger().log(Level.INFO, "WorldGuard `allow-shop` flag restriction enabled, Shops can only be created in regions with the `allow-shop` flag set!");
+                // Register flag for WorldGuard if we are hooking into the flag system
+                // Only log, don't re-register flags, we do that in the onLoad function.
+//                WorldGuardHook.registerAllowShopFlag();
+            } else {
+                this.getLogger().log(Level.INFO, "WorldGuard `allow-shop` flag restriction is disabled, if you want to only allow shops in regions with the `allow-shop` flag, please set `hookWorldGuard` to `true` in `config.yml`");
+            }
+        } else {
+            this.worldGuardExists = false;
+        }
+
         if(getServer().getPluginManager().getPlugin("LWC") != null){
             lwcHookListener = new LWCHookListener(this);
             getServer().getPluginManager().registerEvents(lwcHookListener, this);
+            this.getLogger().log(Level.INFO, "LWC is installed, creating LWC listener");
         }
 
         if(getServer().getPluginManager().getPlugin("dynmap") != null){
             dynmapHookListener = new DynmapHookListener(this);
             getServer().getPluginManager().registerEvents(dynmapHookListener, this);
+            this.getLogger().log(Level.INFO, "Dynmap is installed, creating Dynmap listener");
         }
 
         if(getServer().getPluginManager().getPlugin("BlueMap") != null && bluemapEnabled){
@@ -482,11 +503,13 @@ public class Shop extends JavaPlugin {
         if(getServer().getPluginManager().getPlugin("BentoBox") != null){
             bentoBoxHookListener = new BentoBoxHookListener(this);
             getServer().getPluginManager().registerEvents(bentoBoxHookListener, this);
+            this.getLogger().log(Level.INFO, "BentoBox is installed, creating BentoBox listener");
         }
 
         if(getServer().getPluginManager().getPlugin("AdvancedRegionMarket") != null){
             armHookListener = new ARMHookListener(this);
             getServer().getPluginManager().registerEvents(armHookListener, this);
+            this.getLogger().log(Level.INFO, "AdvancedRegionMarket is installed, creating AdvancedRegionMarket listener");
         }
 
         displayListener.startRepeatingDisplayViewTask();
@@ -535,6 +558,7 @@ public class Shop extends JavaPlugin {
         if (getServer().getPluginManager().getPlugin("Vault") == null) {
             return false;
         }
+        this.getLogger().log(Level.INFO, "Vault is installed, creating Vault integration for Economy support");
         RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
         if (rsp == null) {
             return false;
