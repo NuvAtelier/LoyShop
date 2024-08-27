@@ -123,24 +123,22 @@ public class InventoryUtils {
         if(i1.getType() != i2.getType())
             return false;
 
-        ItemMeta i1Meta = i1.getItemMeta();
-        ItemMeta i2Meta = i2.getItemMeta();
-        //only have the option to ignore durability if the item can be damaged
-        if(i1Meta instanceof Damageable) {
-            Damageable i1Damagable = (Damageable)i1Meta;
-            Damageable i2Damagable = (Damageable)i2Meta;
+        ItemStack itemStack1 = i1.clone();
+        ItemStack itemStack2 = i2.clone();
 
-            if (!Shop.getPlugin().checkItemDurability() && i1Damagable.getDamage() != i2Damagable.getDamage()) {
-                ItemStack itemStack1 = i1.clone();
-                ItemStack itemStack2 = i2.clone();
+        ItemMeta i1Meta = itemStack1.getItemMeta();
+        ItemMeta i2Meta = itemStack2.getItemMeta();
 
-                ItemMeta is1 = itemStack1.getItemMeta();
-                Damageable is1Damagable = (Damageable)is1;
-                is1Damagable.setDamage(i2Damagable.getDamage());
-                itemStack1.setItemMeta((ItemMeta)is1Damagable);
+        // Check if we are ignoring item durability, if so, reset the durability of both items and continue with later checks
+        if (!Shop.getPlugin().checkItemDurability()) {
+            Damageable is1Damagable = (Damageable)i1Meta;
+            is1Damagable.setDamage(0);
 
-                return itemStack1.isSimilar(itemStack2);
-            }
+            Damageable is2Damagable = (Damageable)i2Meta;
+            is2Damagable.setDamage(0);
+
+            itemStack1.setItemMeta(is1Damagable);
+            itemStack2.setItemMeta(is2Damagable);
         }
 
         //special case to check for beehives
@@ -156,11 +154,11 @@ public class InventoryUtils {
         if (i1Meta != null && i2Meta != null && i1Meta.hasAttributeModifiers() && i2Meta.hasAttributeModifiers()) {
             i1Meta.setAttributeModifiers(i1Meta.getAttributeModifiers());
             i2Meta.setAttributeModifiers(i2Meta.getAttributeModifiers());
-            i1.setItemMeta(i1Meta);
-            i2.setItemMeta(i2Meta);
+            itemStack1.setItemMeta(i1Meta);
+            itemStack2.setItemMeta(i2Meta);
         }
 
-        return i1.isSimilar(i2);
+        return itemStack1.isSimilar(itemStack2);
     }
 
     public static boolean isEmpty(Inventory inv){

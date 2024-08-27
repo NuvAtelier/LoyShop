@@ -137,8 +137,9 @@ public abstract class AbstractShop {
                         return false;
                     }
                 }
-                this.updateSign();
                 this.setGuiIcon();
+                // Stock is recalculated in setGuiIcon
+                this.updateSign();
                 return true;
             } catch (ClassCastException cce) {
                 //this shop has no sign on it. return false
@@ -315,29 +316,42 @@ public abstract class AbstractShop {
 
     public void setItemStack(ItemStack is) {
         this.item = is.clone();
-        if(!Shop.getPlugin().checkItemDurability()) {
-            ItemMeta itemMeta = item.getItemMeta();
-            if(itemMeta instanceof Damageable){
-                Damageable damageableItem = (Damageable)itemMeta;
-                damageableItem.setDamage(0); //set item to full durability
-                item.setItemMeta(itemMeta);
-            }
-        }
+
+        // Remove "0 Damage" from item meta (old config bug)
+        this.item = this.removeZeroDamageMeta(this.item);
+
         setGuiIcon();
     }
 
     public void setSecondaryItemStack(ItemStack is) {
         this.secondaryItem = is.clone();
-        if(!Shop.getPlugin().checkItemDurability()) {
-            ItemMeta itemMeta = secondaryItem.getItemMeta();
-            if(itemMeta instanceof Damageable){
-                Damageable damageableItem = (Damageable)itemMeta;
-                damageableItem.setDamage(0); //set secondary item to full durability
-                secondaryItem.setItemMeta(itemMeta);
-            }
-        }
-        //this.display.spawn();
+
+        // Remove "0 Damage" from item meta (old config bug)
+        this.secondaryItem = this.removeZeroDamageMeta(this.secondaryItem);
+
         setGuiIcon();
+    }
+
+    public ItemStack removeZeroDamageMeta(ItemStack item) {
+        // In the past we used to explicitly set the durability of an item to be 0, this caused blocks/items to be saved
+        // with extra NBT data that we don't actually want. For example, dirt shouldn't have a damage of 0.
+        // Detect if we set it to 0, and if so, remove it from the ItemMeta!
+        if (item.getItemMeta() instanceof Damageable && ((Damageable) item.getItemMeta()).getDamage() == 0) {
+            String components = item.getItemMeta().getAsComponentString(); // example: "[minecraft:damage=53]"
+
+            // Remove it from the array
+            components = components.replace(",minecraft:damage=0", ""); // Middle of an array
+            components = components.replace("minecraft:damage=0,", ""); // Start of an array
+            components = components.replace("minecraft:damage=0", ""); // Only object in array
+
+            // Convert it back into an item
+            String itemTypeKey = item.getType().getKey().toString(); // example: "minecraft:diamond_sword"
+            String itemAsString = itemTypeKey + components; // results in: "minecraft:diamond_sword[minecraft:damage=53]"
+            return Bukkit.getItemFactory().createItemStack(itemAsString);
+        }
+
+        // Default return original item
+        return item;
     }
 
     public void setOwner(UUID newOwner){
