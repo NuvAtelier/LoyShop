@@ -171,8 +171,11 @@ public abstract class AbstractShop {
         }
         stock = InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / this.getAmount();
         if(stock == 0 && Shop.getPlugin().getAllowPartialSales()){
-            float remaining = (float)InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / (float)this.getAmount();
-            if(remaining > 0){
+            int stockRemaining = (int) Math.floor(InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / this.getItemsPerPriceUnit());
+//            System.out.println("items leftInShop: " + InventoryUtils.getAmount(this.getInventory(), this.getItemStack()));
+//            System.out.println("getItemsPerPriceUnit: " + this.getItemsPerPriceUnit());
+//            System.out.println("stockRemaining: " + stockRemaining);
+            if(stockRemaining >= 1){
                 stock = 1;
             }
         }
@@ -273,6 +276,28 @@ public abstract class AbstractShop {
         return price;
     }
 
+    public int getPricePerItem() {
+        // Calculate pricePerItem for partial sales, round up!
+        int pricePer = (int) Math.ceil(this.getPrice() / this.getAmount());
+
+        System.out.println("-- getAmount - " + this.getAmount());
+        System.out.println("-- getPrice - " + this.getPrice());
+        System.out.println("-- getPricePerItem - " + pricePer);
+
+        return pricePer;
+    }
+
+    public double getItemsPerPriceUnit() {
+        // Calculate items you can get for each price unit, round down!
+        double pricePer = this.getAmount() / this.getPrice();
+
+        System.out.println("-- getAmount - " + this.getAmount());
+        System.out.println("-- getPrice - " + this.getPrice());
+        System.out.println("-- getItemsPerPriceUnit - " + pricePer);
+
+        return pricePer;
+    }
+
     public String getPriceString() {
         if(this.type == ShopType.BARTER && this.isInitialized()){
             return (int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack());
@@ -281,7 +306,7 @@ public abstract class AbstractShop {
     }
 
     public String getPricePerItemString() {
-        double pricePer = this.getPrice() / this.getAmount();
+        double pricePer = this.getPricePerItem();
         return Shop.getPlugin().getPriceString(pricePer, true);
     }
 

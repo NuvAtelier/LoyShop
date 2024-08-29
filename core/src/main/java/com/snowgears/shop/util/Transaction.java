@@ -17,6 +17,7 @@ public class Transaction {
     private ItemStack itemStack;
     private ItemStack secondaryItemStack;
     private double price;
+    private int amount;
     private TransactionError error;
 
     public Transaction(Player player, AbstractShop shop, ShopType transactionType) {
@@ -30,15 +31,20 @@ public class Transaction {
             ((GambleShop)shop).setGambleItem();
             this.itemStack = ((GambleShop) shop).getGambleItem();
         }
+
+        this.amount = this.itemStack.getAmount();
+
         if(shop.getType() == ShopType.BARTER){
             this.secondaryItemStack = shop.getSecondaryItemStack();
         }
+
         if(shop instanceof ComboShop && transactionType == ShopType.SELL) {
             this.price = ((ComboShop)shop).getPriceSell();
         }
         else{
             this.price = shop.getPrice();
         }
+
         this.error = null;
     }
 
@@ -70,34 +76,61 @@ public class Transaction {
         return secondaryItemStack;
     }
 
+    public void setPrice(int newPrice) {
+        this.price = newPrice;
+        if(shop.getType() == ShopType.BARTER) {
+            this.secondaryItemStack.setAmount(newPrice);
+        }
+    }
+
+    public void setAmountBeingBought(int amount) {
+        this.amount = amount;
+        this.itemStack.setAmount(amount);
+    }
+
+    public int getAmount() {
+        return this.amount;
+    }
+
     public boolean setAmountCalculatePrice(int primaryItemAmount){
         if(shop.getType() == ShopType.BARTER){
-            float crossProductX = ((float)shop.getSecondaryItemStack().getAmount() / (float)shop.getItemStack().getAmount()) * (float)primaryItemAmount;
-            int secondaryItemAmount = (int)Math.floor(crossProductX);
-            this.price = secondaryItemAmount;
-            this.secondaryItemStack.setAmount(secondaryItemAmount);
-            this.itemStack.setAmount(primaryItemAmount);
+            int itemsLeftInShop = primaryItemAmount;
+            int leftInStock = (int) ((float)shop.getSecondaryItemStack().getAmount() / (float)shop.getItemStack().getAmount());
+            int itemsBeingSold = leftInStock * primaryItemAmount;
+            int secondaryItemAmount = itemsBeingSold;
+
+            System.out.println("argument primaryItemAmount - " + itemsBeingSold);
+            System.out.println("  getSecondaryItemStack - " + shop.getSecondaryItemStack().getAmount());
+            System.out.println("  getItemStack - " + shop.getItemStack().getAmount());
+            System.out.println("  leftInStock - " + leftInStock);
+            System.out.println("  itemsBeingSold - " + itemsBeingSold);
+
+            this.setPrice(itemsBeingSold);
+            this.setAmountBeingBought(primaryItemAmount);
+
             return (primaryItemAmount > 0 && secondaryItemAmount > 0);
         }
         else{
             if(Shop.getPlugin().getCurrencyType() == CurrencyType.ITEM){
-                float amountPerPriceUnit = getAmountPerPrice();
-                float maxSplit = (float)primaryItemAmount / amountPerPriceUnit;
-                //if maxSplit is less than 1, try flooring the value of amountPerPriceUnit
-                if(maxSplit < 1){
-                    amountPerPriceUnit = (int)Math.floor(amountPerPriceUnit);
-                    maxSplit = (float)primaryItemAmount / amountPerPriceUnit;
-                }
-                int maxPrice = (int)Math.floor(maxSplit + 0.05); //add a bit for float rounding issues
-                int maxItems = (int)Math.floor(maxPrice * amountPerPriceUnit);
+                double amountPerPriceUnit = this.shop.getItemsPerPriceUnit();
+//                float maxSplit = (float)primaryItemAmount / amountPerPriceUnit;
+//                //if maxSplit is less than 1, try flooring the value of amountPerPriceUnit
+//                if(maxSplit < 1){
+//                    amountPerPriceUnit = (int)Math.floor(amountPerPriceUnit);
+//                    maxSplit = (float)primaryItemAmount / amountPerPriceUnit;
+//                }
+//                int maxPrice = (int)Math.floor(maxSplit + 0.05); //add a bit for float rounding issues
+//                int maxItems = (int)Math.floor(maxPrice * amountPerPriceUnit);
 
-                this.itemStack.setAmount(maxItems);
-                this.price = maxPrice;
+                int priceUnitsToSpend = (int) Math.floor(primaryItemAmount / amountPerPriceUnit);
+                int itemsBeingBought = (int) Math.floor(amountPerPriceUnit * priceUnitsToSpend);
 
-//                System.out.println("amountPerPriceUnit - "+amountPerPriceUnit);
-//                System.out.println("maxSplit - "+maxSplit);
-//                System.out.println("maxItems - "+maxItems);
-//                System.out.println("price - "+maxPrice);
+                this.setAmountBeingBought(itemsBeingBought);
+                this.setPrice(priceUnitsToSpend);
+
+                System.out.println("amountPerPriceUnit - " + amountPerPriceUnit);
+                System.out.println("priceUnitsToSpend - " + priceUnitsToSpend);
+                System.out.println("itemsBeingBought - " + itemsBeingBought);
 
                 return this.price >= 1;
             }
@@ -137,9 +170,8 @@ public class Transaction {
         return pricePer;
     }
 
-    public float getAmountPerPrice(){
-        float amountPer = (float)this.getItemStack().getAmount() / (float)this.getPrice();
-        return amountPer;
+    public double getAmountPerPrice(){
+        return this.shop.getItemsPerPriceUnit();
     }
 
     public TransactionError getError(){
@@ -151,6 +183,7 @@ public class Transaction {
     }
 
     public void setError(TransactionError error){
+        System.out.println("TransactionError - " + error);
         this.error = error;
     }
 }

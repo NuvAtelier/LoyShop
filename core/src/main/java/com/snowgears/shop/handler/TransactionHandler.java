@@ -127,19 +127,13 @@ public class TransactionHandler {
             orderNum++;
 
             transaction = new Transaction(player, shop, actionType);
-            //System.out.println("MaxOrders - "+orderSizeMax+", OrderNum - "+orderNum+", issue - "+issue.toString());
+            System.out.println("MaxOrders - "+orderSizeMax+", OrderNum - "+orderNum+", issue - "+issue.toString());
             issue = shop.executeTransaction(transaction);
 
+            // Check if we can perform partial sales
             if(plugin.getAllowPartialSales()){
+                // Attempt a partial sale
                 processTransactionPartialSale(transaction);
-
-                //in the case that a shop can do partial AND player can do partial, process both cases
-                if(issue == TransactionError.INSUFFICIENT_FUNDS_SHOP && transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_PLAYER) {
-                    processTransactionPartialSale(transaction);
-                }
-                else if(issue == TransactionError.INSUFFICIENT_FUNDS_PLAYER && transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_SHOP) {
-                    processTransactionPartialSale(transaction);
-                }
                 issue = transaction.getError();
             }
 
@@ -213,66 +207,117 @@ public class TransactionHandler {
             shop.updateSign();
     }
 
-    //TODO process cases for different shop types and for using Vault or not using Vault
     private void processTransactionPartialSale(Transaction transaction){
         Player player = transaction.getPlayer();
         AbstractShop shop = transaction.getShop();
 
-        boolean processAgain = false;
-        if(transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_SHOP){
-            switch (transaction.getType()){
-                case SELL:
-                case BARTER:
-                    int maxItems = InventoryUtils.getAmount(shop.getInventory(), transaction.getItemStack());
-                    if(maxItems > 0) {
-                        processAgain = transaction.setAmountCalculatePrice(maxItems);
-                    }
-                    break;
-                case BUY:
-                    double pricePerItem = transaction.getPricePerItem();
-                    double maxItemsWithFunds = Math.floor((float)EconomyUtils.getFunds(shop.getOwner(), shop.getInventory()) / pricePerItem);
-                    if(maxItemsWithFunds > 0) {
-                        processAgain = transaction.setAmountCalculatePrice((int) maxItemsWithFunds);
-                    }
-                    break;
-                default:
-                    break;
+        System.out.println(" ");
+        System.out.println("ptps shopType: " + shop.getType());
+        System.out.println("ptps transactionType: " + transaction.getType());
+        System.out.println("ptps itemStackOne: " + shop.getItemStack());
+        System.out.println("ptps itemStackTwo: " + shop.getSecondaryItemStack());
+        System.out.println("ptps getPrice: " + transaction.getPrice());
+        System.out.println("ptps getItemsPerPriceUnit: " + shop.getItemsPerPriceUnit());
+        System.out.println("ptps getPricePerItem: " + shop.getPricePerItem());
+
+        if(transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_SHOP || transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_PLAYER) {
+            // Figure out how many items we have to sell
+            int itemsLeftInShop = InventoryUtils.getAmount(shop.getInventory(), transaction.getItemStack());
+            int partialStockRemaining = (int) Math.floor((double) itemsLeftInShop / shop.getItemsPerPriceUnit());
+            // If we are buying with currency, then the stock we have left is the amount of currency we have left
+            if (shop.getType() == ShopType.BUY || (shop.getType() == ShopType.COMBO && transaction.getType() == ShopType.BUY)) {
+                itemsLeftInShop = (int) EconomyUtils.getFunds(shop.getOwner(), shop.getInventory());
+                partialStockRemaining = itemsLeftInShop;
+            }
+
+            // Figure out how much funds the player has to spend
+            float playerFunds = (float) EconomyUtils.getFunds(player, player.getInventory());
+            // If we are a buy/barter shop, then our funds are the items in the players inventory, not our currency
+            if (shop.getType() == ShopType.BUY || (shop.getType() == ShopType.COMBO && transaction.getType() == ShopType.BUY)) { playerFunds = InventoryUtils.getAmount(player.getInventory(), transaction.getItemStack()); }
+            if (shop.getType() == ShopType.BARTER) { playerFunds = InventoryUtils.getAmount(player.getInventory(), transaction.getSecondaryItemStack()); }
+
+            // Calculate the maximum quantity of stock that the user can purchase
+            int playerMaxPurchaseQuantity = (int) Math.floor((double) playerFunds / shop.getPricePerItem());
+            // If we are a buy shop, then we take the total amount of the item the player has, and divide it by the number of items in each quantity
+            if (shop.getType() == ShopType.BUY || (shop.getType() == ShopType.COMBO && transaction.getType() == ShopType.BUY)) { playerMaxPurchaseQuantity = (int) Math.floor(playerFunds / shop.getItemsPerPriceUnit()); }
+
+            // Figure out how many units we can sell
+            int maxPurchasableQuantity = Math.min(partialStockRemaining, playerMaxPurchaseQuantity);
+
+            System.out.println("itemsLeftInShop: " + itemsLeftInShop);
+            System.out.println("partialStockRemaining: " + partialStockRemaining);
+            System.out.println("playerFunds: " + playerFunds);
+            System.out.println("playerMaxPurchaseQuantity: " + playerMaxPurchaseQuantity);
+            System.out.println("maxPurchasableQuantity: " + maxPurchasableQuantity);
+
+            if (maxPurchasableQuantity > 0) {
+                System.out.println("setPrice: " + (maxPurchasableQuantity * shop.getPricePerItem()));
+                System.out.println("setAmountBeingBought: " + (maxPurchasableQuantity * shop.getItemsPerPriceUnit()));
+                // Set price and purchase amount
+                transaction.setPrice(maxPurchasableQuantity * shop.getPricePerItem());
+                transaction.setAmountBeingBought((int) Math.floor(maxPurchasableQuantity * shop.getItemsPerPriceUnit()));
+                // Run the transaction again
+                transaction.setError(null);
+                transaction.setError(shop.executeTransaction(transaction));
             }
         }
-        else if(transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_PLAYER){
-            switch (transaction.getType()){
-                case SELL:
-                    double pricePerItem = transaction.getPricePerItem();
-                    //double maxItemsWithFunds = Math.floor((float)EconomyUtils.getFunds(player, player.getInventory()) / pricePerItem);
-                    double maxItemsWithFunds = Math.round((float)EconomyUtils.getFunds(player, player.getInventory()) / pricePerItem);
-                    //System.out.println("getFunds(player): "+EconomyUtils.getFunds(player, player.getInventory()));
-                    //System.out.println("pricePerItem: "+pricePerItem);
-                    //System.out.println("maxItemsWithFunds: "+maxItemsWithFunds);
-                    if(maxItemsWithFunds > 0) {
-                        processAgain = transaction.setAmountCalculatePrice((int) maxItemsWithFunds);
-                    }
-                    break;
-                case BUY:
-                    int maxItems = InventoryUtils.getAmount(player.getInventory(), transaction.getItemStack());
-                    //System.out.println("maxItems: "+maxItems);
-                    if(maxItems > 0) {
-                        processAgain = transaction.setAmountCalculatePrice(maxItems);
-                    }
-                    break;
-                case BARTER:
-                    int maxSecondaryItems = InventoryUtils.getAmount(player.getInventory(), transaction.getSecondaryItemStack());
-                    if(maxSecondaryItems > 0) {
-                        processAgain = transaction.setSecondaryAmountCalculatePrice(maxSecondaryItems);
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-        if(processAgain){
-            transaction.setError(null);
-            transaction.setError(shop.executeTransaction(transaction));
-        }
+
+//        boolean processAgain = false;
+//        if(transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_SHOP){
+//            switch (transaction.getType()){
+//                case SELL:
+//                case BARTER:
+//                    int itemsLeftInShop = InventoryUtils.getAmount(shop.getInventory(), transaction.getItemStack());
+//
+//                    if(itemsLeftInShop > 0) {
+//                        processAgain = transaction.setAmountCalculatePrice(itemsLeftInShop);
+//                    }
+//                    break;
+//                case BUY:
+//                    double pricePerItem = transaction.getPricePerItem();
+//                    double maxItemsWithFunds = Math.floor((float)EconomyUtils.getFunds(shop.getOwner(), shop.getInventory()) / pricePerItem);
+//                    if(maxItemsWithFunds > 0) {
+//                        processAgain = transaction.setAmountCalculatePrice((int) maxItemsWithFunds);
+//                    }
+//                    break;
+//                default:
+//                    break;
+//            }
+//        }
+//        else if(transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_PLAYER){
+//            switch (transaction.getType()){
+//                case SELL:
+//                    double pricePerItem = transaction.getPricePerItem();
+//                    //double maxItemsWithFunds = Math.floor((float)EconomyUtils.getFunds(player, player.getInventory()) / pricePerItem);
+//                    double maxItemsWithFunds = Math.round((float)EconomyUtils.getFunds(player, player.getInventory()) / pricePerItem);
+//                    //System.out.println("getFunds(player): "+EconomyUtils.getFunds(player, player.getInventory()));
+//                    //System.out.println("pricePerItem: "+pricePerItem);
+//                    //System.out.println("maxItemsWithFunds: "+maxItemsWithFunds);
+//                    if(maxItemsWithFunds > 0) {
+//                        processAgain = transaction.setAmountCalculatePrice((int) maxItemsWithFunds);
+//                    }
+//                    break;
+//                case BUY:
+//                    int maxItems = InventoryUtils.getAmount(player.getInventory(), transaction.getItemStack());
+//                    //System.out.println("maxItems: "+maxItems);
+//                    if(maxItems > 0) {
+//                        processAgain = transaction.setAmountCalculatePrice(maxItems);
+//                    }
+//                    break;
+//                case BARTER:
+//                    int maxSecondaryItems = InventoryUtils.getAmount(player.getInventory(), transaction.getSecondaryItemStack());
+//                    if(maxSecondaryItems > 0) {
+//                        processAgain = transaction.setSecondaryAmountCalculatePrice(maxSecondaryItems);
+//                    }
+//                    break;
+//                default:
+//                    break;
+//            }
+//        }
+//        if(processAgain){
+//            transaction.setError(null);
+//            transaction.setError(shop.executeTransaction(transaction));
+//        }
     }
 
     private void sendExchangeMessagesAndLog(AbstractShop shop, Player player, ShopType transactionType, ArrayList<Transaction> transactions) {

@@ -135,7 +135,7 @@ public class ComboShop extends AbstractShop {
         //check if player has enough items
         if(transaction.isCheck()) {
             int playerItems = InventoryUtils.getAmount(player.getInventory(), is);
-            if (playerItems < is.getAmount())
+            if (playerItems < transaction.getAmount())
                 transaction.setError(TransactionError.INSUFFICIENT_FUNDS_PLAYER);
         }
         else {
@@ -229,6 +229,7 @@ public class ComboShop extends AbstractShop {
 
     @Override
     protected int calculateStock(){
+        stock = 0;
         if(this.isAdmin) {
             stock = Integer.MAX_VALUE;
         }
@@ -238,6 +239,29 @@ public class ComboShop extends AbstractShop {
                 stock = Integer.MAX_VALUE;
             else{
                 stock = (int)(funds / this.getPrice());
+                // Check if we should show partial stock
+                if (stock == 0 && Shop.getPlugin().getAllowPartialSales()) {
+                    int stockRemaining = (int) funds / this.getPricePerItem();
+                    if (stockRemaining >= 1) {
+                        stock = 1;
+                    }
+                }
+            }
+
+            // Check if we have stock to sell items still, even if we don't have funds to buy items anymore
+            if (stock == 0) {
+                int itemsToSell = InventoryUtils.getAmount(this.getInventory(), this.getItemStack());
+                stock = itemsToSell / this.getAmount();
+                // Check if we should show partial stock
+                if (stock == 0 && Shop.getPlugin().getAllowPartialSales()) {
+                    int stockRemaining = (int) Math.floor(InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / this.getItemsPerPriceUnit());
+                    System.out.println("items leftInShop: " + InventoryUtils.getAmount(this.getInventory(), this.getItemStack()));
+                    System.out.println("getItemsPerPriceUnit: " + this.getItemsPerPriceUnit());
+                    System.out.println("stockRemaining: " + stockRemaining);
+                    if (stockRemaining >= 1) {
+                        stock = 1;
+                    }
+                }
             }
         }
         return stock;
