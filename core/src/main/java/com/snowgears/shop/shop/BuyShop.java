@@ -31,12 +31,11 @@ public class BuyShop extends AbstractShop {
             if (this.getPrice() == 0)
                 stock = Integer.MAX_VALUE;
             else{
-                stock = (int)(funds / this.getPrice());
                 if(stock == 0 && Shop.getPlugin().getAllowPartialSales()){
                     if(this.getItemStack() == null)
                         stock = 0;
                     else {
-                        double pricePer = this.getPrice() / this.getItemStack().getAmount();
+                        double pricePer = this.getPricePerItem();
                         if (funds >= pricePer) {
                             stock = 1;
                         }

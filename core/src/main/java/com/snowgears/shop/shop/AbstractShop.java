@@ -169,11 +169,11 @@ public abstract class AbstractShop {
         }
         stock = InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / this.getAmount();
         if(stock == 0 && Shop.getPlugin().getAllowPartialSales()){
-            int stockRemaining = (int) Math.floor(InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / this.getItemsPerPriceUnit());
-//            System.out.println("items leftInShop: " + InventoryUtils.getAmount(this.getInventory(), this.getItemStack()));
-//            System.out.println("getItemsPerPriceUnit: " + this.getItemsPerPriceUnit());
-//            System.out.println("stockRemaining: " + stockRemaining);
-            if(stockRemaining >= 1){
+            // Calculate the minimum items required to show as in stock
+            int minItemAmountRequired = (int) Math.ceil(1 / this.getPricePerItem());
+            int itemsInShop = InventoryUtils.getAmount(this.getInventory(), this.getItemStack());
+
+            if(itemsInShop >= minItemAmountRequired){
                 stock = 1;
             }
         }
@@ -274,9 +274,9 @@ public abstract class AbstractShop {
         return price;
     }
 
-    public int getPricePerItem() {
+    public double getPricePerItem() {
         // Calculate pricePerItem for partial sales, round up!
-        int pricePer = (int) Math.ceil(this.getPrice() / this.getAmount());
+        double pricePer = this.getPrice() / this.getAmount();
 
         return pricePer;
     }
