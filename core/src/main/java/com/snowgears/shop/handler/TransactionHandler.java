@@ -102,228 +102,87 @@ public class TransactionHandler {
     }
 
     private void executeTransactionSequence(Player player, AbstractShop shop, ShopType actionType, boolean fullStackOrder){
-
-        int orderNum = 0;
-        int orderSizeMax = 1;
-        //full stack order max will be a stack of 64
-        if(fullStackOrder){
-            if(shop.getType() == ShopType.BARTER){
-                orderSizeMax = 64 / shop.getItemStack().getAmount();
-                if(orderSizeMax < 1)
-                    orderSizeMax = 1;
-            }
-            else {
-                orderSizeMax = 64 / shop.getAmount();
-                if (orderSizeMax < 1)
-                    orderSizeMax = 1;
-            }
-        }
-
         //loop through, submitting transactions up to the order max or until an issue occurs
         TransactionError issue = TransactionError.NONE;
         ArrayList<Transaction> successfulTransactions = new ArrayList<>();
-        Transaction transaction;
-        while(orderNum < orderSizeMax && issue == TransactionError.NONE) {
-            orderNum++;
+        Transaction transaction = new Transaction(player, shop, actionType);
+        if (fullStackOrder) {
+            transaction.negotiatePurchase(64);
+        } else {
+            transaction.negotiatePurchase();
+        }
+        issue = shop.executeTransaction(transaction);
 
-            transaction = new Transaction(player, shop, actionType);
-            System.out.println("MaxOrders - "+orderSizeMax+", OrderNum - "+orderNum+", issue - "+issue.toString());
-            issue = shop.executeTransaction(transaction);
-
-            // Check if we can perform partial sales
-            if(plugin.getAllowPartialSales()){
-                // Attempt a partial sale
-                processTransactionPartialSale(transaction);
-                issue = transaction.getError();
-            }
-
-            //while loop fail safe
-            if(orderNum > 100)
-                return;
-
+        // Check if there was an error
+        if (issue != TransactionError.NONE) {
             //there was an issue when checking transaction, send reason to player
-            if (issue != TransactionError.NONE) {
-                String message = null;
-                switch (issue) {
-                    case INSUFFICIENT_FUNDS_SHOP:
-                        if (!shop.isAdmin()) {
-                            Player owner = shop.getOwner().getPlayer();
-                            //the shop owner is online
-                            if (owner != null && notifyOwner(shop)) {
-                                ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_STOCK);
-
-                                if (guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON) {
-                                    String ownerMessage = ShopMessage.getMessage(actionType.toString(), "ownerNoStock", shop, owner);
-                                    if (ownerMessage != null && !ownerMessage.isEmpty())
-                                        owner.sendMessage(ownerMessage);
-                                }
-                            }
-                        }
-                        message = ShopMessage.getMessage(actionType.toString(), "shopNoStock", shop, player);
-                        break;
-                    case INSUFFICIENT_FUNDS_PLAYER:
-                        message = ShopMessage.getMessage(actionType.toString(), "playerNoStock", shop, player);
-                        break;
-                    case INVENTORY_FULL_SHOP:
-                        if (!shop.isAdmin()) {
-                            Player owner = shop.getOwner().getPlayer();
-                            //the shop owner is online
-                            if (owner != null && notifyOwner(shop)) {
-                                ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_STOCK);
-
-                                if (guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON) {
-                                    String ownerMessage = ShopMessage.getMessage(actionType.toString(), "ownerNoSpace", shop, owner);
-                                    if (ownerMessage != null && !ownerMessage.isEmpty())
-                                        owner.sendMessage(ownerMessage);
-                                }
-                            }
-                        }
-                        message = ShopMessage.getMessage(actionType.toString(), "shopNoSpace", shop, player);
-                        break;
-                    case INVENTORY_FULL_PLAYER:
-                        message = ShopMessage.getMessage(actionType.toString(), "playerNoSpace", shop, player);
-                        break;
-                }
-                if(orderNum < 2) {
-                    if (message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    sendEffects(false, player, shop);
-                    return;
-                }
-                //if orderNum >= 2, that means the player successfully transacted so we will show success messages below
-            }
-            else{
-                successfulTransactions.add(transaction);
-            }
+            this.sendErrorMessage(player, shop, actionType, transaction);
+            return;
         }
 
         //TODO update enderchest shop inventory?
 
         //the transaction has finished and the exchange event has not been cancelled
-        sendExchangeMessagesAndLog(shop, player, actionType, successfulTransactions);
+        sendExchangeMessagesAndLog(shop, player, actionType, transaction);
         sendEffects(true, player, shop);
         //make sure to update the shop sign, but only if the sign lines use a variable that requires a refresh (like stock that is dynamically updated)
         if(shop.getSignLinesRequireRefresh())
             shop.updateSign();
     }
 
-    private void processTransactionPartialSale(Transaction transaction){
-        Player player = transaction.getPlayer();
-        AbstractShop shop = transaction.getShop();
+    private void sendErrorMessage(Player player, AbstractShop shop, ShopType actionType, Transaction transaction) {
+        String message = null;
+        switch (transaction.getError()) {
+            case INSUFFICIENT_FUNDS_SHOP:
+                if (!shop.isAdmin()) {
+                    Player owner = shop.getOwner().getPlayer();
+                    //the shop owner is online
+                    if (owner != null && notifyOwner(shop)) {
+                        ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_STOCK);
 
-        System.out.println(" ");
-        System.out.println("ptps shopType: " + shop.getType());
-        System.out.println("ptps transactionType: " + transaction.getType());
-        System.out.println("ptps itemStackOne: " + shop.getItemStack());
-        System.out.println("ptps itemStackTwo: " + shop.getSecondaryItemStack());
-        System.out.println("ptps getPrice: " + transaction.getPrice());
-        System.out.println("ptps getItemsPerPriceUnit: " + shop.getItemsPerPriceUnit());
-        System.out.println("ptps getPricePerItem: " + shop.getPricePerItem());
+                        if (guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON) {
+                            String ownerMessage = ShopMessage.getMessage(actionType.toString(), "ownerNoStock", shop, owner);
+                            if (ownerMessage != null && !ownerMessage.isEmpty())
+                                owner.sendMessage(ownerMessage);
+                        }
+                    }
+                }
+                message = ShopMessage.getMessage(actionType.toString(), "shopNoStock", shop, player);
+                break;
+            case INSUFFICIENT_FUNDS_PLAYER:
+                message = ShopMessage.getMessage(actionType.toString(), "playerNoStock", shop, player);
+                break;
+            case INVENTORY_FULL_SHOP:
+                if (!shop.isAdmin()) {
+                    Player owner = shop.getOwner().getPlayer();
+                    //the shop owner is online
+                    if (owner != null && notifyOwner(shop)) {
+                        ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_STOCK);
 
-        if(transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_SHOP || transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_PLAYER) {
-            // Figure out how many items we have to sell
-            int itemsLeftInShop = InventoryUtils.getAmount(shop.getInventory(), transaction.getItemStack());
-            int partialStockRemaining = (int) Math.floor((double) itemsLeftInShop / shop.getItemsPerPriceUnit());
-            // If we are buying with currency, then the stock we have left is the amount of currency we have left
-            if (shop.getType() == ShopType.BUY || (shop.getType() == ShopType.COMBO && transaction.getType() == ShopType.BUY)) {
-                itemsLeftInShop = (int) EconomyUtils.getFunds(shop.getOwner(), shop.getInventory());
-                partialStockRemaining = itemsLeftInShop;
-            }
-
-            // Figure out how much funds the player has to spend
-            float playerFunds = (float) EconomyUtils.getFunds(player, player.getInventory());
-            // If we are a buy/barter shop, then our funds are the items in the players inventory, not our currency
-            if (shop.getType() == ShopType.BUY || (shop.getType() == ShopType.COMBO && transaction.getType() == ShopType.BUY)) { playerFunds = InventoryUtils.getAmount(player.getInventory(), transaction.getItemStack()); }
-            if (shop.getType() == ShopType.BARTER) { playerFunds = InventoryUtils.getAmount(player.getInventory(), transaction.getSecondaryItemStack()); }
-
-            // Calculate the maximum quantity of stock that the user can purchase
-            int playerMaxPurchaseQuantity = (int) Math.floor((double) playerFunds / shop.getPricePerItem());
-            // If we are a buy shop, then we take the total amount of the item the player has, and divide it by the number of items in each quantity
-            if (shop.getType() == ShopType.BUY || (shop.getType() == ShopType.COMBO && transaction.getType() == ShopType.BUY)) { playerMaxPurchaseQuantity = (int) Math.floor(playerFunds / shop.getItemsPerPriceUnit()); }
-
-            // Figure out how many units we can sell
-            int maxPurchasableQuantity = Math.min(partialStockRemaining, playerMaxPurchaseQuantity);
-
-            System.out.println("itemsLeftInShop: " + itemsLeftInShop);
-            System.out.println("partialStockRemaining: " + partialStockRemaining);
-            System.out.println("playerFunds: " + playerFunds);
-            System.out.println("playerMaxPurchaseQuantity: " + playerMaxPurchaseQuantity);
-            System.out.println("maxPurchasableQuantity: " + maxPurchasableQuantity);
-
-            if (maxPurchasableQuantity > 0) {
-                System.out.println("setPrice: " + (maxPurchasableQuantity * shop.getPricePerItem()));
-                System.out.println("setAmountBeingBought: " + (maxPurchasableQuantity * shop.getItemsPerPriceUnit()));
-                // Set price and purchase amount
-                transaction.setPrice(maxPurchasableQuantity * shop.getPricePerItem());
-                transaction.setAmountBeingBought((int) Math.floor(maxPurchasableQuantity * shop.getItemsPerPriceUnit()));
-                // Run the transaction again
-                transaction.setError(null);
-                transaction.setError(shop.executeTransaction(transaction));
-            }
+                        if (guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON) {
+                            String ownerMessage = ShopMessage.getMessage(actionType.toString(), "ownerNoSpace", shop, owner);
+                            if (ownerMessage != null && !ownerMessage.isEmpty())
+                                owner.sendMessage(ownerMessage);
+                        }
+                    }
+                }
+                message = ShopMessage.getMessage(actionType.toString(), "shopNoSpace", shop, player);
+                break;
+            case INVENTORY_FULL_PLAYER:
+                message = ShopMessage.getMessage(actionType.toString(), "playerNoSpace", shop, player);
+                break;
         }
 
-//        boolean processAgain = false;
-//        if(transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_SHOP){
-//            switch (transaction.getType()){
-//                case SELL:
-//                case BARTER:
-//                    int itemsLeftInShop = InventoryUtils.getAmount(shop.getInventory(), transaction.getItemStack());
-//
-//                    if(itemsLeftInShop > 0) {
-//                        processAgain = transaction.setAmountCalculatePrice(itemsLeftInShop);
-//                    }
-//                    break;
-//                case BUY:
-//                    double pricePerItem = transaction.getPricePerItem();
-//                    double maxItemsWithFunds = Math.floor((float)EconomyUtils.getFunds(shop.getOwner(), shop.getInventory()) / pricePerItem);
-//                    if(maxItemsWithFunds > 0) {
-//                        processAgain = transaction.setAmountCalculatePrice((int) maxItemsWithFunds);
-//                    }
-//                    break;
-//                default:
-//                    break;
-//            }
-//        }
-//        else if(transaction.getError() == TransactionError.INSUFFICIENT_FUNDS_PLAYER){
-//            switch (transaction.getType()){
-//                case SELL:
-//                    double pricePerItem = transaction.getPricePerItem();
-//                    //double maxItemsWithFunds = Math.floor((float)EconomyUtils.getFunds(player, player.getInventory()) / pricePerItem);
-//                    double maxItemsWithFunds = Math.round((float)EconomyUtils.getFunds(player, player.getInventory()) / pricePerItem);
-//                    //System.out.println("getFunds(player): "+EconomyUtils.getFunds(player, player.getInventory()));
-//                    //System.out.println("pricePerItem: "+pricePerItem);
-//                    //System.out.println("maxItemsWithFunds: "+maxItemsWithFunds);
-//                    if(maxItemsWithFunds > 0) {
-//                        processAgain = transaction.setAmountCalculatePrice((int) maxItemsWithFunds);
-//                    }
-//                    break;
-//                case BUY:
-//                    int maxItems = InventoryUtils.getAmount(player.getInventory(), transaction.getItemStack());
-//                    //System.out.println("maxItems: "+maxItems);
-//                    if(maxItems > 0) {
-//                        processAgain = transaction.setAmountCalculatePrice(maxItems);
-//                    }
-//                    break;
-//                case BARTER:
-//                    int maxSecondaryItems = InventoryUtils.getAmount(player.getInventory(), transaction.getSecondaryItemStack());
-//                    if(maxSecondaryItems > 0) {
-//                        processAgain = transaction.setSecondaryAmountCalculatePrice(maxSecondaryItems);
-//                    }
-//                    break;
-//                default:
-//                    break;
-//            }
-//        }
-//        if(processAgain){
-//            transaction.setError(null);
-//            transaction.setError(shop.executeTransaction(transaction));
-//        }
+        // Since there was an error during the transaction, send the message, then exit the transaction early.
+        if (message != null && !message.isEmpty())
+            player.sendMessage(message);
+        sendEffects(false, player, shop);
     }
 
-    private void sendExchangeMessagesAndLog(AbstractShop shop, Player player, ShopType transactionType, ArrayList<Transaction> transactions) {
+    private void sendExchangeMessagesAndLog(AbstractShop shop, Player player, ShopType transactionType, Transaction transaction) {
 
-        double price = getPriceFromOrders(transactions);
-        String message = getMessageFromOrders(shop, player, transactionType, "user", price, transactions);
+        double price = transaction.getPrice();
+        String message = getMessageFromOrders(shop, player, transactionType, "user", price, transaction);
 
         ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_SALE_USER);
         if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_USER_ON) {
@@ -333,7 +192,7 @@ public class TransactionHandler {
 
         Player owner = Bukkit.getPlayer(shop.getOwnerUUID());
         if ((owner != null) && (!shop.isAdmin())) {
-            message = getMessageFromOrders(shop, player, transactionType, "owner", price, transactions);
+            message = getMessageFromOrders(shop, player, transactionType, "owner", price, transaction);
 
             guiIcon = plugin.getGuiHandler().getIconFromOption(owner, PlayerSettings.Option.NOTIFICATION_SALE_OWNER);
             if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_OWNER_ON) {
@@ -342,35 +201,26 @@ public class TransactionHandler {
             }
         }
 
-        int amount = 0;
-        for(Transaction transaction : transactions){
-            amount += transaction.getItemStack().getAmount();
-        }
+        int amount = transaction.getAmount();
 
         plugin.getLogHandler().logTransaction(player, shop, transactionType, price, amount);
 //        if(shop.getType() == ShopType.GAMBLE)
 //            shop.shuffleGambleItem();
     }
 
-    private String getMessageFromOrders(AbstractShop shop, Player player, ShopType transactionType, String subKey, double price, ArrayList<Transaction> transactions){
+    private String getMessageFromOrders(AbstractShop shop, Player player, ShopType transactionType, String subKey, double price, Transaction transaction){
         String message = ShopMessage.getUnformattedMessage(transactionType.toString(), subKey);
         String priceStr = Shop.getPlugin().getPriceString(price, false);
         message = message.replace("[price]", ""+priceStr);
 
         if(shop.getItemStack() != null) {
             //int amount = shop.getItemStack().getAmount() * orders;
-            int amount = 0;
-            for(Transaction transaction : transactions){
-                amount += transaction.getItemStack().getAmount();
-            }
+            int amount = transaction.getAmount();
             message = message.replace("[item amount]", "" + amount);
         }
-        if(shop.getSecondaryItemStack() != null) {
+        if(shop.getType() == ShopType.BARTER) {
            // int amount = shop.getSecondaryItemStack().getAmount() * transactions.size();
-            int amount = 0;
-            for(Transaction transaction : transactions){
-                amount += transaction.getSecondaryItemStack().getAmount();
-            }
+            int amount = (int) transaction.getPrice();
             message = message.replace("[barter item amount]", "" + amount);
         }
         message = ShopMessage.formatMessage(message, shop, player, false);

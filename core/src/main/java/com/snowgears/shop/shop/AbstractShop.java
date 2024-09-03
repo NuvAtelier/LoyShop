@@ -280,20 +280,12 @@ public abstract class AbstractShop {
         // Calculate pricePerItem for partial sales, round up!
         int pricePer = (int) Math.ceil(this.getPrice() / this.getAmount());
 
-        System.out.println("-- getAmount - " + this.getAmount());
-        System.out.println("-- getPrice - " + this.getPrice());
-        System.out.println("-- getPricePerItem - " + pricePer);
-
         return pricePer;
     }
 
     public double getItemsPerPriceUnit() {
         // Calculate items you can get for each price unit, round down!
         double pricePer = this.getAmount() / this.getPrice();
-
-        System.out.println("-- getAmount - " + this.getAmount());
-        System.out.println("-- getPrice - " + this.getPrice());
-        System.out.println("-- getItemsPerPriceUnit - " + pricePer);
 
         return pricePer;
     }
