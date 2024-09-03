@@ -153,8 +153,6 @@ public abstract class AbstractShop {
 
     //abstract methods that must be implemented in each shop subclass
 
-    public abstract TransactionError executeTransaction(Transaction transaction);
-
     protected int calculateStock() {
         int oldStock = stock;
         if(this.isAdmin) {

@@ -1,10 +1,13 @@
 package com.snowgears.shop.util;
 
 import com.snowgears.shop.Shop;
+import com.snowgears.shop.event.PlayerExchangeShopEvent;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.GambleShop;
 import com.snowgears.shop.shop.ShopType;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -177,6 +180,12 @@ public class Transaction {
         // Check if the transaction has already been cancelled
         if (this.error == TransactionError.CANCELLED) { return this.error; }
 
+        // Don't process another transaction if there is one in progress!
+        if (shop.isPerformingTransaction()) {
+            this.error = TransactionError.CANCELLED;
+            return this.error;
+        }
+
         // Check if the buyer has enough funds to pay for the tx
         if (this.buyer.getAvailableFunds() < this.price) {
             // Failed Verification: The buyer does not have enough funds to pay for the transaction!
@@ -238,6 +247,14 @@ public class Transaction {
             }
         }
 
+        // Check if any other plugins want to cancel the transaction
+        PlayerExchangeShopEvent e = new PlayerExchangeShopEvent(player, shop);
+        Bukkit.getPluginManager().callEvent(e);
+        if(e.isCancelled()) {
+            this.error = TransactionError.CANCELLED;
+            return this.error;
+        }
+
         // There were no errors, so we are good to proceed!
         this.error = TransactionError.NONE;
         return this.error;
@@ -256,6 +273,10 @@ public class Transaction {
             // Only transact with the buyer, don't remove items from shop!
             this.buyer.deductFunds(this.price);
             this.buyer.depositItem(itemSold);
+
+            // Cycle display to show won item
+            if (shop instanceof GambleShop) { ((GambleShop) shop).shuffleGambleItem(player); }
+
             // Successful!
             return TransactionError.NONE;
         }
@@ -266,6 +287,13 @@ public class Transaction {
         // Swap item
         this.seller.deductItem(itemSold);
         this.buyer.depositItem(itemSold);
+
+        // Misc shop handling tasks
+        // if the shop is connected to an ender inventory, save the contents as needed
+        if(shop.getChestLocation() != null && shop.getChestLocation().getBlock().getType() == Material.ENDER_CHEST){
+            Shop.getPlugin().getEnderChestHandler().saveInventory(shop.getOwner());
+        }
+        shop.setGuiIcon();
 
         // Successful!
         return TransactionError.NONE;
