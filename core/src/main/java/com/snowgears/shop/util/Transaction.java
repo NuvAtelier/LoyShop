@@ -61,7 +61,7 @@ public class Transaction {
             // Player is buying from the shop!
             // The buyer is going to use an item for their currency/payment
             this.buyer = new TransactionParty(true, player, player.getInventory(), shop.getSecondaryItemStack());
-            this.seller = new TransactionParty(false, shop.getOwner(), shop.getInventory());
+            this.seller = new TransactionParty(false, shop.getOwner(), shop.getInventory(), shop.getSecondaryItemStack());
         }
         else if (transactionType == ShopType.BUY) {
             // Shop is buying from the player
@@ -92,6 +92,9 @@ public class Transaction {
 
     // Calculate the maximum amount the transaction can spend/purchase
     public void negotiatePurchase(int desiredAmount) {
+        // Don't perform this processing if we are a gamble shop!
+        if (shop.getType() == ShopType.GAMBLE) { return; }
+
         int maxPurchaseAmount = this.originalAmountBeingSold;
         // Check if we passed in the amount that we want to purchase, sometimes we want to purchase more
         if (desiredAmount != -1) { maxPurchaseAmount = desiredAmount; };
@@ -106,7 +109,7 @@ public class Transaction {
         System.out.println("* itemsPerPrice: " + itemsPerPrice);
 
         // Calculate the maximum qty that the buyer can afford to buy
-        double buyerMaxQtyPurchase = (this.buyer.getAvailableFunds() / (pricePerItem)) / itemsPerPrice;
+        double buyerMaxQtyPurchase = (this.buyer.getAvailableFunds() / pricePerItem) / itemsPerPrice;
         System.out.println("* buyerMaxQtyPurchase: " + buyerMaxQtyPurchase);
         // Calculate the maximum items the seller has to sell
         double sellerMaxQtySale = this.seller.getInventoryQuantity(this.itemBeingSold) / itemsPerPrice;
@@ -123,7 +126,7 @@ public class Transaction {
         int itemsBeingBought = (int) Math.floor(maxPurchasableQuantity * itemsPerPrice);
         System.out.println("* itemsBeingBought: " + itemsBeingBought);
         // The overall price we are paying
-        double priceBeingPaid = Math.ceil(maxPurchasableQuantity);
+        double priceBeingPaid = Math.ceil(itemsBeingBought * pricePerItem);
         System.out.println("* priceBeingPaid: " + priceBeingPaid);
 
         // Check if partial sales are not allowed
@@ -155,6 +158,12 @@ public class Transaction {
             System.out.println("*-* priceBeingPaid: " + priceBeingPaid);
         }
 
+        // If we are not able to buy/sell, just leave the price/amount being sold as-is for error handling
+        if (itemsBeingBought == 0 || priceBeingPaid == 0) {
+            return;
+        }
+
+        // We are a valid price, go ahead and set it!
         this.amountBeingSold = itemsBeingBought;
         this.price = priceBeingPaid;
         System.out.println("-* amountBeingSold: " + this.amountBeingSold);
@@ -170,22 +179,31 @@ public class Transaction {
 
         // Check if the buyer has enough funds to pay for the tx
         if (this.buyer.getAvailableFunds() < this.price) {
-            // Set the error, check if the error comes from the player or shop side
-            if (this.buyer.isPlayer()) { this.error = TransactionError.INSUFFICIENT_FUNDS_PLAYER; }
-            else { this.error = TransactionError.INSUFFICIENT_FUNDS_SHOP; }
-
             // Failed Verification: The buyer does not have enough funds to pay for the transaction!
-            return this.error;
+            if (this.buyer.isPlayer()) {
+                this.error = TransactionError.INSUFFICIENT_FUNDS_PLAYER;
+                return this.error;
+            }
+            // Make sure that the shop is not an admin or gamble shop before saying it doesn't have sufficient funds
+            else if (!shop.isAdmin() && shop.getType() != ShopType.GAMBLE){
+                // Failed Verification: The buyer does not have enough funds to pay for the transaction, and the shop is not an admin!
+                this.error = TransactionError.INSUFFICIENT_FUNDS_SHOP;
+                return this.error;
+            }
         }
 
         // Check if seller has enough items to sell
         if (this.seller.getInventoryQuantity(this.itemBeingSold) < this.amountBeingSold) {
-            // Set the error, check if the error comes from the player or shop side
-            if (this.seller.isPlayer()) { this.error = TransactionError.INSUFFICIENT_FUNDS_PLAYER; }
-            else { this.error = TransactionError.INSUFFICIENT_FUNDS_SHOP; }
-
             // Failed Verification: There was not enough items in the sellers inventory to cover the transaction
-            return this.error;
+            if (this.seller.isPlayer()) {
+                this.error = TransactionError.INSUFFICIENT_FUNDS_PLAYER;
+                return this.error;
+            }
+            // Make sure that the shop is not an admin or gamble shop before saying it doesn't have sufficient funds
+            else if (!shop.isAdmin() && shop.getType() != ShopType.GAMBLE){
+                this.error = TransactionError.INSUFFICIENT_FUNDS_SHOP;
+                return this.error;
+            }
         }
 
         // Create the item being sold and set the amount we are selling in the tx
@@ -193,22 +211,31 @@ public class Transaction {
         itemToBeAdded.setAmount(this.amountBeingSold);
         // Check if the buyer has inventory space to receive the item
         if (!this.buyer.hasRoomForItem(itemToBeAdded)) {
-            // Set the error, check if the error comes from the player or shop side
-            if (this.buyer.isPlayer()) { this.error = TransactionError.INVENTORY_FULL_PLAYER; }
-            else { this.error = TransactionError.INVENTORY_FULL_SHOP; }
-
             // Failed Verification: The buyer does not have space to receive the item being bought
-            return this.error;
+            if (this.buyer.isPlayer()) {
+                this.error = TransactionError.INVENTORY_FULL_PLAYER;
+                return this.error;
+            }
+            // Make sure that the shop is not an admin or gamble shop before saying we don't have space
+            else if (!shop.isAdmin() && shop.getType() != ShopType.GAMBLE){
+                this.error = TransactionError.INVENTORY_FULL_SHOP;
+                return this.error;
+            }
+
         }
 
         // Check if the seller can accept the payment amount, aka if they have space for a currency item to be place into their inventory
         if (!this.seller.canAcceptPayment(this.price)) {
-            // Set the error, check if the error comes from the player or shop side
-            if (this.seller.isPlayer()) { this.error = TransactionError.INVENTORY_FULL_PLAYER; }
-            else { this.error = TransactionError.INVENTORY_FULL_SHOP; }
-
-            // Failed Verification: The seller does not have space to receive the currency item!
-            return this.error;
+            // Failed Verification: The buyer does not have space to receive the item being bought
+            if (this.seller.isPlayer()) {
+                this.error = TransactionError.INVENTORY_FULL_PLAYER;
+                return this.error;
+            }
+            // Make sure that the shop is not an admin or gamble shop before saying we don't have space
+            else if (!shop.isAdmin() && shop.getType() != ShopType.GAMBLE){
+                this.error = TransactionError.INVENTORY_FULL_SHOP;
+                return this.error;
+            }
         }
 
         // There were no errors, so we are good to proceed!
@@ -223,6 +250,15 @@ public class Transaction {
         // Perform the transaction, we are fully verified, so we can just directly run through the transaction
         ItemStack itemSold = this.itemBeingSold.clone();
         itemSold.setAmount(this.amountBeingSold);
+
+        // Special handling for Gamble & Admin shops!
+        if (shop.getType() == ShopType.GAMBLE || shop.isAdmin()) {
+            // Only transact with the buyer, don't remove items from shop!
+            this.buyer.deductFunds(this.price);
+            this.buyer.depositItem(itemSold);
+            // Successful!
+            return TransactionError.NONE;
+        }
 
         // Swap funds
         this.buyer.deductFunds(this.price);

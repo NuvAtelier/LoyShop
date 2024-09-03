@@ -73,7 +73,7 @@ public class TransactionParty {
             // We are being paid with an item
             ItemStack payment = this.currencyItem.clone();
             payment.setAmount((int) paymentAmount);
-            InventoryUtils.addItem(inventory, payment, party);
+            InventoryUtils.addItem(this.inventory, payment, party);
         } else {
             // We are being paid using our normal currency
             EconomyUtils.addFunds(party, this.inventory, paymentAmount);

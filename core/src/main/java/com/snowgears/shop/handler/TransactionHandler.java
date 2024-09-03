@@ -102,18 +102,21 @@ public class TransactionHandler {
     }
 
     private void executeTransactionSequence(Player player, AbstractShop shop, ShopType actionType, boolean fullStackOrder){
-        //loop through, submitting transactions up to the order max or until an issue occurs
-        TransactionError issue = TransactionError.NONE;
-        ArrayList<Transaction> successfulTransactions = new ArrayList<>();
         Transaction transaction = new Transaction(player, shop, actionType);
+
+        // Set the desired purchase amount if we are a full stack order
         if (fullStackOrder) {
             transaction.negotiatePurchase(64);
         } else {
             transaction.negotiatePurchase();
         }
-        issue = shop.executeTransaction(transaction);
 
-        // Check if there was an error
+        // Verify the transaction is possible
+        TransactionError issue = transaction.verify();
+        // If it is possible, go ahead and execute it, extra check just in case there is an issue (shouldn't ever happen, but who knows)
+        if (issue == TransactionError.NONE) { issue = transaction.execute(); }
+
+        // If there was an issue with the transaction, send the error message and bail out early
         if (issue != TransactionError.NONE) {
             //there was an issue when checking transaction, send reason to player
             this.sendErrorMessage(player, shop, actionType, transaction);
