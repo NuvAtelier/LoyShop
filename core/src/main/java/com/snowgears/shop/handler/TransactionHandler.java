@@ -123,8 +123,6 @@ public class TransactionHandler {
             return;
         }
 
-        //TODO update enderchest shop inventory?
-
         //the transaction has finished and the exchange event has not been cancelled
         sendExchangeMessagesAndLog(shop, player, actionType, transaction);
         sendEffects(true, player, shop);
@@ -207,8 +205,6 @@ public class TransactionHandler {
         int amount = transaction.getAmount();
 
         plugin.getLogHandler().logTransaction(player, shop, transactionType, price, amount);
-//        if(shop.getType() == ShopType.GAMBLE)
-//            shop.shuffleGambleItem();
     }
 
     private String getMessageFromOrders(AbstractShop shop, Player player, ShopType transactionType, String subKey, double price, Transaction transaction){
@@ -228,14 +224,6 @@ public class TransactionHandler {
         }
         message = ShopMessage.formatMessage(message, shop, player, false);
         return message;
-    }
-
-    private double getPriceFromOrders(ArrayList<Transaction> transactions){
-        double price = 0;
-        for(Transaction transaction : transactions){
-            price += transaction.getPrice();
-        }
-        return price;
     }
 
     public void sendEffects(boolean success, Player player, AbstractShop shop){

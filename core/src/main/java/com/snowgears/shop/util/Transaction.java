@@ -16,11 +16,7 @@ public class Transaction {
     private Player player;
     private AbstractShop shop;
     private ShopType transactionType;
-    private boolean isCheck;
-    private ItemStack itemStack;
-    private ItemStack secondaryItemStack;
 
-    private int amount;
     private TransactionError error;
 
     // The buyer in the transaction
@@ -42,7 +38,6 @@ public class Transaction {
 
     public Transaction(Player player, AbstractShop shop, ShopType transactionType) {
         this.error = null;
-        this.isCheck = true;
 
         this.player = player;
         this.shop = shop;
@@ -106,59 +101,59 @@ public class Transaction {
         // Greater than 1 if price is higher than amount being sold
         // Less than one if price is lower than amount being sold
         double pricePerItem = this.originalPrice / this.originalAmountBeingSold;
-        System.out.println("* pricePerItem: " + pricePerItem);
+//        System.out.println("* pricePerItem: " + pricePerItem);
         // The number of items to equal one price unit
         double itemsPerPrice = 1 / pricePerItem;
-        System.out.println("* itemsPerPrice: " + itemsPerPrice);
+//        System.out.println("* itemsPerPrice: " + itemsPerPrice);
 
         // Calculate the maximum qty that the buyer can afford to buy
         double buyerMaxQtyPurchase = (this.buyer.getAvailableFunds() / pricePerItem) / itemsPerPrice;
-        System.out.println("* buyerMaxQtyPurchase: " + buyerMaxQtyPurchase);
+//        System.out.println("* buyerMaxQtyPurchase: " + buyerMaxQtyPurchase);
         // Calculate the maximum items the seller has to sell
         double sellerMaxQtySale = this.seller.getInventoryQuantity(this.itemBeingSold) / itemsPerPrice;
-        System.out.println("* this.seller.getInventoryQuantity(this.itemBeingSold): " + this.seller.getInventoryQuantity(this.itemBeingSold));
-        System.out.println("* sellerMaxQtySale: " + sellerMaxQtySale);
+//        System.out.println("* this.seller.getInventoryQuantity(this.itemBeingSold): " + this.seller.getInventoryQuantity(this.itemBeingSold));
+//        System.out.println("* sellerMaxQtySale: " + sellerMaxQtySale);
 
         // The maximum qty that we can buy/sell with our available funds
         double maxPurchasableQuantity = Math.floor( Math.min(buyerMaxQtyPurchase, sellerMaxQtySale) );
-        System.out.println("* maxPurchasableQuantity: " + maxPurchasableQuantity);
+//        System.out.println("* maxPurchasableQuantity: " + maxPurchasableQuantity);
         // If we don't have enough to buy/sell, then we can't negotiate a new price! Return so normal error handling can occur.
         if (maxPurchasableQuantity <= 0) { return; }
 
         // The number of items we are buying
         int itemsBeingBought = (int) Math.floor(maxPurchasableQuantity * itemsPerPrice);
-        System.out.println("* itemsBeingBought: " + itemsBeingBought);
+//        System.out.println("* itemsBeingBought: " + itemsBeingBought);
         // The overall price we are paying
         double priceBeingPaid = Math.ceil(itemsBeingBought * pricePerItem);
-        System.out.println("* priceBeingPaid: " + priceBeingPaid);
+//        System.out.println("* priceBeingPaid: " + priceBeingPaid);
 
         // Check if partial sales are not allowed
         if (!Shop.getPlugin().getAllowPartialSales()) {
             // Multiple Quantity of original amount sales code (for full stack sales)
             double quantityPerOriginalAmount = this.originalAmountBeingSold / itemsPerPrice;
-            System.out.println("*** quantityPerOriginalAmount: " + quantityPerOriginalAmount);
+//            System.out.println("*** quantityPerOriginalAmount: " + quantityPerOriginalAmount);
             // Force the quantity to be a multiple of our original amount when performing multiple sales
             int roundedQuantity = (int) (Math.floor(maxPurchasableQuantity / quantityPerOriginalAmount) * quantityPerOriginalAmount);
-            System.out.println("*** roundedQuantity: " + roundedQuantity);
+//            System.out.println("*** roundedQuantity: " + roundedQuantity);
 
             // Partial sales are not allowed, we need to default to a multiple of our default amount/price
             itemsBeingBought = (int) Math.floor(roundedQuantity * itemsPerPrice);
-            System.out.println("*** itemsBeingBought: " + itemsBeingBought);
+//            System.out.println("*** itemsBeingBought: " + itemsBeingBought);
             priceBeingPaid = (int) Math.ceil(roundedQuantity);
-            System.out.println("*** priceBeingPaid: " + priceBeingPaid);
+//            System.out.println("*** priceBeingPaid: " + priceBeingPaid);
 
             // Set max purchase amount to be rounded down to a multiple of our original amount
             maxPurchaseAmount = (int) (Math.floor(maxPurchaseAmount / this.originalAmountBeingSold) * originalAmountBeingSold);
-            System.out.println("*** maxPurchaseAmount: " + maxPurchaseAmount);
+//            System.out.println("*** maxPurchaseAmount: " + maxPurchaseAmount);
         }
 
         // Make sure we only sell up to our maxPurchaseAmount (normally the original amount, but can be set higher)
         if (itemsBeingBought > maxPurchaseAmount) {
-            System.out.println("itemsBeingBought > maxPurchaseAmount: " + itemsBeingBought + " > " + maxPurchaseAmount);
+//            System.out.println("itemsBeingBought > maxPurchaseAmount: " + itemsBeingBought + " > " + maxPurchaseAmount);
             itemsBeingBought = maxPurchaseAmount;
-            System.out.println("*-* itemsBeingBought: " + itemsBeingBought);
+//            System.out.println("*-* itemsBeingBought: " + itemsBeingBought);
             priceBeingPaid = Math.ceil(maxPurchaseAmount * pricePerItem);
-            System.out.println("*-* priceBeingPaid: " + priceBeingPaid);
+//            System.out.println("*-* priceBeingPaid: " + priceBeingPaid);
         }
 
         // If we are not able to buy/sell, just leave the price/amount being sold as-is for error handling
@@ -169,10 +164,10 @@ public class Transaction {
         // We are a valid price, go ahead and set it!
         this.amountBeingSold = itemsBeingBought;
         this.price = priceBeingPaid;
-        System.out.println("-* amountBeingSold: " + this.amountBeingSold);
-        System.out.println("-* price: " + this.price);
-        System.out.println("-* originalAmountBeingSold: " + this.originalAmountBeingSold);
-        System.out.println("-* originalPrice: " + this.originalPrice);
+//        System.out.println("-* amountBeingSold: " + this.amountBeingSold);
+//        System.out.println("-* price: " + this.price);
+//        System.out.println("-* originalAmountBeingSold: " + this.originalAmountBeingSold);
+//        System.out.println("-* originalPrice: " + this.originalPrice);
     }
 
     // Verify there are no errors with the transaction
@@ -299,14 +294,6 @@ public class Transaction {
         return TransactionError.NONE;
     }
 
-
-
-
-
-
-
-
-
     public Player getPlayer() {
         return player;
     }
@@ -319,22 +306,10 @@ public class Transaction {
         return transactionType;
     }
 
-    public boolean isCheck() {
-        return isCheck;
-    }
-
-    public void passCheck(){
-        isCheck = false;
-    }
-
     public ItemStack getItemStack() {
         ItemStack item = this.itemBeingSold.clone();
         item.setAmount(this.amountBeingSold);
         return item;
-    }
-
-    public ItemStack getSecondaryItemStack(){
-        return secondaryItemStack;
     }
 
     public int getAmount() {
@@ -350,7 +325,7 @@ public class Transaction {
     }
 
     public void setError(TransactionError error){
-        System.out.println("TransactionError - " + error);
+//        System.out.println("TransactionError - " + error);
         this.error = error;
     }
 }
