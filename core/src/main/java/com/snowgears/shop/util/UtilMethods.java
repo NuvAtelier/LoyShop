@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.UUID;
 
 public class UtilMethods {
@@ -498,37 +499,28 @@ public class UtilMethods {
 
     //this takes a dirty (pre-cleaned) string and finds how much to multiply the final by
     //this utility allows the input of numbers like 1.2k (1200)
-    public static int getMultiplyValue(String text){
-        int multiplyBy = 1;
-        for(int i=0; i<text.length(); i++) {
-            switch (text.charAt(i)) {
-                case 'k':
-                case 'K':
-                    multiplyBy *= 1000D;
-                    break;
-                case 'm':
-                case 'M':
-                    multiplyBy *= 1000000D;
-                    break;
-                case 'g':
-                case 'G':
-                    multiplyBy *= 1000000000D;
-                    break;
-                case 't':
-                case 'T':
-                    multiplyBy *= 1000000000000D;
-                    break;
-                case 'p':
-                case 'P':
-                    multiplyBy *= 1000000000000000D;
-                    break;
-                case 'e':
-                case 'E':
-                    multiplyBy *= 1000000000000000000D;
-                    break;
+    public static double getMultiplyValue(String text){
+        // Remove color formatting, whitespace, and make sure the string is lowercase for matching our suffixes below
+        String priceString = ChatColor.stripColor(text).replaceAll("\\s", "").toLowerCase();
+        // Get just the suffix from the price string, remove all numbers and decimals
+        String priceSuffix = priceString.replaceAll("[0-9.]", "");
+
+        // Load the suffixes from the config values
+        NavigableMap<Double, String> configPriceSuffixes = Shop.getPlugin().getPriceSuffixes();
+
+        // Search for a suffix match
+        for (Map.Entry<Double, String> entry : configPriceSuffixes.entrySet()) {
+            Double configPriceValue = entry.getKey();
+            String configSuffix = entry.getValue().toLowerCase();
+
+            if (priceSuffix.equals(configSuffix)) {
+                // Return the value for the suffix from the config
+                return configPriceValue;
             }
         }
-        return multiplyBy;
+
+        // No match so our multiplier is just 1
+        return 1;
     }
 
     public static String cleanNumberText(String text){

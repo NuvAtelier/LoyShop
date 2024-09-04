@@ -34,7 +34,7 @@ public class TransactionParty {
         this.currencyItem = currencyItem;
     }
 
-    public boolean isPlayer() { return isPlayer; }
+    public boolean isPlayer() { return this.isPlayer; }
 
     public int getInventoryQuantity(ItemStack item) {
         return InventoryUtils.getAmount(this.inventory, item);
@@ -94,8 +94,7 @@ public class TransactionParty {
         }
 
         // We are being paid using our normal currency
-        EconomyUtils.removeFunds(party, this.inventory, paymentAmount);
-        return true;
+        return EconomyUtils.removeFunds(party, this.inventory, paymentAmount);
     }
 
     // Check if there is space in the inventory to recieve an item
