@@ -284,6 +284,11 @@ public class Shop extends JavaPlugin {
         allowCreateMethodCommand = config.getBoolean("creationMethod.runCommand");
 
         usePerms = config.getBoolean("usePermissions");
+        if (usePerms) {
+            this.getLogger().log(Level.INFO, "Permissions enabled, Shop will respect player permissions!");
+        } else {
+            this.getLogger().log(Level.INFO, "Permissions disabled! Anybody will be able to create/use shops!");
+        }
         checkUpdates = config.getBoolean("checkUpdates");
         //enableMetrics = config.getBoolean("enableMetrics");
         enableGUI = config.getBoolean("enableGUI");
@@ -417,7 +422,8 @@ public class Shop extends JavaPlugin {
                 log.severe("[Shop] Vault implementation not detected at startup! Currency may not work properly!");
                 log.info("[Shop] If you do not wish to use Vault with Shop, make sure to set 'economy.type' in the config file to ITEM.");
             } else {
-                log.info("[Shop] Vault dependency found. Using the Vault economy (" + currencyName + ") for currency on the server.");
+                // There is already a log saying that vault is installed, so don't log it again, just log that we are using it as the currency
+                log.info("[Shop] Shops will use the Vault economy (" + currencyName + ") as currency on the server.");
             }
         } else {
             if (itemCurrency == null) {
@@ -470,6 +476,10 @@ public class Shop extends JavaPlugin {
             this.worldGuardExists = false;
         }
 
+        if(getServer().getPluginManager().getPlugin("Towny") != null && this.hookTowny){
+            this.getLogger().log(Level.INFO, "Towny is installed, Shop will respect Towny!");
+        }
+
         if(getServer().getPluginManager().getPlugin("LWC") != null){
             lwcHookListener = new LWCHookListener(this);
             getServer().getPluginManager().registerEvents(lwcHookListener, this);
@@ -483,6 +493,7 @@ public class Shop extends JavaPlugin {
         }
 
         if(getServer().getPluginManager().getPlugin("BlueMap") != null && bluemapEnabled){
+            plugin.getLogger().log(Level.INFO, "BlueMap is installed, starting BlueMap integration");
             // Wait for 2 minutes for BlueMap to become available/boot up, then initialize listener.
             new BukkitRunnable() {
                 @Override
