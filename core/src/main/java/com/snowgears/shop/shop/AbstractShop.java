@@ -154,7 +154,6 @@ public abstract class AbstractShop {
     //abstract methods that must be implemented in each shop subclass
 
     protected int calculateStock() {
-        int oldStock = stock;
         if(this.isAdmin) {
             stock = Integer.MAX_VALUE;
             return stock;
@@ -177,11 +176,26 @@ public abstract class AbstractShop {
                 stock = 1;
             }
         }
+        return stock;
+    }
+
+    public void updateStock() {
+        int oldStock = stock;
+
+        // Update the stock
+        this.calculateStock();
+
+        // Update sign if needed
         if(stock != oldStock){
             signLinesRequireRefresh = true;
+            this.updateSign();
             Shop.getPlugin().getShopHandler().saveShops(getOwnerUUID());
+
+            //also set marker in here if using a marker integration
+            if(Shop.getPlugin().getBluemapHookListener() != null) {
+                Shop.getPlugin().getBluemapHookListener().updateMarker(this);
+            }
         }
-        return stock;
     }
 
     public int getStock(){
@@ -382,12 +396,7 @@ public abstract class AbstractShop {
     }
 
     public void setGuiIcon(){
-        this.calculateStock();
-
-        //also set marker in here if using a marker integration
-        if(Shop.getPlugin().getBluemapHookListener() != null) {
-            Shop.getPlugin().getBluemapHookListener().updateMarker(this);
-        }
+        this.updateStock();
 
         if(this.type != ShopType.GAMBLE) {
             if (this.getItemStack() == null)

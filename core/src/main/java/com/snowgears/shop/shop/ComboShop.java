@@ -54,7 +54,7 @@ public class ComboShop extends AbstractShop {
             if (this.getPrice() == 0)
                 stock = Integer.MAX_VALUE;
             else{
-                stock = (int)(funds / this.getPrice());
+                stock = (int) Math.floor(funds / this.getPrice());
                 // Check if we should show partial stock
                 if (stock == 0 && Shop.getPlugin().getAllowPartialSales()) {
                     if (funds >= this.getPricePerItem()) {
