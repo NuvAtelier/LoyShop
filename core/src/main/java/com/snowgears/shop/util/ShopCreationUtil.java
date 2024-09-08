@@ -86,7 +86,7 @@ public class ShopCreationUtil {
         //do a check for the WorldGuard region (optional hook)
         boolean canCreateShopInRegion = true;
         try {
-            if(plugin.hookWorldGuard()) {
+            if(plugin.worldGuardExists()) {
                 canCreateShopInRegion = WorldGuardHook.canCreateShop(player, chest.getLocation());
             }
         } catch (NoClassDefFoundError e) {
@@ -383,7 +383,7 @@ public class ShopCreationUtil {
         double price = 0;
         if (plugin.getCurrencyType() == CurrencyType.VAULT) {
             try {
-                int multiplyValue = UtilMethods.getMultiplyValue(input);
+                double multiplyValue = UtilMethods.getMultiplyValue(input);
                 String line3 = UtilMethods.cleanNumberText(input);
 
                 if (line3.contains("."))
@@ -419,7 +419,7 @@ public class ShopCreationUtil {
         double priceCombo = 0;
         if (plugin.getCurrencyType() == CurrencyType.VAULT) {
             try {
-                int multiplyValue = UtilMethods.getMultiplyValue(input);
+                double multiplyValue = UtilMethods.getMultiplyValue(input);
                 String line3 = UtilMethods.cleanNumberText(input);
 
                 if (line3.contains("."))
@@ -451,7 +451,7 @@ public class ShopCreationUtil {
         double priceCombo = 0;
         if (plugin.getCurrencyType() == CurrencyType.VAULT) {
             try {
-                int multiplyValue = UtilMethods.getMultiplyValue(input);
+                double multiplyValue = UtilMethods.getMultiplyValue(input);
                 String line3 = UtilMethods.cleanNumberText(input);
 
                 String[] multiplePrices = line3.split(" ");

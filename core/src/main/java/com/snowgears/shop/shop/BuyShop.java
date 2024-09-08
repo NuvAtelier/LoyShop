@@ -21,109 +21,11 @@ public class BuyShop extends AbstractShop {
         this.signLines = ShopMessage.getSignLines(this, this.type);
     }
 
-    //TODO incorporate # of orders at a time into this transaction
-    @Override
-    public TransactionError executeTransaction(Transaction transaction) {
-
-        this.isPerformingTransaction = true;
-
-        Player player = transaction.getPlayer();
-        ItemStack is = transaction.getItemStack();
-
-        //check if player has enough items
-        if(transaction.isCheck()) {
-            int playerItems = InventoryUtils.getAmount(player.getInventory(), is);
-            if (playerItems < is.getAmount()) {
-                transaction.setError(TransactionError.INSUFFICIENT_FUNDS_PLAYER);
-            }
-        }
-        else {
-            //remove items from player
-            InventoryUtils.removeItem(player.getInventory(), is, player);
-        }
-
-        if(transaction.getError() == null) {
-            //check if shop has enough currency
-            if(!this.isAdmin()) {
-                if(transaction.isCheck()) {
-                    boolean hasFunds = EconomyUtils.hasSufficientFunds(this.getOwner(), this.getInventory(), transaction.getPrice());
-                    if (!hasFunds) {
-                        transaction.setError(TransactionError.INSUFFICIENT_FUNDS_SHOP);
-                    }
-                }
-                else {
-                    EconomyUtils.removeFunds(this.getOwner(), this.getInventory(), transaction.getPrice());
-                }
-            }
-        }
-
-        if(transaction.getError() == null) {
-            if(transaction.isCheck()) {
-                //check if player has enough room to accept currency
-                boolean hasRoom = EconomyUtils.canAcceptFunds(player, player.getInventory(), transaction.getPrice());
-                if (!hasRoom) {
-                    transaction.setError(TransactionError.INVENTORY_FULL_PLAYER);
-                }
-            }
-            else {
-                //add currency to player
-                EconomyUtils.addFunds(player, player.getInventory(), transaction.getPrice());
-            }
-        }
-
-        if(transaction.getError() == null) {
-            //check if shop has enough room to accept items
-            if(!this.isAdmin()) {
-                if(transaction.isCheck()) {
-                    boolean shopHasRoom = InventoryUtils.hasRoom(this.getInventory(), is, this.getOwner());
-                    if (!shopHasRoom) {
-                        transaction.setError(TransactionError.INVENTORY_FULL_SHOP);
-                    }
-                }
-                else{
-                    //add items to shop's inventory
-                    InventoryUtils.addItem(this.getInventory(), is, this.getOwner());
-                }
-            }
-        }
-
-        player.updateInventory();
-
-        if(transaction.getError() != null){
-            isPerformingTransaction = false;
-            return transaction.getError();
-        }
-
-        //if there are no issues with the test/check transaction
-        if(transaction.getError() == null && transaction.isCheck()){
-
-            PlayerExchangeShopEvent e = new PlayerExchangeShopEvent(player, this);
-            Bukkit.getPluginManager().callEvent(e);
-
-            if(e.isCancelled()) {
-                this.isPerformingTransaction = false;
-                transaction.setError(TransactionError.CANCELLED);
-                return TransactionError.CANCELLED;
-            }
-
-            //run the transaction again after passing checks
-            transaction.passCheck();
-            return executeTransaction(transaction);
-        }
-
-        //if the shop is connected to an ender inventory, save the contents as needed
-        if(!isAdmin && this.chestLocation != null && this.chestLocation.getBlock().getType() == Material.ENDER_CHEST){
-            Shop.getPlugin().getEnderChestHandler().saveInventory(this.getOwner());
-        }
-
-        this.isPerformingTransaction = false;
-        setGuiIcon();
-        transaction.setError(TransactionError.NONE);
-        return TransactionError.NONE;
-    }
-
     @Override
     protected int calculateStock(){
+        // Reset stock to start with
+        stock = 0;
+
         if(this.isAdmin) {
             stock = Integer.MAX_VALUE;
         }
@@ -132,12 +34,14 @@ public class BuyShop extends AbstractShop {
             if (this.getPrice() == 0)
                 stock = Integer.MAX_VALUE;
             else{
-                stock = (int)(funds / this.getPrice());
+                // Check if the player has enough funds to cover a full transaction
+                stock = (int) Math.floor(funds / this.getPrice());
+                // If the player doesn't have enough funds for a full transaction, see if they can accept a partial one
                 if(stock == 0 && Shop.getPlugin().getAllowPartialSales()){
                     if(this.getItemStack() == null)
                         stock = 0;
                     else {
-                        double pricePer = this.getPrice() / this.getItemStack().getAmount();
+                        double pricePer = this.getPricePerItem();
                         if (funds >= pricePer) {
                             stock = 1;
                         }

@@ -37,6 +37,9 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.logging.Level;
 
+import static com.snowgears.shop.util.ShopCreationProcess.ChatCreationStep.BARTER_ITEM;
+import static com.snowgears.shop.util.ShopCreationProcess.ChatCreationStep.ITEM;
+
 public class CreativeSelectionListener implements Listener {
 
     private Shop plugin;
@@ -166,8 +169,14 @@ public class CreativeSelectionListener implements Listener {
                 Player player = plugin.getServer().getPlayer(event.getPlayer().getUniqueId());
                 if(player != null) {
                     boolean removed = removePlayerFromCreativeSelection(player);
-                    if (removed)
+                    if (removed) {
                         player.updateInventory();
+                    }
+                    // Check if we have a chat shop creation in process, and cancel it
+                    ShopCreationProcess process = plugin.getMiscListener().getShopCreationProcess(player);
+                    // If we are in the ITEM/BARTER_ITEM selection stage, then cancel the shop chat creation process!
+                    if (process != null && (process.getStep() == ITEM || process.getStep() == BARTER_ITEM))
+                        plugin.getMiscListener().cancelShopCreationProcess(player);
                 }
             }
         }, 10L); //0.5 second
@@ -243,7 +252,7 @@ public class CreativeSelectionListener implements Listener {
 
                         //they just hit a chest with an open hand (so they are making a BUY shop) and now need to choose an item from creative selection
                         ShopCreationProcess currentProcess = plugin.getMiscListener().getShopCreationProcess(player);
-                        if(currentProcess.getStep() == ShopCreationProcess.ChatCreationStep.ITEM){
+                        if(currentProcess.getStep() == ITEM){
                             currentProcess.setItemStack(event.getCursor());
                             currentProcess.setShopType(ShopType.BUY);
 
@@ -305,6 +314,15 @@ public class CreativeSelectionListener implements Listener {
             return true;
         }
         return false;
+    }
+
+    // Check if the player logged out, if so, put them back in survival before they finish logging out
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        final Player player = event.getPlayer();
+        if(playerDataMap.containsKey(player.getUniqueId())) {
+            this.removePlayerFromCreativeSelection(player);
+        }
     }
 
     //make sure that if player somehow quit without getting their old data back, return it to them when they login next

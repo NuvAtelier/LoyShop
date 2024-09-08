@@ -2,6 +2,7 @@ package com.snowgears.shop.hook;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.event.PlayerDestroyShopEvent;
+import com.snowgears.shop.handler.ShopHandler;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.UtilMethods;
@@ -13,9 +14,9 @@ import de.bluecolored.bluemap.api.markers.POIMarker;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 
 public class BluemapHookListener implements Listener {
@@ -34,17 +35,15 @@ public class BluemapHookListener implements Listener {
     public BluemapHookListener(Shop plugin){
         this.plugin = plugin;
         readConfig();
+    }
 
-        //reload the shop plugin after 2 minutes of booting to make all current markers (BlueMap API loads async)
-        if(enabled){
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    BlueMapAPI.getInstance().ifPresent(api -> {
-                        Shop.getPlugin().reload();
-                    });
-                }
-            }.runTaskLater(this.plugin, 20*120);
+    // Used on server startup to make sure all our shops are in sync with BlueMap
+    // Useful if BlueMap is added as a plugin AFTER there are existing shops
+    public void reloadMarkers(ShopHandler shopHandler) {
+        final List<AbstractShop> allShops = shopHandler.getAllShops();
+        for(AbstractShop shop : allShops){
+            // Update every shops marker
+            this.updateMarker(shop);
         }
     }
 

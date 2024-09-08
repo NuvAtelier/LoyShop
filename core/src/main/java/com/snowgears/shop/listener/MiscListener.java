@@ -185,6 +185,17 @@ public class MiscListener implements Listener {
         return playerChatCreationSteps.get(player.getUniqueId());
     }
 
+    public void cancelShopCreationProcess(Player player){
+        if (this.getShopCreationProcess(player) != null) {
+            playerChatCreationSteps.remove(player.getUniqueId());
+            // Send message that the creation was cancelled
+            String unformattedMessage = ShopMessage.getUnformattedMessage("interactionIssue", "createCancel");
+            String formattedMessage = ShopMessage.formatMessage(unformattedMessage, null, null, false);
+            if(formattedMessage != null && !formattedMessage.isEmpty())
+                player.sendMessage(formattedMessage);
+        }
+    }
+
     @EventHandler
     public void onPreShopSignClick(PlayerInteractEvent event) {
         if (event.isCancelled()) {
@@ -498,8 +509,13 @@ public class MiscListener implements Listener {
                         playerChatCreationSteps.remove(player.getUniqueId());
                     }
                     break;
+                // ITEM, BARTER_ITEM, or FINISHED
                 default:
-                    event.setCancelled(true); //TODO maybe remove this
+                    // If the user chatted and we were not in one of the earlier steps, cancel the creation process
+                    // This will happen if the user was meant to select an ITEM or BARTER_ITEM, and exited the window
+                    // without selecting their item to buy.
+                    // This prevents chat from being locked for the player
+                    this.cancelShopCreationProcess(player);
                     break;
             }
         }
@@ -585,7 +601,7 @@ public class MiscListener implements Listener {
             else {
                 boolean isRegionOwner = false;
                 //check if the player is a world guard region owner
-                if (Shop.getPlugin().hookWorldGuard()) {
+                if (Shop.getPlugin().worldGuardExists()) {
                     isRegionOwner = WorldGuardHook.isRegionOwner(player, shop.getSignLocation());
                 }
                 if (isRegionOwner || player.isOp() || (plugin.usePerms() && (player.hasPermission("shop.operator") || player.hasPermission("shop.destroy.other")))) {

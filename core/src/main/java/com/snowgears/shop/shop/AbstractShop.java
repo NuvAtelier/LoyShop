@@ -137,8 +137,9 @@ public abstract class AbstractShop {
                         return false;
                     }
                 }
-                this.updateSign();
                 this.setGuiIcon();
+                // Stock is recalculated in setGuiIcon
+                this.updateSign();
                 return true;
             } catch (ClassCastException cce) {
                 //this shop has no sign on it. return false
@@ -152,10 +153,7 @@ public abstract class AbstractShop {
 
     //abstract methods that must be implemented in each shop subclass
 
-    public abstract TransactionError executeTransaction(Transaction transaction);
-
     protected int calculateStock() {
-        int oldStock = stock;
         if(this.isAdmin) {
             stock = Integer.MAX_VALUE;
             return stock;
@@ -170,16 +168,34 @@ public abstract class AbstractShop {
         }
         stock = InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / this.getAmount();
         if(stock == 0 && Shop.getPlugin().getAllowPartialSales()){
-            float remaining = (float)InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / (float)this.getAmount();
-            if(remaining > 0){
+            // Calculate the minimum items required to show as in stock
+            int minItemAmountRequired = (int) Math.ceil(1 / this.getPricePerItem());
+            int itemsInShop = InventoryUtils.getAmount(this.getInventory(), this.getItemStack());
+
+            if(itemsInShop >= minItemAmountRequired){
                 stock = 1;
             }
         }
+        return stock;
+    }
+
+    public void updateStock() {
+        int oldStock = stock;
+
+        // Update the stock
+        this.calculateStock();
+
+        // Update sign if needed
         if(stock != oldStock){
             signLinesRequireRefresh = true;
+            this.updateSign();
             Shop.getPlugin().getShopHandler().saveShops(getOwnerUUID());
+
+            //also set marker in here if using a marker integration
+            if(Shop.getPlugin().getBluemapHookListener() != null) {
+                Shop.getPlugin().getBluemapHookListener().updateMarker(this);
+            }
         }
-        return stock;
     }
 
     public int getStock(){
@@ -272,6 +288,20 @@ public abstract class AbstractShop {
         return price;
     }
 
+    public double getPricePerItem() {
+        // Calculate pricePerItem for partial sales, round up!
+        double pricePer = this.getPrice() / this.getAmount();
+
+        return pricePer;
+    }
+
+    public double getItemsPerPriceUnit() {
+        // Calculate items you can get for each price unit, round down!
+        double pricePer = this.getAmount() / this.getPrice();
+
+        return pricePer;
+    }
+
     public String getPriceString() {
         if(this.type == ShopType.BARTER && this.isInitialized()){
             return (int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack());
@@ -280,7 +310,7 @@ public abstract class AbstractShop {
     }
 
     public String getPricePerItemString() {
-        double pricePer = this.getPrice() / this.getAmount();
+        double pricePer = this.getPricePerItem();
         return Shop.getPlugin().getPriceString(pricePer, true);
     }
 
@@ -315,29 +345,42 @@ public abstract class AbstractShop {
 
     public void setItemStack(ItemStack is) {
         this.item = is.clone();
-        if(!Shop.getPlugin().checkItemDurability()) {
-            ItemMeta itemMeta = item.getItemMeta();
-            if(itemMeta instanceof Damageable){
-                Damageable damageableItem = (Damageable)itemMeta;
-                damageableItem.setDamage(0); //set item to full durability
-                item.setItemMeta(itemMeta);
-            }
-        }
+
+        // Remove "0 Damage" from item meta (old config bug)
+        this.item = this.removeZeroDamageMeta(this.item);
+
         setGuiIcon();
     }
 
     public void setSecondaryItemStack(ItemStack is) {
         this.secondaryItem = is.clone();
-        if(!Shop.getPlugin().checkItemDurability()) {
-            ItemMeta itemMeta = secondaryItem.getItemMeta();
-            if(itemMeta instanceof Damageable){
-                Damageable damageableItem = (Damageable)itemMeta;
-                damageableItem.setDamage(0); //set secondary item to full durability
-                secondaryItem.setItemMeta(itemMeta);
-            }
-        }
-        //this.display.spawn();
+
+        // Remove "0 Damage" from item meta (old config bug)
+        this.secondaryItem = this.removeZeroDamageMeta(this.secondaryItem);
+
         setGuiIcon();
+    }
+
+    public ItemStack removeZeroDamageMeta(ItemStack item) {
+        // In the past we used to explicitly set the durability of an item to be 0, this caused blocks/items to be saved
+        // with extra NBT data that we don't actually want. For example, dirt shouldn't have a damage of 0.
+        // Detect if we set it to 0, and if so, remove it from the ItemMeta!
+        if (item.getItemMeta() instanceof Damageable && ((Damageable) item.getItemMeta()).getDamage() == 0) {
+            String components = item.getItemMeta().getAsComponentString(); // example: "[minecraft:damage=53]"
+
+            // Remove it from the array
+            components = components.replace(",minecraft:damage=0", ""); // Middle of an array
+            components = components.replace("minecraft:damage=0,", ""); // Start of an array
+            components = components.replace("minecraft:damage=0", ""); // Only object in array
+
+            // Convert it back into an item
+            String itemTypeKey = item.getType().getKey().toString(); // example: "minecraft:diamond_sword"
+            String itemAsString = itemTypeKey + components; // results in: "minecraft:diamond_sword[minecraft:damage=53]"
+            return Bukkit.getItemFactory().createItemStack(itemAsString);
+        }
+
+        // Default return original item
+        return item;
     }
 
     public void setOwner(UUID newOwner){
@@ -353,12 +396,7 @@ public abstract class AbstractShop {
     }
 
     public void setGuiIcon(){
-        this.calculateStock();
-
-        //also set marker in here if using a marker integration
-        if(Shop.getPlugin().getBluemapHookListener() != null) {
-            Shop.getPlugin().getBluemapHookListener().updateMarker(this);
-        }
+        this.updateStock();
 
         if(this.type != ShopType.GAMBLE) {
             if (this.getItemStack() == null)

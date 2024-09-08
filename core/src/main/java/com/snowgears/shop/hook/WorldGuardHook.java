@@ -5,6 +5,7 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.flags.BooleanFlag;
 import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.flags.Flags;
@@ -62,6 +63,18 @@ public class WorldGuardHook {
             WorldGuardPlugin wgPlugin = (WorldGuardPlugin) worldGuardPlugin;
             RegionQuery query = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
 
+            // Check if we are not in a region.
+            ApplicableRegionSet regions = query.getApplicableRegions(BukkitAdapter.adapt(loc));
+            if (regions.size() == 0) {
+                // If we have no regions here, then we need to check if we are requiring the `allow-shops` worldguard flag
+                if (Shop.getPlugin().hookWorldGuard()) {
+                    // Allow shops ONLY in regions with the shop flag set
+                    return false;
+                }
+                // If we are not requiring `allow-shops` and we are not inside a region, then allow shop creation
+                return true;
+            }
+
             // Check if shop flag is set:
             boolean allowShopFlag = false; // false if unset or disallowed
 
@@ -82,13 +95,29 @@ public class WorldGuardHook {
                 // Shop flag doesn't exist, assume unset.
             }
 
-            if (Shop.getPlugin().hookWorldGuard()) {
-                // Allow shops ONLY in regions with the shop flag set:
-                return allowShopFlag;
-            } else {
-                // Allow shops in regions where the shop flag is set OR the player can build:
-                return (allowShopFlag || query.testState(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), Flags.BUILD));
+            // Check if we should deny the player from creating a shop based on other WG Flags
+            // We cannot create a shop if we cannot Build (add a sign), or if we cannot interact with a chest, and PASSTHROUGH is not allowed
+            StateFlag.State passthroughFlag = query.queryState(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), Flags.PASSTHROUGH);
+            StateFlag.State buildFlag = query.queryState(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), Flags.BUILD);
+            StateFlag.State chestAccessFlag = query.queryState(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), Flags.CHEST_ACCESS);
+
+            // If building or chest access is explicitly denied, then they are not allowed to make a shop here
+            if (buildFlag == StateFlag.State.DENY || chestAccessFlag == StateFlag.State.DENY) {
+                return false;
             }
+            // If passthrough is explicitly allowed, then we are allowed to create our shop
+            // If we alternatively explicitly have explicit build permission and chest access permission, then we are allowed to create our shop
+            else if (passthroughFlag == StateFlag.State.ALLOW || (buildFlag == StateFlag.State.ALLOW && chestAccessFlag == StateFlag.State.ALLOW)) {
+                if (Shop.getPlugin().hookWorldGuard()) {
+                    // Allow shops ONLY in regions with the shop flag set
+                    return allowShopFlag;
+                }
+                // If we are not required to have the shop flag, just default return true
+                return true;
+            }
+
+            // If we didn't match the flag requirements above, default return false
+            return false;
         }
 
         private Internal() {
@@ -96,7 +125,8 @@ public class WorldGuardHook {
     }
 
     public static boolean canCreateShop(Player player, Location location) {
-        if (!Shop.getPlugin().hookWorldGuard()) {
+        // Check if the WorldGuard plugin even exists on the server
+        if (!Shop.getPlugin().worldGuardExists()) {
             return true;
         }
         if (player.isOp() || (Shop.getPlugin().usePerms() && player.hasPermission("shop.operator"))) {
@@ -112,7 +142,7 @@ public class WorldGuardHook {
     }
 
     public static boolean canUseShop(Player player, Location location) {
-        if (!Shop.getPlugin().hookWorldGuard()) {
+        if (!Shop.getPlugin().worldGuardExists()) {
             return true;
         }
         if (player.isOp() || (Shop.getPlugin().usePerms() && player.hasPermission("shop.operator"))) {
@@ -129,7 +159,7 @@ public class WorldGuardHook {
     }
 
     public static boolean isRegionOwner(Player player, Location location) {
-        if (!Shop.getPlugin().hookWorldGuard()) {
+        if (!Shop.getPlugin().worldGuardExists()) {
             return false;
         }
         try {
