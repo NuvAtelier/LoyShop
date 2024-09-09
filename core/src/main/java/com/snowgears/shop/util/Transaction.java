@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 public class Transaction {
+    boolean TX_DEBUG_LOGGING = false;
 
     private Player player;
     private AbstractShop shop;
@@ -36,10 +37,6 @@ public class Transaction {
     // The amount of the item being sold in the tx, might be a higher or lower quantity than originalAmountBeingSold
     private int amountBeingSold;
 
-    // Track the maximum amounts that either party can purchase/sell for error handling
-    private double buyerMaxQtyPurchase;
-    private double sellerMaxQtySale;
-
     public Transaction(Player player, AbstractShop shop, ShopType transactionType) {
         this.error = null;
 
@@ -52,8 +49,8 @@ public class Transaction {
         this.amountBeingSold = shop.getAmount();
 
         if (transactionType == ShopType.GAMBLE) {
-            this.buyer = new TransactionParty(true, player, player.getInventory());
-            this.seller = new TransactionParty(false, shop.getOwner(), shop.getInventory());
+            this.buyer = new TransactionParty(true, false, player, player.getInventory());
+            this.seller = new TransactionParty(false, shop.isAdmin(), shop.getOwner(), shop.getInventory());
 
             ((GambleShop)shop).setGambleItem();
             this.itemBeingSold = ((GambleShop) shop).getGambleItem();
@@ -62,18 +59,18 @@ public class Transaction {
         else if (shop.getType() == ShopType.BARTER) {
             // Player is buying from the shop!
             // The buyer is going to use an item for their currency/payment
-            this.buyer = new TransactionParty(true, player, player.getInventory(), shop.getSecondaryItemStack());
-            this.seller = new TransactionParty(false, shop.getOwner(), shop.getInventory(), shop.getSecondaryItemStack());
+            this.buyer = new TransactionParty(true, false, player, player.getInventory(), shop.getSecondaryItemStack());
+            this.seller = new TransactionParty(false, shop.isAdmin(), shop.getOwner(), shop.getInventory(), shop.getSecondaryItemStack());
         }
         else if (transactionType == ShopType.BUY) {
             // Shop is buying from the player
-            this.buyer = new TransactionParty(false, shop.getOwner(), shop.getInventory());
-            this.seller = new TransactionParty(true, player, player.getInventory());
+            this.buyer = new TransactionParty(false, shop.isAdmin(), shop.getOwner(), shop.getInventory());
+            this.seller = new TransactionParty(true, false, player, player.getInventory());
         }
         else if (transactionType == ShopType.SELL) {
             // Shop is selling to the player
-            this.buyer = new TransactionParty(true, player, player.getInventory());
-            this.seller = new TransactionParty(false, shop.getOwner(), shop.getInventory());
+            this.buyer = new TransactionParty(true, false, player, player.getInventory());
+            this.seller = new TransactionParty(false, shop.isAdmin(), shop.getOwner(), shop.getInventory());
 
             // If we are a combo shop, then we need to grab the sell price
             if (shop instanceof ComboShop) {
@@ -105,31 +102,34 @@ public class Transaction {
         // Greater than 1 if price is higher than amount being sold
         // Less than one if price is lower than amount being sold
         double pricePerItem = this.originalPrice / this.originalAmountBeingSold;
-//        System.out.println("* pricePerItem: " + pricePerItem);
         // The number of items to equal one price unit
         double itemsPerPrice = 1;
         // If our price is less than 1, then we are buying multiple items with each order
         if (pricePerItem < 1) { itemsPerPrice = 1/pricePerItem; }
-//        System.out.println("* itemsPerPrice: " + itemsPerPrice);
 
         // Calculate the maximum qty that the buyer can afford to buy
-        buyerMaxQtyPurchase = (this.buyer.getAvailableFunds() / pricePerItem) / itemsPerPrice;
-//        System.out.println("* buyerMaxQtyPurchase: " + buyerMaxQtyPurchase);
+        double buyerMaxQtyPurchase = (this.buyer.getAvailableFunds() / pricePerItem) / itemsPerPrice;
         // Calculate the maximum items the seller has to sell
-        sellerMaxQtySale = this.seller.getInventoryQuantity(this.itemBeingSold) / itemsPerPrice;
-//        System.out.println("* this.seller.getInventoryQuantity(this.itemBeingSold): " + this.seller.getInventoryQuantity(this.itemBeingSold));
-//        System.out.println("* sellerMaxQtySale: " + sellerMaxQtySale);
+        double sellerMaxQtySale = this.seller.getInventoryQuantity(this.itemBeingSold) / itemsPerPrice;
 
         // The maximum qty that we can buy/sell with our available funds
         double maxPurchasableQuantity = Math.floor( Math.min(buyerMaxQtyPurchase, sellerMaxQtySale) );
-//        System.out.println("* maxPurchasableQuantity: " + maxPurchasableQuantity);
 
         // The number of items we are buying
         int itemsBeingBought = (int) Math.floor(maxPurchasableQuantity * itemsPerPrice);
-//        System.out.println("* itemsBeingBought: " + itemsBeingBought);
         // The overall price we are paying
         double priceBeingPaid = Math.ceil(itemsBeingBought * pricePerItem);
-//        System.out.println("* priceBeingPaid: " + priceBeingPaid);
+
+        if (TX_DEBUG_LOGGING) {
+            System.out.println("* pricePerItem: " + pricePerItem);
+            System.out.println("* itemsPerPrice: " + itemsPerPrice);
+            System.out.println("* buyerMaxQtyPurchase: " + buyerMaxQtyPurchase);
+            System.out.println("* this.seller.getInventoryQuantity(this.itemBeingSold): " + this.seller.getInventoryQuantity(this.itemBeingSold));
+            System.out.println("* sellerMaxQtySale: " + sellerMaxQtySale);
+            System.out.println("* maxPurchasableQuantity: " + maxPurchasableQuantity);
+            System.out.println("* itemsBeingBought: " + itemsBeingBought);
+            System.out.println("* priceBeingPaid: " + priceBeingPaid);
+        }
 
         // If we don't have enough to buy/sell, then we can't negotiate a new price! Return so normal error handling can occur.
         if (maxPurchasableQuantity <= 0 || itemsBeingBought <= 0 || priceBeingPaid <= 0) {
@@ -143,29 +143,32 @@ public class Transaction {
         if (!Shop.getPlugin().getAllowPartialSales()) {
             // Multiple Quantity of original amount sales code (for full stack sales)
             double quantityPerOriginalAmount = this.originalAmountBeingSold / itemsPerPrice;
-//            System.out.println("*** quantityPerOriginalAmount: " + quantityPerOriginalAmount);
             // Force the quantity to be a multiple of our original amount when performing multiple sales
             int roundedQuantity = (int) (Math.floor(maxPurchasableQuantity / quantityPerOriginalAmount) * quantityPerOriginalAmount);
-//            System.out.println("*** roundedQuantity: " + roundedQuantity);
 
             // Partial sales are not allowed, we need to default to a multiple of our default amount/price
             itemsBeingBought = (int) Math.floor(roundedQuantity * itemsPerPrice);
-//            System.out.println("*** itemsBeingBought: " + itemsBeingBought);
             priceBeingPaid = Math.ceil(roundedQuantity);
-//            System.out.println("*** priceBeingPaid: " + priceBeingPaid);
 
             // Set max purchase amount to be rounded down to a multiple of our original amount
             maxPurchaseAmount = (int) (Math.floor(maxPurchaseAmount / this.originalAmountBeingSold) * originalAmountBeingSold);
-//            System.out.println("*** maxPurchaseAmount: " + maxPurchaseAmount);
+
+            if (TX_DEBUG_LOGGING) {
+                System.out.println("*** roundedQuantity: " + roundedQuantity);
+                System.out.println("*** quantityPerOriginalAmount: " + quantityPerOriginalAmount);
+                System.out.println("*** itemsBeingBought: " + itemsBeingBought);
+                System.out.println("*** priceBeingPaid: " + priceBeingPaid);
+                System.out.println("*** maxPurchaseAmount: " + maxPurchaseAmount);
+            }
         }
 
         // Make sure we only sell up to our maxPurchaseAmount (normally the original amount, but can be set higher)
         if (itemsBeingBought > maxPurchaseAmount) {
-//            System.out.println("itemsBeingBought > maxPurchaseAmount: " + itemsBeingBought + " > " + maxPurchaseAmount);
+            if (TX_DEBUG_LOGGING) { System.out.println("itemsBeingBought > maxPurchaseAmount: " + itemsBeingBought + " > " + maxPurchaseAmount); }
             itemsBeingBought = maxPurchaseAmount;
-//            System.out.println("*-* itemsBeingBought: " + itemsBeingBought);
             priceBeingPaid = Math.ceil(maxPurchaseAmount * pricePerItem);
-//            System.out.println("*-* priceBeingPaid: " + priceBeingPaid);
+            if (TX_DEBUG_LOGGING) { System.out.println("*-* itemsBeingBought: " + itemsBeingBought); }
+            if (TX_DEBUG_LOGGING) { System.out.println("*-* priceBeingPaid: " + priceBeingPaid); }
         }
 
         // If we are not able to buy/sell, just leave the price/amount being sold as-is for error handling
@@ -176,10 +179,13 @@ public class Transaction {
         // We are a valid price, go ahead and set it!
         this.amountBeingSold = itemsBeingBought;
         this.price = priceBeingPaid;
-//        System.out.println("-* amountBeingSold: " + this.amountBeingSold);
-//        System.out.println("-* price: " + this.price);
-//        System.out.println("-* originalAmountBeingSold: " + this.originalAmountBeingSold);
-//        System.out.println("-* originalPrice: " + this.originalPrice);
+
+        if (TX_DEBUG_LOGGING) {
+            System.out.println("-* amountBeingSold: " + this.amountBeingSold);
+            System.out.println("-* price: " + this.price);
+            System.out.println("-* originalAmountBeingSold: " + this.originalAmountBeingSold);
+            System.out.println("-* originalPrice: " + this.originalPrice);
+        }
     }
 
     // Verify there are no errors with the transaction, note, you must run negotiatePurchase before verifying!
@@ -188,43 +194,28 @@ public class Transaction {
         if (this.error == TransactionError.CANCELLED) { return this.error; }
 
         // Don't process another transaction if there is one in progress!
-        if (shop.isPerformingTransaction()) {
-            this.error = TransactionError.CANCELLED;
-            return this.error;
-        }
+        if (shop.isPerformingTransaction()) { return this.setError(TransactionError.CANCELLED); }
 
         // Check if the buyer has enough funds to pay for the tx
-        if (this.buyer.getAvailableFunds() < this.price && buyerMaxQtyPurchase < 1) {
+        if (this.buyer.getAvailableFunds() < this.price) {
             // Failed Verification: The buyer does not have enough funds to pay for the transaction!
             if (this.buyer.isPlayer()) {
-                this.error = TransactionError.INSUFFICIENT_FUNDS_PLAYER;
-//                System.out.println("!!! buyer INSUFFICIENT_FUNDS_PLAYER");
-                return this.error;
-            }
-            // Make sure that the shop is not an admin or gamble shop before saying it doesn't have sufficient funds
-            else if (!shop.isAdmin() && shop.getType() != ShopType.GAMBLE){
-                // Failed Verification: The buyer does not have enough funds to pay for the transaction, and the shop is not an admin!
-                this.error = TransactionError.INSUFFICIENT_FUNDS_SHOP;
-//                System.out.println("!!! buyer INSUFFICIENT_FUNDS_SHOP");
-                shop.updateStock();
-                return this.error;
+                return this.setError(TransactionError.INSUFFICIENT_FUNDS_PLAYER);
+            } else {
+                // Failed Verification: The buyer does not have enough funds to pay for the transaction!
+                shop.updateStock(); // Update sign to show out of stock in case we were out of sync and the shop showed as in-stock
+                return this.setError(TransactionError.INSUFFICIENT_FUNDS_SHOP);
             }
         }
 
         // Check if seller has enough items to sell
-        if (this.seller.getInventoryQuantity(this.itemBeingSold) < this.amountBeingSold && sellerMaxQtySale < 1) {
+        if (this.seller.getInventoryQuantity(this.itemBeingSold) < this.amountBeingSold) {
             // Failed Verification: There was not enough items in the sellers inventory to cover the transaction
             if (this.seller.isPlayer()) {
-                this.error = TransactionError.INSUFFICIENT_FUNDS_PLAYER;
-//                System.out.println("!!! seller INSUFFICIENT_FUNDS_PLAYER");
-                return this.error;
-            }
-            // Make sure that the shop is not an admin or gamble shop before saying it doesn't have sufficient funds
-            else if (!shop.isAdmin() && shop.getType() != ShopType.GAMBLE){
-                this.error = TransactionError.INSUFFICIENT_FUNDS_SHOP;
-//                System.out.println("!!! seller INSUFFICIENT_FUNDS_SHOP");
-                shop.updateStock(); // Make sure the stock display is up to date!
-                return this.error;
+                return this.setError(TransactionError.INSUFFICIENT_FUNDS_PLAYER);
+            } else {
+                shop.updateStock(); // Update sign to show out of stock in case we were out of sync and the shop showed as in-stock
+                return this.setError(TransactionError.INSUFFICIENT_FUNDS_SHOP);
             }
         }
 
@@ -234,49 +225,28 @@ public class Transaction {
         // Check if the buyer has inventory space to receive the item
         if (!this.buyer.hasRoomForItem(itemToBeAdded)) {
             // Failed Verification: The buyer does not have space to receive the item being bought
-            if (this.buyer.isPlayer()) {
-                this.error = TransactionError.INVENTORY_FULL_PLAYER;
-//                System.out.println("!!! buyer INVENTORY_FULL_PLAYER");
-                return this.error;
-            }
-            // Make sure that the shop is not an admin or gamble shop before saying we don't have space
-            else if (!shop.isAdmin() && shop.getType() != ShopType.GAMBLE){
-                this.error = TransactionError.INVENTORY_FULL_SHOP;
-//                System.out.println("!!! buyer INVENTORY_FULL_SHOP");
-                return this.error;
-            }
-
+            if (this.buyer.isPlayer()) { return this.setError(TransactionError.INVENTORY_FULL_PLAYER); }
+            else {  return this.setError(TransactionError.INVENTORY_FULL_SHOP); }
         }
 
         // Check if the seller can accept the payment amount, aka if they have space for a currency item to be place into their inventory
         if (!this.seller.canAcceptPayment(this.price)) {
             // Failed Verification: The buyer does not have space to receive the item being bought
-            if (this.seller.isPlayer()) {
-                this.error = TransactionError.INVENTORY_FULL_PLAYER;
-//                System.out.println("!!! seller INVENTORY_FULL_PLAYER");
-                return this.error;
-            }
-            // Make sure that the shop is not an admin or gamble shop before saying we don't have space
-            else if (!shop.isAdmin() && shop.getType() != ShopType.GAMBLE){
-                this.error = TransactionError.INVENTORY_FULL_SHOP;
-//                System.out.println("!!! seller INVENTORY_FULL_SHOP");
-                return this.error;
-            }
+            if (this.seller.isPlayer()) { return this.setError(TransactionError.INVENTORY_FULL_PLAYER); }
+            else { return this.setError(TransactionError.INVENTORY_FULL_SHOP); }
         }
 
         // Check if any other plugins want to cancel the transaction
         PlayerExchangeShopEvent e = new PlayerExchangeShopEvent(player, shop);
         Bukkit.getPluginManager().callEvent(e);
         if(e.isCancelled()) {
-            this.error = TransactionError.CANCELLED;
-//            System.out.println("!!! CANCELLED because of plugin hooking into shop!");
-            return this.error;
+            if (TX_DEBUG_LOGGING) { System.out.println("!!! CANCELLED because of plugin hooking into shop!"); }
+            return this.setError(TransactionError.CANCELLED);
         }
 
         // There were no errors, so we are good to proceed!
-        this.error = TransactionError.NONE;
-//        System.out.println("Transaction Verified Successfully!");
-        return this.error;
+        if (TX_DEBUG_LOGGING) { System.out.println("Transaction Verified Successfully!"); }
+        return this.setError(TransactionError.NONE);
     }
 
     public TransactionError execute() {
@@ -287,26 +257,12 @@ public class Transaction {
         ItemStack itemSold = this.itemBeingSold.clone();
         itemSold.setAmount(this.amountBeingSold);
 
-        // Special handling for Gamble & Admin shops!
-        if (shop.getType() == ShopType.GAMBLE || shop.isAdmin()) {
-            // Only transact with the buyer, don't remove items from shop!
-            this.buyer.deductFunds(this.price);
-            this.buyer.depositItem(itemSold);
-
-            // Cycle display to show won item
-            if (shop instanceof GambleShop) { ((GambleShop) shop).shuffleGambleItem(player); }
-
-            // Successful!
-            return TransactionError.NONE;
-        }
-
         // Swap funds
         boolean paymentSuccessful = this.buyer.deductFunds(this.price);
         // Verify we took the funds from the buyer
         if (!paymentSuccessful) {
-            if (this.buyer.isPlayer()) { this.error = TransactionError.INSUFFICIENT_FUNDS_PLAYER; }
-            else { this.error = TransactionError.INSUFFICIENT_FUNDS_SHOP; }
-            return this.error;
+            if (this.buyer.isPlayer()) { return this.setError(TransactionError.INSUFFICIENT_FUNDS_PLAYER); }
+            else { return this.setError(TransactionError.INSUFFICIENT_FUNDS_SHOP); }
         }
         // Pay the seller the funds
         this.seller.depositFunds(this.price);
@@ -314,6 +270,14 @@ public class Transaction {
         // Swap Item
         this.seller.deductItem(itemSold);
         this.buyer.depositItem(itemSold);
+
+        // Special handling for Gamble shops!
+        if (shop.getType() == ShopType.GAMBLE) {
+            // Cycle display to show won item
+            if (shop instanceof GambleShop) { ((GambleShop) shop).shuffleGambleItem(player); }
+            // Exit early
+            return this.setError(TransactionError.NONE);
+        }
 
         // Misc shop handling tasks
         // if the shop is connected to an ender inventory, save the contents as needed
@@ -323,7 +287,7 @@ public class Transaction {
         shop.setGuiIcon();
 
         // Successful!
-        return TransactionError.NONE;
+        return this.setError(TransactionError.NONE);
     }
 
     public Player getPlayer() {
@@ -356,8 +320,9 @@ public class Transaction {
         return price;
     }
 
-    public void setError(TransactionError error){
-//        System.out.println("TransactionError - " + error);
+    public TransactionError setError(TransactionError error){
+        if (TX_DEBUG_LOGGING) { System.out.println("TX setError: TransactionError." + error.toString().toUpperCase()); }
         this.error = error;
+        return this.error;
     }
 }
