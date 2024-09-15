@@ -107,6 +107,9 @@ public class Shop extends JavaPlugin {
 
     private YamlConfiguration config;
 
+    private boolean debug_allowUseOwnShop;
+    private boolean debug_transactionDebugLogs;
+
     public static Shop getPlugin() {
         return plugin;
     }
@@ -523,6 +526,9 @@ public class Shop extends JavaPlugin {
             this.getLogger().log(Level.INFO, "AdvancedRegionMarket is installed, creating AdvancedRegionMarket listener");
         }
 
+        debug_allowUseOwnShop = config.getBoolean("debug.allowUseOwnShop");
+        debug_transactionDebugLogs = config.getBoolean("debug.transactionDebugLogs");
+
         displayListener.startRepeatingDisplayViewTask();
 
         if(checkUpdates){
@@ -711,6 +717,9 @@ public class Shop extends JavaPlugin {
     public ItemStack getItemCurrency() {
         return itemCurrency;
     }
+
+    public boolean getDebug_allowUseOwnShop() { return debug_allowUseOwnShop; }
+    public boolean getDebug_transactionDebugLogs() { return debug_transactionDebugLogs; }
 
     public void setItemCurrency(ItemStack itemCurrency){
         this.itemCurrency = itemCurrency;
