@@ -148,7 +148,7 @@ public class Transaction {
 
             // Partial sales are not allowed, we need to default to a multiple of our default amount/price
             itemsBeingBought = (int) Math.floor(roundedQuantity * itemsPerPrice);
-            priceBeingPaid = Math.ceil(roundedQuantity);
+            priceBeingPaid = Math.ceil(roundedQuantity * pricePerItem);
 
             // Set max purchase amount to be rounded down to a multiple of our original amount
             maxPurchaseAmount = (int) (Math.floor(maxPurchaseAmount / this.originalAmountBeingSold) * originalAmountBeingSold);
