@@ -2,8 +2,8 @@ package com.snowgears.shop.util;
 
 
 import com.snowgears.shop.Shop;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
@@ -18,26 +18,33 @@ public class InventoryUtils {
 
     //removes itemstack from inventory
     //returns the amount of items it could not remove
-    public static int removeItem(Inventory inventory, ItemStack itemStack, OfflinePlayer inventoryOwner) {
+    public static int removeItem(Inventory inventory, ItemStack itemStack) {
         if(inventory == null)
             return itemStack.getAmount();
         if (itemStack == null || itemStack.getAmount() <= 0)
             return 0;
+
         ItemStack[] contents = inventory.getContents();
         int amount = itemStack.getAmount();
         for (int i = 0; i < contents.length; i++) {
             ItemStack is = contents[i];
             if (is != null) {
+                // Check if we are the same item type
                 if (itemstacksAreSimilar(is, itemStack)) {
+                    // Take items from stack
                     if (is.getAmount() > amount) {
                         contents[i].setAmount(is.getAmount() - amount);
                         inventory.setContents(contents);
                         return 0;
-                    } else if (is.getAmount() == amount) {
+                    }
+                    // If we are equal, remove the stack from the inventory
+                    else if (is.getAmount() == amount) {
                         contents[i].setType(Material.AIR);
                         inventory.setContents(contents);
                         return 0;
-                    } else {
+                    }
+                    // We have less than enough, take the amount
+                    else {
                         amount -= is.getAmount();
                         contents[i].setType(Material.AIR);
                     }
@@ -50,7 +57,7 @@ public class InventoryUtils {
 
     //takes an ItemStack and splits it up into multiple ItemStacks with correct stack sizes
     //then adds those items to the given inventory
-    public static int addItem(Inventory inventory, ItemStack itemStack, OfflinePlayer inventoryOwner) {
+    public static int addItem(Inventory inventory, ItemStack itemStack) {
         if(inventory == null)
             return itemStack.getAmount();
         if (itemStack.getAmount() <= 0)
@@ -81,22 +88,21 @@ public class InventoryUtils {
         return amount;
     }
 
-    public static boolean hasRoom(Inventory inventory, ItemStack itemStack, OfflinePlayer inventoryOwner) {
+    public static boolean hasRoom(Inventory inventory, ItemStack itemStack) {
         if (inventory == null)
             return false;
         if (itemStack.getAmount() <= 0)
             return true;
 
-        int overflow = addItem(inventory, itemStack, inventoryOwner);
+        // Check a cloned inventory instead of the players inventory
+        Inventory clonedInv = Bukkit.createInventory(null, 54); // Max inv size is 54, so just default to that, no harm done.
+        clonedInv.setContents(inventory.getContents());
 
-        //revert back if inventory cannot hold all of the items
-        if (overflow > 0) {
-            ItemStack revert = itemStack.clone();
-            revert.setAmount(revert.getAmount() - overflow);
-            InventoryUtils.removeItem(inventory, revert, inventoryOwner);
+        // Check if we can successfully add all the items to the players inventory
+        int itemsLeftToAdd = addItem(clonedInv, itemStack);
+        if (itemsLeftToAdd > 0) {
             return false;
         }
-        removeItem(inventory, itemStack, inventoryOwner);
         return true;
     }
 

@@ -74,7 +74,7 @@ public class TransactionParty {
             // We are being paid with an item
             ItemStack payment = this.currencyItem.clone();
             payment.setAmount((int) paymentAmount);
-            return InventoryUtils.hasRoom(this.inventory, payment, party);
+            return InventoryUtils.hasRoom(this.inventory, payment);
         }
 
         // We are being paid through the normal economy
@@ -90,7 +90,7 @@ public class TransactionParty {
             // We are being paid with an item
             ItemStack payment = this.currencyItem.clone();
             payment.setAmount((int) paymentAmount);
-            InventoryUtils.addItem(this.inventory, payment, party);
+            InventoryUtils.addItem(this.inventory, payment);
         } else {
             // We are being paid using our normal currency
             EconomyUtils.addFunds(party, this.inventory, paymentAmount);
@@ -109,7 +109,7 @@ public class TransactionParty {
         if (this.currencyItem != null) {
             ItemStack payment = this.currencyItem.clone();
             payment.setAmount((int) paymentAmount);
-            InventoryUtils.removeItem(inventory, payment, party);
+            InventoryUtils.removeItem(inventory, payment);
             return true;
         }
 
@@ -122,7 +122,7 @@ public class TransactionParty {
         // If we are an admin, then we always have room for the item (since we don't deposit it)
         if (this.isAdmin) { return true; }
 
-        return InventoryUtils.hasRoom(this.inventory, item, party);
+        return InventoryUtils.hasRoom(this.inventory, item);
     }
 
     public boolean depositItem(ItemStack item) {
@@ -134,7 +134,7 @@ public class TransactionParty {
 
         // We have the space, so add the item to our inventory!
         // @TODO: Maybe check how many items were unable to be added to the inv to make sure we actually deposited the item
-        InventoryUtils.addItem(inventory, item, party);
+        InventoryUtils.addItem(inventory, item);
         return true;
     }
 
@@ -143,7 +143,7 @@ public class TransactionParty {
         if (this.isAdmin) { return true; }
 
         // @TODO: Maybe check how many items were unable to be removed from the inv to verify tx occured successfully
-        InventoryUtils.removeItem(inventory, item, party);
+        InventoryUtils.removeItem(inventory, item);
         return true;
     }
 }

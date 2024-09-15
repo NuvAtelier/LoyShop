@@ -41,7 +41,7 @@ public class EconomyUtils {
                 ItemStack currency = Shop.getPlugin().getItemCurrency().clone();
                 currency.setAmount((int) amount);
 
-                return InventoryUtils.hasRoom(inventory, currency, player);
+                return InventoryUtils.hasRoom(inventory, currency);
             default:
                 return false;
         }
@@ -95,10 +95,10 @@ public class EconomyUtils {
             case ITEM:
                 ItemStack currency = Shop.getPlugin().getItemCurrency().clone();
                 currency.setAmount((int)amount);
-                int unremoved = InventoryUtils.removeItem(inventory, currency, player);
+                int unremoved = InventoryUtils.removeItem(inventory, currency);
                 if(unremoved > 0){
                     currency.setAmount(((int)amount) - unremoved);
-                    InventoryUtils.addItem(inventory, currency, player);
+                    InventoryUtils.addItem(inventory, currency);
                     return false;
                 }
                 return true;
@@ -135,10 +135,10 @@ public class EconomyUtils {
             case ITEM:
                 ItemStack currency = Shop.getPlugin().getItemCurrency().clone();
                 currency.setAmount((int)amount);
-                int unadded = InventoryUtils.addItem(inventory, currency, player);
+                int unadded = InventoryUtils.addItem(inventory, currency);
                 if(unadded > 0){
                     currency.setAmount(((int)amount) - unadded);
-                    InventoryUtils.removeItem(inventory, currency, player);
+                    InventoryUtils.removeItem(inventory, currency);
                     return false;
                 }
                 return true;
