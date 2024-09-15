@@ -94,9 +94,8 @@ public class InventoryUtils {
         if (itemStack.getAmount() <= 0)
             return true;
 
-        // Check a cloned inventory instead of the players inventory
-        Inventory clonedInv = Bukkit.createInventory(null, 54); // Max inv size is 54, so just default to that, no harm done.
-        clonedInv.setContents(inventory.getContents());
+        // Check a cloned inventory instead of modifying the existing inventory
+        Inventory clonedInv = getVirtualInventory(inventory);
 
         // Check if we can successfully add all the items to the players inventory
         int itemsLeftToAdd = addItem(clonedInv, itemStack);
@@ -106,11 +105,19 @@ public class InventoryUtils {
         return true;
     }
 
+    public static Inventory getVirtualInventory(Inventory inventory) {
+        // Check a cloned inventory instead of manipulating the original inventory
+        Inventory clonedInv = Bukkit.createInventory(null, inventory.getStorageContents().length);
+        clonedInv.setContents(inventory.getStorageContents());
+
+        return clonedInv;
+    }
+
     //gets the amount of items in inventory
     public static int getAmount(Inventory inventory, ItemStack itemStack){
         if(inventory == null)
             return 0;
-        ItemStack[] contents = inventory.getContents();
+        ItemStack[] contents = inventory.getStorageContents();
         int amount = 0;
         for (int i = 0; i < contents.length; i++) {
             ItemStack is = contents[i];
