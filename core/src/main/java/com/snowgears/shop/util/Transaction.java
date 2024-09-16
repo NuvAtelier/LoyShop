@@ -39,6 +39,7 @@ public class Transaction {
 
     public Transaction(Player player, AbstractShop shop, ShopType transactionType) {
         this.error = null;
+        if (!TX_DEBUG_LOGGING) { TX_DEBUG_LOGGING = Shop.getPlugin().getDebug_transactionDebugLogs(); }
 
         this.player = player;
         this.shop = shop;
@@ -148,7 +149,7 @@ public class Transaction {
 
             // Partial sales are not allowed, we need to default to a multiple of our default amount/price
             itemsBeingBought = (int) Math.floor(roundedQuantity * itemsPerPrice);
-            priceBeingPaid = Math.ceil(roundedQuantity);
+            priceBeingPaid = Math.ceil(itemsBeingBought * pricePerItem);
 
             // Set max purchase amount to be rounded down to a multiple of our original amount
             maxPurchaseAmount = (int) (Math.floor(maxPurchaseAmount / this.originalAmountBeingSold) * originalAmountBeingSold);

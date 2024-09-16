@@ -237,13 +237,15 @@ public class ShopCreationUtil {
     }
 
     public boolean itemsCanBeInitialized(Player player, ItemStack itemStack, ItemStack barterItemStack){
+        boolean isAdmin = (!plugin.usePerms() && player.isOp()) || (plugin.usePerms() && player.hasPermission("shop.operator"));
 
         //if the item is on the DENY LIST or the item is not on the ALLOW LIST, don't let player initialize with it
-        if(((!plugin.usePerms() && player.isOp()) || (plugin.usePerms() && player.hasPermission("shop.operator")))) {
+        // Only perform this check for non admins
+        if (!isAdmin) {
             boolean passesItemList = plugin.getShopHandler().passesItemListCheck(itemStack);
-            if(!passesItemList){
+            if (!passesItemList) {
                 String message = ShopMessage.getMessage("interactionIssue", "itemListDeny", null, player);
-                if(message != null && !message.isEmpty())
+                if (message != null && !message.isEmpty())
                     player.sendMessage(message);
                 //plugin.getTransactionListener().sendEffects(false, player, shop);
                 return false;
@@ -251,6 +253,7 @@ public class ShopCreationUtil {
         }
 
         //System.out.println("[shop] item: "+ itemStack.getType().toString()+", otherItem: "+barterItemStack.getType().toString());
+        // Always perform this check, even if admin!
         if (InventoryUtils.itemstacksAreSimilar(itemStack, barterItemStack)) {
             String message = ShopMessage.getMessage("interactionIssue", "sameItem", null, player);
             if(message != null && !message.isEmpty())

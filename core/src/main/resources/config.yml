@@ -247,3 +247,19 @@ logging:
    # properties are only used on a 'MYSQL' type for now
    properties:
       - "useSSL=false"
+
+# =================================================================== #
+#                            DEBUG TOOLS                              #
+# =================================================================== #
+
+# Normally Developer Use only, but helpful if you are running into bugs and want more details!
+#
+# If you are running into issues, or doing a lot of testing, you can enable these debug settings
+# in order to speed up your debugging!
+
+debug:
+   # (default: false) Should owners be able to buy/sell from their own shop
+   allowUseOwnShop: false
+   # (default: false) Show price calculation logs when purchases are made
+   transactionDebugLogs: false
+

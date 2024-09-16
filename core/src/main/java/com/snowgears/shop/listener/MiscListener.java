@@ -556,11 +556,21 @@ public class MiscListener implements Listener {
                 //if players must pay to create shops, remove money first
                 double cost = plugin.getDestructionCost();
                 if(cost > 0){
+                    // Check for funds
+                    if (!EconomyUtils.hasSufficientFunds(player, player.getInventory(), cost)){
+                        String message = ShopMessage.getMessage("interactionIssue", "destroyInsufficientFunds", shop, player);
+                        if(message != null && !message.isEmpty())
+                            player.sendMessage(message);
+                        event.setCancelled(true);
+                        return;
+                    }
+                    // Remove funds
                     boolean removed = EconomyUtils.removeFunds(player, player.getInventory(), cost);
                     if(!removed){
                         String message = ShopMessage.getMessage("interactionIssue", "destroyInsufficientFunds", shop, player);
                         if(message != null && !message.isEmpty())
                             player.sendMessage(message);
+                        event.setCancelled(true);
                         return;
                     }
                 }
