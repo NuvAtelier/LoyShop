@@ -258,6 +258,8 @@ logging:
 # in order to speed up your debugging!
 
 debug:
-   allowUseOwnShop: false # (default: false) Should owners be able to buy/sell from their own shop
-   transactionDebugLogs: false # (default: false) Show price calculation logs when purchases are made
+   # (default: false) Should owners be able to buy/sell from their own shop
+   allowUseOwnShop: false
+   # (default: false) Show price calculation logs when purchases are made
+   transactionDebugLogs: false
 
