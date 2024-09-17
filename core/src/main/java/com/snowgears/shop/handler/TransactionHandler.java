@@ -187,8 +187,10 @@ public class TransactionHandler {
 
         ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_SALE_USER);
         if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_USER_ON) {
-            if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+            if(message != null && !message.isEmpty()) {
+                ShopMessage.embedAndSendHoverItemsMessage(message, player, transaction.getItems());
+//                player.sendMessage(message);
+            }
         }
 
         Player owner = Bukkit.getPlayer(shop.getOwnerUUID());
@@ -198,7 +200,8 @@ public class TransactionHandler {
             guiIcon = plugin.getGuiHandler().getIconFromOption(owner, PlayerSettings.Option.NOTIFICATION_SALE_OWNER);
             if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_OWNER_ON) {
                 if(message != null && !message.isEmpty())
-                    owner.sendMessage(message);
+                    ShopMessage.embedAndSendHoverItemsMessage(message, owner, transaction.getItems());
+//                    owner.sendMessage(message);
             }
         }
 

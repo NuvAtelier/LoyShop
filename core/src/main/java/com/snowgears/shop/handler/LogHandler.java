@@ -5,11 +5,13 @@ import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.OfflineTransactions;
 import com.snowgears.shop.util.ShopActionType;
+import com.snowgears.shop.util.UtilMethods;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,7 +19,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.*;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -64,8 +68,6 @@ public class LogHandler {
         String password = shopConfig.getString("logging.password");
 
        List<String> connectionProperties = shopConfig.getStringList("logging.properties");
-
-        this.enabled = enabled;
 
         if(type.equalsIgnoreCase("OFF")) {
             this.enabled = false;
@@ -153,9 +155,9 @@ public class LogHandler {
                         stmt.setString(1, transactionType.toString().toUpperCase());
                         stmt.setDouble(2, price);
                         stmt.setInt(3, amount);
-                        stmt.setString(4, shop.getItemStack().getType().toString());
+                        stmt.setString(4, UtilMethods.itemStackToBase64(shop.getItemStack()));
                         if (shop.getSecondaryItemStack() != null)
-                            stmt.setString(5, shop.getSecondaryItemStack().getType().toString());
+                            stmt.setString(5, UtilMethods.itemStackToBase64(shop.getSecondaryItemStack()));
                         else
                             stmt.setNull(5, Types.VARCHAR);
 
@@ -187,6 +189,10 @@ public class LogHandler {
                         e.printStackTrace();
                         conn.close();
                         return;
+                    } catch (IOException e) {
+                        plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction.");
+                        e.printStackTrace();
+                        return;
                     }
                 } catch(SQLException e){
                     plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction.");
@@ -208,30 +214,75 @@ public class LogHandler {
             @Override
             public void run() {
                 String query = "SELECT * from shop_action RIGHT JOIN shop_transaction on shop_action.transaction_id = shop_transaction.id where owner_uuid=? and ts > ?;";
+                plugin.getLogger().log(Level.INFO,"Querying for Offline Transactions...");
 
                 Connection conn;
                 try {
                     conn = dataSource.getConnection();
                     try {
+                        // Initialize variables to accumulate totals
+                        double totalProfit = 0.0;
+                        double totalSpent = 0.0;
+                        Map<ItemStack, Integer> itemsBought = new HashMap<>();
+                        Map<ItemStack, Integer> itemsSold = new HashMap<>();
+
+                        // Prepare and execute the statement
                         PreparedStatement stmt = conn.prepareStatement(query);
                         stmt.setString(1, offlineTransactions.getPlayerUUID().toString());
-                        //stmt.setString(1, "admin");
                         stmt.setTimestamp(2, new Timestamp(offlineTransactions.getLastPlayed()));
-                        stmt.execute();
+                        ResultSet resultSet = stmt.executeQuery();
 
-                        ResultSet resultSet = stmt.getResultSet();
                         int size = 0;
-                        if(resultSet != null){
-                            while(resultSet.next()){
+                        if (resultSet != null) {
+                            while (resultSet.next()) {
                                 size++;
+
+                                // Extract transaction data
+                                String tType = resultSet.getString("t_type");
+                                double price = resultSet.getDouble("price");
+                                int amount = resultSet.getInt("amount");
+                                String item = resultSet.getString("item");
+//                                String barterItem = resultSet.getString("barter_item"); // May be null
+
+                                ItemStack itemstack = UtilMethods.itemStackFromBase64(item);
+
+
+                                // Process transactions based on their type
+                                if (tType.equalsIgnoreCase("BUY")) {
+                                    // User spent money to buy items
+                                    totalSpent += price;
+                                    int itemsBoughtAmt = itemsBought.getOrDefault(itemstack, 0) + amount;
+                                    itemsBought.put(itemstack,itemsBoughtAmt);
+
+//                                    if (barterItem != null) {
+//                                        // User sold barter items
+//                                        itemsSold.put(barterItem, itemsSold.getOrDefault(barterItem, 0) + amount);
+//                                    }
+                                } else if (tType.equalsIgnoreCase("SELL")) {
+                                    // User earned money by selling items
+                                    totalProfit += price;
+                                    int itemsSoldAmt = itemsSold.getOrDefault(itemstack, 0) + amount;
+                                    itemsSold.put(itemstack, itemsSoldAmt);
+
+//                                    if (barterItem != null) {
+//                                        // User bought barter items
+//                                        itemsBought.put(barterItem, itemsBought.getOrDefault(barterItem, 0) + amount);
+//                                    }
+                                }
                             }
                         }
 
-                        conn.close();
+                        // Close resources
+                        resultSet.close();
                         stmt.close();
+                        conn.close();
 
-                        //TODO also calculate profits in the future or just save whole resultset in offlinetransactions object and print
+                        // Update offlineTransactions object with the calculated data
                         offlineTransactions.setNumTransactions(size);
+                        offlineTransactions.setTotalProfit(totalProfit);
+                        offlineTransactions.setTotalSpent(totalSpent);
+                        offlineTransactions.setItemsBought(itemsBought);
+                        offlineTransactions.setItemsSold(itemsSold);
                         offlineTransactions.setIsCalculating(false);
                         return;
                     } catch (SQLException e){
@@ -240,6 +291,16 @@ public class LogHandler {
                         conn.close();
                         offlineTransactions.setIsCalculating(false);
                         return;
+                    } catch (IOException e) {
+                        plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to get offline transactions.");
+                        e.printStackTrace();
+                        conn.close();
+                        offlineTransactions.setIsCalculating(false);
+                    } catch (ClassNotFoundException e) {
+                        plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to get offline transactions.");
+                        e.printStackTrace();
+                        conn.close();
+                        offlineTransactions.setIsCalculating(false);
                     }
                 } catch (SQLException e) {
                     plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to get offline transactions.");

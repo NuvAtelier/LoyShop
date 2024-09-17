@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS shop_transaction
     t_type CHAR(6) NOT NULL,
     price   DOUBLE UNSIGNED  NOT NULL,
     amount   SMALLINT UNSIGNED  NOT NULL,
-    item   CHAR(32)  NOT NULL,
-    barter_item   CHAR(32),
+    item   TEXT NOT NULL,
+    barter_item   TEXT,
     PRIMARY KEY (id)
 );
 
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS shop_action
     ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     player_uuid     CHAR(36)  NOT NULL,
     owner_uuid     CHAR(36)  NOT NULL,
-    shop_world   CHAR(48)  NOT NULL,
+    shop_world   CHAR(128)  NOT NULL,
     shop_x   INT  NOT NULL,
     shop_y   INT  NOT NULL,
     shop_z   INT  NOT NULL,

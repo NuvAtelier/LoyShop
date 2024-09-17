@@ -25,6 +25,13 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.UUID;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Base64;
+import org.bukkit.util.io.BukkitObjectOutputStream;
+import org.bukkit.util.io.BukkitObjectInputStream;
+
 public class UtilMethods {
 
     private static ArrayList<Material> nonIntrusiveMaterials = new ArrayList<Material>();
@@ -432,7 +439,8 @@ public class UtilMethods {
             case "WATER_WORKER":
                 return "Aqua Affinity";
             default:
-                return "Unknown";
+                // Default just return the unformatted name!
+                return enchantment.getName();
         }
     }
 
@@ -627,5 +635,27 @@ public class UtilMethods {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static String itemStackToBase64(ItemStack item) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
+
+        // Write the ItemStack to the ObjectOutputStream
+        dataOutput.writeObject(item);
+        dataOutput.close();
+
+        // Encode the byte array to a Base64 string
+        return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+    }
+
+    public static ItemStack itemStackFromBase64(String data) throws IOException, ClassNotFoundException {
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(data));
+        BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
+
+        // Read the ItemStack from the ObjectInputStream
+        ItemStack item = (ItemStack) dataInput.readObject();
+        dataInput.close();
+        return item;
     }
 }

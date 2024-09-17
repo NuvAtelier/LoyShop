@@ -11,6 +11,9 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Transaction {
     boolean TX_DEBUG_LOGGING = false;
 
@@ -319,6 +322,14 @@ public class Transaction {
 
     public double getPrice(){
         return price;
+    }
+
+    // Gets a Map of both items in the transaction, for logging purposes
+    public Map<ItemStack, Integer> getItems() {
+        Map<ItemStack, Integer> items = new HashMap<>();
+        items.put(this.itemBeingSold, this.amountBeingSold);
+        if (shop.getSecondaryItemStack() != null) { items.put(shop.getSecondaryItemStack(), (int) this.price); }
+        return items;
     }
 
     public TransactionError setError(TransactionError error){

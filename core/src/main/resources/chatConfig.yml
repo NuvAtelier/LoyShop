@@ -59,25 +59,43 @@
 # [notify owner] : The on/off value of how the player has their owner notifications set #
 # [notify stock] : The on/off value of how the player has their stock notifications set #
 # [offline transactions]: The number of transactions that took place at a players shop while a player was offline
-# [offline profit]: The amount of currency that was either gained or lost while a player was offline
+# [offline profit]: The amount of currency that was earned while a player was offline
+# [offline spent]: The amount of currency that was spent while a player was offline
+# [item name sold row]: Offline Purchase item sold name
+# [item amount sold row]: Offline Purchase item sold amount
+# [item name bought row]: Offline Purchase item bought name
+# [item amount bought row]: Offline Purchase item bought amount
+# [out of stock item]: (Offline Notification) Item that is out of stock for a particular shop
+# [out of stock location]: (Offline Notification) Location for the shop that is out of stock
 # [tp time remaining]: The amount of seconds remaining on a players teleport to shop cooldown timer
 
 transaction:
    SELL:
-      user: "&7You bought &f[item amount] [item](s) &7from [owner] for &a[price]&7."
-      owner: "&7[user] bought &f[item amount] [item](s) &7from you for &a[price]&7."
+      user: '&7You bought &f[item amount] [item](s) &7from [owner] for &a[price]&7.'
+      owner: '&7[user] bought &f[item amount] [item](s) &7from you for &a[price]&7.'
    BUY:
-      user: "&7You sold &f[item amount] [item](s) &7to [owner] for &a[price]&7."
-      owner: "&7[user] sold &f[item amount] [item](s) &7to you for &a[price]&7."
+      user: '&7You sold &f[item amount] [item](s) &7to [owner] for &a[price]&7.'
+      owner: '&7[user] sold &f[item amount] [item](s) &7to you for &a[price]&7.'
    BARTER:
-      user: "&7You bartered &f[barter item amount] &7of your &f[barter item](s) &7for &f[item amount] &7of [owner]s &f[item](s)&7."
-      owner: "&7[user] bartered &f[barter item amount] &7of their &f[barter item](s) &7for &f[item amount] &7of your &f[item](s)&7."
+      user: '&7You bartered &f[barter item amount] &7of your &f[barter item](s) &7for &f[item amount] &7of [owner]s &f[item](s)&7.'
+      owner: '&7[user] bartered &f[barter item amount] &7of their &f[barter item](s) &7for &f[item amount] &7of your &f[item](s)&7.'
    GAMBLE:
-      user: "&7You gambled &a[price] &7and received &f[item]&7(x[item amount])."
-   OFFLINE_NOTIFICATION:
+      user: '&7You gambled &a[price] &7and received &f[item]&7(x[item amount]).'
+   OFFLINE_TRANSACTIONS_NOTIFICATION:
       - '&d+---------------------------------------------------+'
-      - '&d| &aShop Sales &7(while offline):'
+      - '&d| &bShop Sales &7(while offline):'
+      - '&d|'
       - '&d| &7Transactions: &b[offline transactions]'
+      - '&d| &7Profits: &a[offline profit]'
+      - '&d| &7Spent: &6[offline spent]'
+      - '&d|             &7v (hover over items to see details)'
+      - '&d| &7Items Sold: '
+      - '&d| &f - &b[[item name sold row]] &7(x&e[item amount sold row]&7)'
+      - '&d|'
+      - '&d| &7Items Bought: '
+      - '&d| &f - &b[[item name bought row]] &7(x&e[item amount bought row]&7)'
+      - '&d|'
+      - '&d| &6Out Of Stock Shop: &b[out of stock item] &6at &b[out of stock location]'
       - '&d+---------------------------------------------------+'
 
 transaction_issue:

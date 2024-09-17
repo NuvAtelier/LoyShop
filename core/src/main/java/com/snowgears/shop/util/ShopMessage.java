@@ -6,10 +6,17 @@ import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
+import de.tr7zw.changeme.nbtapi.NBT;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.text.DecimalFormat;
@@ -89,6 +96,44 @@ public class ShopMessage {
         return message;
     }
 
+    // Embeds hover objects for items!
+    public static void embedAndSendHoverItemsMessage(String message, Player player, Map<ItemStack, Integer> items){
+        if(message == null)
+            return;
+
+        String[] parts = message.replace("§", "&").split("(?=&[0-9A-FK-ORa-fk-or])");
+        TextComponent fancyMessage = new TextComponent("");
+
+        for(String part : parts){
+            ComponentBuilder builder = new ComponentBuilder("");
+            net.md_5.bungee.api.ChatColor cc = UtilMethods.getChatColor(part);
+            if(cc != null)
+                part = part.substring(2, part.length());
+            builder.append(part);
+            if(cc != null) {
+                builder.color(ChatColor.valueOf(cc.name()));
+            }
+
+            ItemStack item = null;
+            for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
+                if (part.contains(Shop.getPlugin().getItemNameUtil().getName(entry.getKey()))) {
+                    item = entry.getKey();
+                }
+            }
+
+            if (item != null) {
+                BaseComponent[] hoverEventComponents = new BaseComponent[]{new TextComponent(NBT.itemStackToNBT(item).toString())}; // The only element of the hover events basecomponents is the item json
+                HoverEvent event = new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents);
+                builder.event(event);
+            }
+
+            for(BaseComponent b : builder.create()) {
+                fancyMessage.addExtra(b);
+            }
+        }
+        player.spigot().sendMessage(fancyMessage);
+    }
+
     public static String formatMessage(String unformattedMessage, ShopCreationProcess process, Player player) {
         if (unformattedMessage == null) {
             loadMessagesFromConfig();
@@ -143,11 +188,108 @@ public class ShopMessage {
     }
 
     public static String formatMessage(String unformattedMessage, Player player, OfflineTransactions offlineTransactions) {
-        if(offlineTransactions != null && player != null) {
-            unformattedMessage = unformattedMessage.replace("[offline transactions]", "" + offlineTransactions.getNumTransactions());
-            //unformattedMessage = unformattedMessage.replace("[offline profit]", "" + offlineTransactions.); //TODO
+        if (offlineTransactions != null && player != null) {
+            // Replace basic placeholders
+            unformattedMessage = unformattedMessage.replace("[offline transactions]", String.valueOf(offlineTransactions.getNumTransactions()));
+            String boughtString = Shop.getPlugin().getPriceString(offlineTransactions.getTotalProfit(), false);
+            if (boughtString.equals("FREE")) { boughtString = "0"; }
+            unformattedMessage = unformattedMessage.replace("[offline profit]", boughtString);
+            String spentString = Shop.getPlugin().getPriceString(offlineTransactions.getTotalSpent(), false);
+            if (spentString.equals("FREE")) { spentString = "0"; }
+            unformattedMessage = unformattedMessage.replace("[offline spent]", spentString);
+
+            List<AbstractShop> playerShops = Shop.getPlugin().getShopHandler().getShops(player.getUniqueId());
+
+            // Process items sold
+            unformattedMessage = processItemRows(
+                    unformattedMessage,
+                    "[item name sold row]",
+                    "[item amount sold row]",
+                    offlineTransactions.getItemsSold()
+            );
+
+            // Process items bought
+            unformattedMessage = processItemRows(
+                    unformattedMessage,
+                    "[item name bought row]",
+                    "[item amount bought row]",
+                    offlineTransactions.getItemsBought()
+            );
+
+            // Process shops out of stock
+            unformattedMessage = processShopStockRows(
+                    unformattedMessage,
+                    "[out of stock item]",
+                    "[out of stock location]",
+                    playerShops
+            );
         }
+
         return unformattedMessage;
+    }
+
+    private static String processItemRows(
+            String message,
+            String itemNamePlaceholder,
+            String itemAmountPlaceholder,
+            Map<ItemStack, Integer> items
+    ) {
+        // Split the message into lines
+        String[] lines = message.split("\\r?\\n");
+        StringBuilder newMessage = new StringBuilder();
+
+        for (String line : lines) {
+            if (line.contains(itemNamePlaceholder) && line.contains(itemAmountPlaceholder)) {
+                if (items != null && !items.isEmpty()) {
+                    // For each item, generate a line based on the template line
+                    for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
+                        String itemLine = line;
+                        itemLine = itemLine.replace(itemNamePlaceholder, Shop.getPlugin().getItemNameUtil().getName(entry.getKey()));
+                        itemLine = itemLine.replace(itemAmountPlaceholder, String.valueOf(entry.getValue()));
+                        newMessage.append(itemLine).append("\n");
+                    }
+                } else {
+                    // No items, don't log anything
+                }
+            } else {
+                newMessage.append(line).append("\n");
+            }
+        }
+
+        return newMessage.toString().trim();
+    }
+
+    private static String processShopStockRows(
+            String message,
+            String shopItemPlaceholder,
+            String locationPlaceholder,
+            List<AbstractShop> shops
+    ) {
+        // Split the message into lines
+        String[] lines = message.split("\\r?\\n");
+        StringBuilder newMessage = new StringBuilder();
+
+        for (String line : lines) {
+            if (line.contains(shopItemPlaceholder) && line.contains(locationPlaceholder)) {
+                if (shops != null && !shops.isEmpty()) {
+                    // For each item, generate a line based on the template line
+                    for (AbstractShop shop : shops) {
+                        if (shop.getStock() > 0) { continue; }
+                        String itemLine = line;
+                        itemLine = itemLine.replace(shopItemPlaceholder, Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack()));
+                        Location loc = shop.getChestLocation();
+                        itemLine = itemLine.replace(locationPlaceholder, "(" + loc.getBlockX() + "," + loc.getBlockY() + ","+ loc.getBlockZ() + ")");
+                        newMessage.append(itemLine).append("\n");
+                    }
+                } else {
+                    // No items, don't log anything
+                }
+            } else {
+                newMessage.append(line).append("\n");
+            }
+        }
+
+        return newMessage.toString().trim();
     }
 
     public static String formatMessage(String unformattedMessage, AbstractShop shop, Player player, boolean forSign){
@@ -551,7 +693,7 @@ public class ShopMessage {
         }
 
         count = 1;
-        for(String s : chatConfig.getStringList("transaction.OFFLINE_NOTIFICATION")){
+        for(String s : chatConfig.getStringList("transaction.OFFLINE_TRANSACTIONS_NOTIFICATION")){
             messageMap.put("offline_transactions"+count, s);
             count++;
         }

@@ -4,11 +4,9 @@ import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.AbstractDisplay;
 import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.util.*;
+import de.tr7zw.changeme.nbtapi.NBT;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,9 +26,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.logging.Level;
 
 import static com.snowgears.shop.util.UtilMethods.isMCVersion17Plus;
 
@@ -541,8 +538,13 @@ public abstract class AbstractShop {
 
     public void printSalesInfo(Player player) {
         for (String message : ShopMessage.getUnformattedMessageList(this.getType().toString(), "description")) {
-            if (message != null && !message.isEmpty())
-                formatAndSendFancyMessage(message, player);
+            if (message != null && !message.isEmpty()) {
+                Map<ItemStack, Integer> items = new HashMap<>();
+                items.put(this.item, this.amount);
+                if (this.getSecondaryItemStack() != null) { items.put(this.getSecondaryItemStack(), (int) this.price); }
+                String formattedMsg = ShopMessage.formatMessage(message, this, player, false);
+                ShopMessage.embedAndSendHoverItemsMessage(formattedMsg, player, items);
+            }
         }
     }
 
@@ -552,49 +554,6 @@ public abstract class AbstractShop {
 
     public void setFakeSign(boolean fakeSign){
         this.fakeSign = fakeSign;
-    }
-
-    protected void formatAndSendFancyMessage(String message, Player player){
-        if(message == null)
-            return;
-
-        String[] parts = message.split("(?=&[0-9A-FK-ORa-fk-or])");
-        TextComponent fancyMessage = new TextComponent("");
-
-        for(String part : parts){
-            ComponentBuilder builder = new ComponentBuilder("");
-            net.md_5.bungee.api.ChatColor cc = UtilMethods.getChatColor(part);
-            if(cc != null)
-                part = part.substring(2, part.length());
-            boolean barterItem = false;
-            if(part.contains("[barter item]"))
-                barterItem = true;
-            part = ShopMessage.formatMessage(part, this, player, false);
-            //part = ChatColor.stripColor(part);
-            builder.append(part);
-            if(cc != null) {
-                builder.color(ChatColor.valueOf(cc.name()));
-            }
-
-            if(part.startsWith("[")) {
-//                String itemJson;
-//                if (barterItem) {
-//                    itemJson = ReflectionUtil.convertItemStackToJson(this.secondaryItem);
-//                } else {
-//                    itemJson = ReflectionUtil.convertItemStackToJson(this.item);
-//                }
-//                // Prepare a BaseComponent array with the itemJson as a text component
-//                BaseComponent[] hoverEventComponents = new BaseComponent[]{ new TextComponent(itemJson) }; // The only element of the hover events basecomponents is the item json
-//                HoverEvent event = new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents);
-//
-//                builder.event(event);
-            }
-
-            for(BaseComponent b : builder.create()) {
-                fancyMessage.addExtra(b);
-            }
-        }
-        player.spigot().sendMessage(fancyMessage);
     }
 
     public boolean executeClickAction(PlayerInteractEvent event, ShopClickType clickType){

@@ -23,14 +23,13 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 
 public class ShopListener implements Listener {
@@ -333,7 +332,7 @@ public class ShopListener implements Listener {
 //    }
 
     @EventHandler
-    public void onLogin(PlayerLoginEvent event){
+    public void onLogin(PlayerJoinEvent event){
         //delete all shops from players that have not played in X amount of hours (if configured)
         if(plugin.getHoursOfflineToRemoveShops() != 0){
             for(OfflinePlayer offlinePlayer : plugin.getShopHandler().getShopOwners()){
@@ -372,6 +371,7 @@ public class ShopListener implements Listener {
             }
         }, 2L);
 
+
         //setup a repeating task that checks if async sql calculations are still running, if they are done, send messages and cancel task
         OfflineTransactions offlineTransactions = transactionsWhileOffline.get(player.getUniqueId());
         if(offlineTransactions != null) {
@@ -385,8 +385,14 @@ public class ShopListener implements Listener {
                                 for (String message : messageList) {
                                     message = ShopMessage.formatMessage(message, player, offlineTransactions);
                                     message = ShopMessage.formatMessage(message, null, player, false);
-                                    if (message != null && !message.isEmpty())
-                                        player.sendMessage(message);
+                                    plugin.getLogger().log(Level.INFO, "message: " + message);
+                                    if (message != null && !message.isEmpty()) {
+                                        Map<ItemStack, Integer> allItems = new HashMap<>();
+                                        allItems.putAll(offlineTransactions.getItemsSold());
+                                        allItems.putAll(offlineTransactions.getItemsBought());
+                                        ShopMessage.embedAndSendHoverItemsMessage(message, player, allItems);
+                                    }
+//                                        player.sendMessage(message);
                                 }
                             }
                             transactionsWhileOffline.remove(player.getUniqueId());
