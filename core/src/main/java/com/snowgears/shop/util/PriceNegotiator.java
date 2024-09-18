@@ -47,7 +47,8 @@ public class PriceNegotiator {
         double sellerMaxQtySale = sellerInventoryQuantity / itemsPerPrice;
 
         // The maximum qty that we can buy/sell with our available funds
-        double maxPurchasableQuantity = Math.floor(Math.min(buyerMaxQtyPurchase, sellerMaxQtySale));
+        double FIX_ROUNDING = 1e-5; // Fix rounding errors (where one of the quantities comes out as x.99999~, make sure that is rounded to a while number
+        double maxPurchasableQuantity = Math.floor(Math.min(buyerMaxQtyPurchase, sellerMaxQtySale) + FIX_ROUNDING);
 
         // The number of items we are buying
         int itemsBeingBought = (int) Math.floor(maxPurchasableQuantity * itemsPerPrice);
