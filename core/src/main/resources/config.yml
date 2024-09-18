@@ -232,19 +232,30 @@ bluemap-marker:
 
 
 # =================================================================== #
-#                         LOGGING SETTINGS                            #
+#                    DATABASE LOGGING SETTINGS                        #
+#                  OFFLINE PURCHASE NOTIFICATIONS                     #
 # =================================================================== #
 
-# All logging functionality requires a compatible database to be defined and enabled #
-# options for type are: 'OFF', 'MYSQL', 'MARIADB'
+# Database logging for player Shop Actions & Transactions #
+# Required for Offline Purchase Notifications to be sent, default enabled with FILE database #
+# Also helpful if you want to keep an eye out for cheaters that abuse Shop bugs so that you can take action. #
+#
+# It will track:
+# * Anytime a player performs a Shop action (see `actionMappings`). Tracks timestamp, shop, player, action performed, and transaction id.
+# * Shop Transactions that are executed. Tracks transaction id, price, amount, and item traded in the transaction.
 logging:
-   type: 'OFF'
-   serverName: "localhost"
-   databaseName: "test"
+   # options for database `type` are:
+   # - 'OFF': Disables database logging and offline purchase notifications
+   # - 'FILE': (Default) Uses a File based H2 database for tracking purchases, requires no extra setup
+   # - 'MYSQL': Uses a remote MYSQL Database to manage purchase tracking
+   # - 'MARIADB': Uses a remote MARIADB Database to manage purchase tracking
+   type: "FILE"
+   serverName: "127.0.0.1"
+   databaseName: "shopdb"
    port: 3306
-   user: "test"
-   password: "test"
-   # properties are only used on a 'MYSQL' type for now
+   user: "shop"
+   password: "mysecurepassword"
+   # properties are only used on a 'MYSQL' type for now, you shouldn't need to touch this normally
    properties:
       - "useSSL=false"
 

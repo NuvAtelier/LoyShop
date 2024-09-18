@@ -40,6 +40,14 @@ public class LogHandler {
         if(!enabled)
             return;
 
+        // Force inclusion of the H2 driver class so that it will be compiled into our jar.
+        // Without this it just ignores the H2 driver and it gets removed when we minimize our jar!
+        try {
+            Class.forName("org.h2.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
         try {
             testDataSource();
         } catch (SQLException e){
@@ -57,6 +65,9 @@ public class LogHandler {
             plugin.getLogger().log(Level.WARNING, "Error initializing tables in database. Logging will not be used.");
             return;
         }
+
+        plugin.getLogger().log(Level.INFO, "Shop Database Logging initialized successfully!");
+        plugin.getLogger().log(Level.INFO, "Offline Purchase Notifications are Enabled!");
     }
 
     public void defineDataSource(YamlConfiguration shopConfig){
@@ -73,6 +84,9 @@ public class LogHandler {
             this.enabled = false;
             return;
         }
+
+        plugin.getLogger().log(Level.INFO, "Starting Database (" + type + ") to track purchases and Shop actions!");
+
         if(type.equalsIgnoreCase("MYSQL")){
             dataSource = new HikariDataSource();
 
@@ -88,7 +102,7 @@ public class LogHandler {
             dataSource.setMaximumPoolSize(10);
             dataSource.setMaxLifetime(600000);
         }
-        else{ //type.equalsIgnoreCase("MARIADB")
+        else if(type.equalsIgnoreCase("MARIADB")){
             HikariConfig config = new HikariConfig();
             config.setDataSourceClassName("org.mariadb.jdbc.MariaDbDataSource");
             config.addDataSourceProperty("serverName", serverName);
@@ -102,6 +116,25 @@ public class LogHandler {
 
             dataSource = new HikariDataSource(config);
         }
+        else if(type.equalsIgnoreCase("FILE")){
+            HikariConfig config = new HikariConfig();
+            config.setDriverClassName("org.h2.Driver");
+            String jdbcURL = "jdbc:h2:" + plugin.getDataFolder().getAbsolutePath() + "/data/" + databaseName + ";MODE=MySQL";
+            config.setJdbcUrl(jdbcURL);
+            config.setUsername(username != null ? username : "sa");
+            config.setPassword(password != null ? password : "");
+            config.setLeakDetectionThreshold(10000);
+            config.setMaximumPoolSize(10);
+            config.setMaxLifetime(600000);
+
+            dataSource = new HikariDataSource(config);
+        }
+        else{
+            plugin.getLogger().log(Level.WARNING, "Unsupported database type! Please check your `config.yml` file! type: " + type);
+            this.enabled = false;
+            return;
+        }
+
         this.enabled = true;
     }
 
@@ -214,7 +247,6 @@ public class LogHandler {
             @Override
             public void run() {
                 String query = "SELECT * from shop_action RIGHT JOIN shop_transaction on shop_action.transaction_id = shop_transaction.id where owner_uuid=? and ts > ?;";
-                plugin.getLogger().log(Level.INFO,"Querying for Offline Transactions...");
 
                 Connection conn;
                 try {
@@ -317,12 +349,13 @@ public class LogHandler {
             if (!conn.isValid(1000)) {
                 enabled = false;
                 conn.close();
-                plugin.getLogger().log(Level.WARNING, "Could not establish database connection.");
+                plugin.getLogger().log(Level.WARNING, "Could not establish database connection!");
+                plugin.getLogger().log(Level.WARNING, "Purchase Database Logging and Offline Purchase notifications are disabled!");
                 throw new SQLException("Could not establish database connection.");
             }
             else{
                 enabled = true;
-                plugin.getLogger().log(Level.INFO,"Established connection to database. Logging is enabled.");
+                plugin.getLogger().log(Level.INFO,"Established connection to database.");
                 conn.close();
             }
         }

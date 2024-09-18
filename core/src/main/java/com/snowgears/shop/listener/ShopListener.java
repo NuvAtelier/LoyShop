@@ -385,7 +385,6 @@ public class ShopListener implements Listener {
                                 for (String message : messageList) {
                                     message = ShopMessage.formatMessage(message, player, offlineTransactions);
                                     message = ShopMessage.formatMessage(message, null, player, false);
-                                    plugin.getLogger().log(Level.INFO, "message: " + message);
                                     if (message != null && !message.isEmpty()) {
                                         Map<ItemStack, Integer> allItems = new HashMap<>();
                                         allItems.putAll(offlineTransactions.getItemsSold());
