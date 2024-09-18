@@ -13,10 +13,10 @@ public class PriceNegotiator {
     int originalAmountBeingSold = 0;
     int negotiatedAmountBeingSold = -1;
 
-    public PriceNegotiator(boolean debugLogging, int originalAmountBeingSold, double originalPrice) {
+    public PriceNegotiator(boolean debugLogging, double originalPrice, int originalAmountBeingSold) {
         if (!TX_DEBUG_LOGGING) { TX_DEBUG_LOGGING = debugLogging; }
-        this.originalAmountBeingSold = originalAmountBeingSold;
         this.originalPrice = originalPrice;
+        this.originalAmountBeingSold = originalAmountBeingSold;
     }
     public void negotiatePurchase(boolean allowPartialSales, double buyerAvailableFunds, int sellerInventoryQuantity, int desiredAmount) {
         // Clear out negotiated price
@@ -52,8 +52,10 @@ public class PriceNegotiator {
 
         // The number of items we are buying
         int itemsBeingBought = (int) Math.floor(maxPurchasableQuantity * itemsPerPrice);
+        if (TX_DEBUG_LOGGING) { System.out.println("*-* itemsBeingBought (pre-round): " + (maxPurchasableQuantity * itemsPerPrice)); }
         // The overall price we are paying
         double priceBeingPaid = Math.ceil(itemsBeingBought * pricePerItem);
+        if (TX_DEBUG_LOGGING) { System.out.println("*-* priceBeingPaid (pre-round): " + (itemsBeingBought * pricePerItem)); }
 
         if (TX_DEBUG_LOGGING) {
             System.out.println("* pricePerItem: " + pricePerItem);
