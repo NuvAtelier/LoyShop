@@ -21,6 +21,7 @@ import org.bukkit.inventory.ItemStack;
 import java.io.File;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.logging.Level;
 
 
 public class ShopMessage {
@@ -121,10 +122,16 @@ public class ShopMessage {
                 }
             }
 
-            if (item != null) {
-                BaseComponent[] hoverEventComponents = new BaseComponent[]{new TextComponent(NBT.itemStackToNBT(item).toString())}; // The only element of the hover events basecomponents is the item json
-                HoverEvent event = new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents);
-                builder.event(event);
+            try {
+                if (item != null) {
+                    BaseComponent[] hoverEventComponents = new BaseComponent[]{new TextComponent(NBT.itemStackToNBT(item).toString())}; // The only element of the hover events basecomponents is the item json
+                    HoverEvent event = new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents);
+                    builder.event(event);
+                }
+            } catch (Exception e) {
+                // Some sort of error occured, likely with the NBT api, just don't embed the hover event
+                // For now, log an error
+                Shop.getPlugin().getLogger().log(Level.WARNING, "Unable to generate Item Hover, there is likely an issue with NBT data! Item: " + item.serialize());
             }
 
             for(BaseComponent b : builder.create()) {
