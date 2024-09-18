@@ -31,6 +31,7 @@ public class UpdateChecker {
     private static final int ID = 9628; //The ID of your resource. Can be found in the resource URL.
     private static final String ERR_MSG = "&cShop update checker failed!";
     private static final String UPDATE_MSG = "&fA new Shop update is available at:&b https://www.spigotmc.org/resources/" + ID + "/updates";
+    private static final String DEV_VERSION_MSG = "&cRunning [Shop] Dev Build: ";
     //PermissionDefault.FALSE == OPs need the permission to be notified.
     //PermissionDefault.TRUE == all OPs are notified regardless of having the permission.
     private static final Permission UPDATE_PERM = new Permission("shop.update", PermissionDefault.FALSE);
@@ -59,24 +60,87 @@ public class UpdateChecker {
                         return;
                     }
 
-                    //Check if the requested version is the same as the one in your plugin.yml.
-                    if (localPluginVersion.equals(spigotPluginVersion)) return;
+                    // Are we running the current version?
+                    if (compareVersions(localPluginVersion, spigotPluginVersion) == 0) return;
+                    // Are we running an older verion?
+                    if (compareVersions(localPluginVersion, spigotPluginVersion) < 0) {
+                        Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', UPDATE_MSG));
 
-                    Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', UPDATE_MSG));
+                        //Register the PlayerJoinEvent
+                        Bukkit.getScheduler().runTask(javaPlugin, () -> Bukkit.getPluginManager().registerEvents(new Listener() {
+                            @EventHandler(priority = EventPriority.MONITOR)
+                            public void onPlayerJoin(final PlayerJoinEvent event) {
+                                final Player player = event.getPlayer();
+                                if (!player.isOp()) return;
+                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', UPDATE_MSG));
+                            }
+                        }, javaPlugin));
+                    }
+                    /* RUNNING SHOP DEV VERSION */
+                    if (compareVersions(localPluginVersion, spigotPluginVersion) > 0) {
+                        Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', combineString(DEV_VERSION_MSG, localPluginVersion)));
 
-                    //Register the PlayerJoinEvent
-                    Bukkit.getScheduler().runTask(javaPlugin, () -> Bukkit.getPluginManager().registerEvents(new Listener() {
-                        @EventHandler(priority = EventPriority.MONITOR)
-                        public void onPlayerJoin(final PlayerJoinEvent event) {
-                            final Player player = event.getPlayer();
-                            if (!player.isOp()) return;
-                            player.sendMessage(ChatColor.translateAlternateColorCodes('&', UPDATE_MSG));
-                        }
-                    }, javaPlugin));
+                        //Register the PlayerJoinEvent
+                        Bukkit.getScheduler().runTask(javaPlugin, () -> Bukkit.getPluginManager().registerEvents(new Listener() {
+                            @EventHandler(priority = EventPriority.MONITOR)
+                            public void onPlayerJoin(final PlayerJoinEvent event) {
+                                final Player player = event.getPlayer();
+                                if (!player.isOp()) return;
+                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', combineString(DEV_VERSION_MSG, localPluginVersion)));
+                            }
+                        }, javaPlugin));
+                    }
 
                     cancel(); //Cancel the runnable as an update has been found.
                 });
             }
         }.runTaskTimer(javaPlugin, 0, CHECK_INTERVAL);
+    }
+
+    private String combineString(String msg, String version) {
+        String message = "" + msg + version;
+        return message;
+    }
+
+    public int compareVersions(String localVersion, String latestVersion) {
+        // Split versions into base version and tag
+        String[] v1Parts = localVersion.split("-", 2);
+        String[] v2Parts = latestVersion.split("-", 2);
+
+        String v1Base = v1Parts[0];
+        String v2Base = v2Parts[0];
+
+        String v1Tag = v1Parts.length > 1 ? v1Parts[1] : "";
+        String v2Tag = v2Parts.length > 1 ? v2Parts[1] : "";
+
+        // Split base versions into numeric parts
+        String[] v1Nums = v1Base.split("\\.");
+        String[] v2Nums = v2Base.split("\\.");
+
+        int maxLength = Math.max(v1Nums.length, v2Nums.length);
+
+        for (int i = 0; i < maxLength; i++) {
+            int n1 = i < v1Nums.length ? Integer.parseInt(v1Nums[i]) : 0;
+            int n2 = i < v2Nums.length ? Integer.parseInt(v2Nums[i]) : 0;
+
+            if (n1 != n2) {
+                return Integer.compare(n1, n2);
+            }
+        }
+
+        // Numeric parts are equal, compare tags
+        boolean v1TagEmpty = v1Tag.isEmpty();
+        boolean v2TagEmpty = v2Tag.isEmpty();
+
+        if (v1TagEmpty && v2TagEmpty) {
+            return 0; // Both tags are empty
+        } else if (v1TagEmpty) {
+            return 1; // v1 has no tag, so it's newer
+        } else if (v2TagEmpty) {
+            return -1; // v2 has no tag, so it's newer
+        } else {
+            // Both have tags, compare them lexicographically
+            return v1Tag.compareTo(v2Tag);
+        }
     }
 }
