@@ -6,6 +6,7 @@ import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.GambleShop;
 import com.snowgears.shop.shop.ShopType;
+import net.alex9849.arm.regions.price.Price;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -98,91 +99,17 @@ public class Transaction {
         // Don't perform this processing if we are a gamble shop!
         if (shop.getType() == ShopType.GAMBLE) { return; }
 
-        int maxPurchaseAmount = this.originalAmountBeingSold;
-        // Check if we passed in the amount that we want to purchase, sometimes we want to purchase more
-        if (desiredAmount != -1) { maxPurchaseAmount = desiredAmount; };
+        PriceNegotiator negotiator = new PriceNegotiator(TX_DEBUG_LOGGING, this.originalAmountBeingSold, this.originalPrice);
 
-        // Price for a single item
-        // Greater than 1 if price is higher than amount being sold
-        // Less than one if price is lower than amount being sold
-        double pricePerItem = this.originalPrice / this.originalAmountBeingSold;
-        // The number of items to equal one price unit
-        double itemsPerPrice = 1;
-        // If our price is less than 1, then we are buying multiple items with each order
-        if (pricePerItem < 1) { itemsPerPrice = 1/pricePerItem; }
+        negotiator.negotiatePurchase(
+                Shop.getPlugin().getAllowPartialSales(),
+                this.buyer.getAvailableFunds(),
+                this.seller.getInventoryQuantity(this.itemBeingSold),
+                desiredAmount
+        );
 
-        // Calculate the maximum qty that the buyer can afford to buy
-        double buyerMaxQtyPurchase = (this.buyer.getAvailableFunds() / pricePerItem) / itemsPerPrice;
-        // Calculate the maximum items the seller has to sell
-        double sellerMaxQtySale = this.seller.getInventoryQuantity(this.itemBeingSold) / itemsPerPrice;
-
-        // The maximum qty that we can buy/sell with our available funds
-        double maxPurchasableQuantity = Math.floor( Math.min(buyerMaxQtyPurchase, sellerMaxQtySale) );
-
-        // The number of items we are buying
-        int itemsBeingBought = (int) Math.floor(maxPurchasableQuantity * itemsPerPrice);
-        // The overall price we are paying
-        double priceBeingPaid = Math.ceil(itemsBeingBought * pricePerItem);
-
-        if (TX_DEBUG_LOGGING) {
-            System.out.println("* pricePerItem: " + pricePerItem);
-            System.out.println("* itemsPerPrice: " + itemsPerPrice);
-            System.out.println("* buyerMaxQtyPurchase: " + buyerMaxQtyPurchase);
-            System.out.println("* this.seller.getInventoryQuantity(this.itemBeingSold): " + this.seller.getInventoryQuantity(this.itemBeingSold));
-            System.out.println("* sellerMaxQtySale: " + sellerMaxQtySale);
-            System.out.println("* maxPurchasableQuantity: " + maxPurchasableQuantity);
-            System.out.println("* itemsBeingBought: " + itemsBeingBought);
-            System.out.println("* priceBeingPaid: " + priceBeingPaid);
-        }
-
-        // If we don't have enough to buy/sell, then we can't negotiate a new price! Return so normal error handling can occur.
-        if (maxPurchasableQuantity <= 0 || itemsBeingBought <= 0 || priceBeingPaid <= 0) {
-            // Reset variables
-            this.price = this.originalPrice;
-            this.amountBeingSold = this.originalAmountBeingSold;
-            return;
-        }
-
-        // Check if partial sales are not allowed
-        if (!Shop.getPlugin().getAllowPartialSales()) {
-            // Multiple Quantity of original amount sales code (for full stack sales)
-            double quantityPerOriginalAmount = this.originalAmountBeingSold / itemsPerPrice;
-            // Force the quantity to be a multiple of our original amount when performing multiple sales
-            int roundedQuantity = (int) (Math.floor(maxPurchasableQuantity / quantityPerOriginalAmount) * quantityPerOriginalAmount);
-
-            // Partial sales are not allowed, we need to default to a multiple of our default amount/price
-            itemsBeingBought = (int) Math.floor(roundedQuantity * itemsPerPrice);
-            priceBeingPaid = Math.ceil(itemsBeingBought * pricePerItem);
-
-            // Set max purchase amount to be rounded down to a multiple of our original amount
-            maxPurchaseAmount = (int) (Math.floor(maxPurchaseAmount / this.originalAmountBeingSold) * originalAmountBeingSold);
-
-            if (TX_DEBUG_LOGGING) {
-                System.out.println("*** roundedQuantity: " + roundedQuantity);
-                System.out.println("*** quantityPerOriginalAmount: " + quantityPerOriginalAmount);
-                System.out.println("*** itemsBeingBought: " + itemsBeingBought);
-                System.out.println("*** priceBeingPaid: " + priceBeingPaid);
-                System.out.println("*** maxPurchaseAmount: " + maxPurchaseAmount);
-            }
-        }
-
-        // Make sure we only sell up to our maxPurchaseAmount (normally the original amount, but can be set higher)
-        if (itemsBeingBought > maxPurchaseAmount) {
-            if (TX_DEBUG_LOGGING) { System.out.println("itemsBeingBought > maxPurchaseAmount: " + itemsBeingBought + " > " + maxPurchaseAmount); }
-            itemsBeingBought = maxPurchaseAmount;
-            priceBeingPaid = Math.ceil(maxPurchaseAmount * pricePerItem);
-            if (TX_DEBUG_LOGGING) { System.out.println("*-* itemsBeingBought: " + itemsBeingBought); }
-            if (TX_DEBUG_LOGGING) { System.out.println("*-* priceBeingPaid: " + priceBeingPaid); }
-        }
-
-        // If we are not able to buy/sell, just leave the price/amount being sold as-is for error handling
-        if (itemsBeingBought == 0 || priceBeingPaid == 0) {
-            return;
-        }
-
-        // We are a valid price, go ahead and set it!
-        this.amountBeingSold = itemsBeingBought;
-        this.price = priceBeingPaid;
+        this.amountBeingSold = negotiator.getAmountBeingSold();
+        this.price = negotiator.getPrice();
 
         if (TX_DEBUG_LOGGING) {
             System.out.println("-* amountBeingSold: " + this.amountBeingSold);
