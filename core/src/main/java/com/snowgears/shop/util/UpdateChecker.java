@@ -31,7 +31,7 @@ public class UpdateChecker {
     private static final int ID = 9628; //The ID of your resource. Can be found in the resource URL.
     private static final String ERR_MSG = "&cShop update checker failed!";
     private static final String UPDATE_MSG = "&fA new Shop update is available at:&b https://www.spigotmc.org/resources/" + ID + "/updates";
-    private static final String DEV_VERSION_MSG = "&eRunning &6Shop &edevelopment version &c{devVersion}&e. If you encounter bugs, please roll back to the latest stable version.";
+    private static final String DEV_VERSION_MSG = "&l&e[Shop] &r&6Running development version &l&c{devVersion}&r&6. If you encounter bugs, please roll back to the latest stable version.";
     //PermissionDefault.FALSE == OPs need the permission to be notified.
     //PermissionDefault.TRUE == all OPs are notified regardless of having the permission.
     private static final Permission UPDATE_PERM = new Permission("shop.update", PermissionDefault.FALSE);
