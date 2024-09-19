@@ -124,7 +124,10 @@ public class ShopMessage {
 
             try {
                 if (item != null) {
-                    BaseComponent[] hoverEventComponents = new BaseComponent[]{new TextComponent(NBT.itemStackToNBT(item).toString())}; // The only element of the hover events basecomponents is the item json
+                    // Clear out the item aount
+                    ItemStack hoverItem = item.clone();
+                    hoverItem.setAmount(1); // Force it to be a single unit just in case we were selling a large quantity greater than a single stack, otherwise this will throw an error!
+                    BaseComponent[] hoverEventComponents = new BaseComponent[]{new TextComponent(NBT.itemStackToNBT(hoverItem).toString())}; // The only element of the hover events basecomponents is the item json
                     HoverEvent event = new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents);
                     builder.event(event);
                 }
