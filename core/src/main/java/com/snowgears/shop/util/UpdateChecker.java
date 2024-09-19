@@ -31,7 +31,7 @@ public class UpdateChecker {
     private static final int ID = 9628; //The ID of your resource. Can be found in the resource URL.
     private static final String ERR_MSG = "&cShop update checker failed!";
     private static final String UPDATE_MSG = "&fA new Shop update is available at:&b https://www.spigotmc.org/resources/" + ID + "/updates";
-    private static final String DEV_VERSION_MSG = "&cRunning [Shop] Dev Build: ";
+    private static final String DEV_VERSION_MSG = "&eRunning &6Shop &edevelopment version &c{devVersion}&e. If you encounter bugs, please roll back to the latest stable version.";
     //PermissionDefault.FALSE == OPs need the permission to be notified.
     //PermissionDefault.TRUE == all OPs are notified regardless of having the permission.
     private static final Permission UPDATE_PERM = new Permission("shop.update", PermissionDefault.FALSE);
@@ -78,7 +78,7 @@ public class UpdateChecker {
                     }
                     /* RUNNING SHOP DEV VERSION */
                     if (compareVersions(localPluginVersion, spigotPluginVersion) > 0) {
-                        Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', combineString(DEV_VERSION_MSG, localPluginVersion)));
+                        Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', combineVersionString(DEV_VERSION_MSG, localPluginVersion)));
 
                         //Register the PlayerJoinEvent
                         Bukkit.getScheduler().runTask(javaPlugin, () -> Bukkit.getPluginManager().registerEvents(new Listener() {
@@ -86,7 +86,7 @@ public class UpdateChecker {
                             public void onPlayerJoin(final PlayerJoinEvent event) {
                                 final Player player = event.getPlayer();
                                 if (!player.isOp()) return;
-                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', combineString(DEV_VERSION_MSG, localPluginVersion)));
+                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', combineVersionString(DEV_VERSION_MSG, localPluginVersion)));
                             }
                         }, javaPlugin));
                     }
@@ -97,8 +97,8 @@ public class UpdateChecker {
         }.runTaskTimer(javaPlugin, 0, CHECK_INTERVAL);
     }
 
-    private String combineString(String msg, String version) {
-        String message = "" + msg + version;
+    private String combineVersionString(String msg, String version) {
+        String message = msg.replace("{devVersion}", version);
         return message;
     }
 
