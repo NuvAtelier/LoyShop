@@ -274,10 +274,9 @@ public class LogHandler {
                                 double price = resultSet.getDouble("price");
                                 int amount = resultSet.getInt("amount");
                                 String item = resultSet.getString("item");
-//                                String barterItem = resultSet.getString("barter_item"); // May be null
+                                String barterItem = resultSet.getString("barter_item"); // May be null
 
                                 ItemStack itemstack = UtilMethods.itemStackFromBase64(item);
-
 
                                 // Process transactions based on their type
                                 if (tType.equalsIgnoreCase("BUY")) {
@@ -285,21 +284,19 @@ public class LogHandler {
                                     totalSpent += price;
                                     int itemsBoughtAmt = itemsBought.getOrDefault(itemstack, 0) + amount;
                                     itemsBought.put(itemstack,itemsBoughtAmt);
-
-//                                    if (barterItem != null) {
-//                                        // User sold barter items
-//                                        itemsSold.put(barterItem, itemsSold.getOrDefault(barterItem, 0) + amount);
-//                                    }
                                 } else if (tType.equalsIgnoreCase("SELL")) {
                                     // User earned money by selling items
                                     totalProfit += price;
                                     int itemsSoldAmt = itemsSold.getOrDefault(itemstack, 0) + amount;
                                     itemsSold.put(itemstack, itemsSoldAmt);
-
-//                                    if (barterItem != null) {
-//                                        // User bought barter items
-//                                        itemsBought.put(barterItem, itemsBought.getOrDefault(barterItem, 0) + amount);
-//                                    }
+                                } else if (tType.equalsIgnoreCase("BARTER")) {
+                                    int itemsAmt = itemsSold.getOrDefault(itemstack, 0) + amount;
+                                    itemsSold.put(itemstack, itemsAmt);
+                                    if (barterItem != null) {
+                                        // Barter Item is the "currency" item being spent in the transaction
+                                        ItemStack barterItemstack = UtilMethods.itemStackFromBase64(barterItem);
+                                        itemsBought.put(barterItemstack, itemsBought.getOrDefault(barterItemstack, 0) + amount);
+                                    }
                                 }
                             }
                         }
