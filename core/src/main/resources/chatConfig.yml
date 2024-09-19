@@ -81,22 +81,25 @@ transaction:
       owner: '&7[user] bartered &f[barter item amount] &7of their &f[barter item](s) &7for &f[item amount] &7of your &f[item](s)&7.'
    GAMBLE:
       user: '&7You gambled &a[price] &7and received &f[item]&7(x[item amount]).'
+
    OFFLINE_TRANSACTIONS_NOTIFICATION:
-      - '&d+---------------------------------------------------+'
-      - '&d| &bShop Sales &7(while offline):'
-      - '&d|'
-      - '&d| &7Transactions: &b[offline transactions]'
-      - '&d| &7Profits: &a[offline profit]'
-      - '&d| &7Spent: &6[offline spent]'
-      - '&d|             &7v (hover over items to see details)'
-      - '&d| &7Items Sold: '
-      - '&d| &f - &b[[item name sold row]] &7(x&e[item amount sold row]&7)'
-      - '&d|'
-      - '&d| &7Items Bought: '
-      - '&d| &f - &b[[item name bought row]] &7(x&e[item amount bought row]&7)'
-      - '&d|'
-      - '&d| &6Out Of Stock Shop: &b[out of stock item] &6at &b[out of stock location]'
-      - '&d+---------------------------------------------------+'
+      summary:
+         - '&d+---------------------------------------------------+'
+         - '&d| &bShop Sales &7(while offline):'
+         - '&d|'
+         - '&d| &7Transactions: &b[offline transactions]'
+         - '&d| &7Profits: &a[offline profit]'
+         - '&d| &7Spent: &6[offline spent]'
+         - '&d|             &7v (hover over items to see details)'
+         - '&d| &7Items Sold: '
+         - '&d| &f - &b[[item name sold row]] &7(x&e[item amount sold row]&7)'
+         - '&d|'
+         - '&d| &7Items Bought: '
+         - '&d| &f - &b[[item name bought row]] &7(x&e[item amount bought row]&7)'
+         - '&d|'
+         - '&d| &6Out Of Stock Shop: &b[out of stock item] &6at &b[out of stock location]'
+         - '&d+---------------------------------------------------+'
+      tooManyOutOfStock: '&d| &b[out of stock remaining] &6more Shops Out Of Stock...'
 
 transaction_issue:
    SELL:

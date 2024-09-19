@@ -280,13 +280,25 @@ public class ShopMessage {
             if (line.contains(shopItemPlaceholder) && line.contains(locationPlaceholder)) {
                 if (shops != null && !shops.isEmpty()) {
                     // For each item, generate a line based on the template line
+                    int outOfStockShops = 0;
+                    int remainingOutOfStock = 0;
                     for (AbstractShop shop : shops) {
                         if (shop.getStock() > 0) { continue; }
+                        outOfStockShops++;
+                        if (outOfStockShops > 3) {
+                            remainingOutOfStock++;
+                            continue;
+                        }
                         String itemLine = line;
                         itemLine = itemLine.replace(shopItemPlaceholder, Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack()));
                         Location loc = shop.getChestLocation();
                         itemLine = itemLine.replace(locationPlaceholder, "(" + loc.getBlockX() + "," + loc.getBlockY() + ","+ loc.getBlockZ() + ")");
                         newMessage.append(itemLine).append("\n");
+                    }
+
+                    if (remainingOutOfStock > 0) {
+                        String remainingMsg = messageMap.get("too_many_out_of_stock");
+                        newMessage.append(remainingMsg.replace("[out of stock remaining]", "" + remainingOutOfStock)).append("\n");
                     }
                 } else {
                     // No items, don't log anything
@@ -700,10 +712,11 @@ public class ShopMessage {
         }
 
         count = 1;
-        for(String s : chatConfig.getStringList("transaction.OFFLINE_TRANSACTIONS_NOTIFICATION")){
+        for(String s : chatConfig.getStringList("transaction.OFFLINE_TRANSACTIONS_NOTIFICATION.summary")){
             messageMap.put("offline_transactions"+count, s);
             count++;
         }
+        messageMap.put("too_many_out_of_stock", chatConfig.getString("transaction.OFFLINE_TRANSACTIONS_NOTIFICATION.tooManyOutOfStock"));
 
         messageMap.put("command_list", chatConfig.getString("command.list"));
         messageMap.put("command_list_output_total", chatConfig.getString("command.list_output_total"));
