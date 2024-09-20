@@ -238,35 +238,66 @@ public class ShopMessage {
         return unformattedMessage;
     }
 
-    private static String processItemRows(
+    private static String addRowsDualPlaceholder(
             String message,
-            String itemNamePlaceholder,
-            String itemAmountPlaceholder,
-            Map<ItemStack, Integer> items
+            String placeholderOne,
+            String placeholderTwo,
+            Map<String, String> rowData
     ) {
         // Split the message into lines
         String[] lines = message.split("\\r?\\n");
         StringBuilder newMessage = new StringBuilder();
 
         for (String line : lines) {
-            if (line.contains(itemNamePlaceholder) && line.contains(itemAmountPlaceholder)) {
-                if (items != null && !items.isEmpty()) {
+            boolean foundLine = line.contains(placeholderOne);
+            if (placeholderTwo != null) { foundLine = foundLine && line.contains(placeholderTwo); };
+            // Does this line contain the placeholders we are looking for?
+            if (foundLine) {
+                if (rowData != null && !rowData.isEmpty()) {
                     // For each item, generate a line based on the template line
-                    for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
+                    for (Map.Entry<String, String> entry : rowData.entrySet()) {
                         String itemLine = line;
-                        itemLine = itemLine.replace(itemNamePlaceholder, Shop.getPlugin().getItemNameUtil().getName(entry.getKey()));
-                        itemLine = itemLine.replace(itemAmountPlaceholder, String.valueOf(entry.getValue()));
+                        itemLine = itemLine.replace(placeholderOne, entry.getKey());
+                        if (placeholderTwo != null) { itemLine = itemLine.replace(placeholderTwo, entry.getValue()); }
                         newMessage.append(itemLine).append("\n");
                     }
                 } else {
-                    // No items, don't log anything
+                    // No objects were sent to us to log, just log nothing (remove line with placeholders)
+                    // If we want to log something like "No Items" in the future we could do that here.
                 }
             } else {
+                // This line didn't contain the placeholders, add it and continue
                 newMessage.append(line).append("\n");
             }
         }
 
         return newMessage.toString().trim();
+    }
+
+    private static String addRows(String message, String placeholder, List<String> rowData) {
+        Map<String, String> newRowData = new HashMap<>();
+
+        for (String row : rowData) {
+            newRowData.put(row, null);
+        }
+
+        return addRowsDualPlaceholder(message, placeholder, null, newRowData);
+    }
+
+    private static String processItemRows(
+            String message,
+            String itemNamePlaceholder,
+            String itemAmountPlaceholder,
+            Map<ItemStack, Integer> items
+    ) {
+        Map<String, String> rowData = new HashMap<>();
+        for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
+            String itemName = Shop.getPlugin().getItemNameUtil().getName(entry.getKey());
+            String itemAmount = String.valueOf(entry.getValue());
+            rowData.put(itemName, itemAmount);
+        }
+
+        return addRowsDualPlaceholder(message, itemNamePlaceholder, itemAmountPlaceholder, rowData);
     }
 
     private static String processShopStockRows(
