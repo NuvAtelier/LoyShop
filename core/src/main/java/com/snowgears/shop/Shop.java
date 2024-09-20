@@ -69,6 +69,7 @@ public class Shop extends JavaPlugin {
     private DisplayTagOption displayTagOption;
     private DisplayType[] displayCycle;
     private boolean checkItemDurability;
+    private boolean ignoreItemRepairCost;
     private boolean allowCreativeSelection;
     private boolean forceDisplayToNoneIfBlocked;
     private int displayLightLevel;
@@ -300,6 +301,7 @@ public class Shop extends JavaPlugin {
         bluemapEnabled = config.getBoolean("bluemap-marker.enabled");
         commandAlias = config.getString("commandAlias");
         checkItemDurability = config.getBoolean("checkItemDurability");
+        ignoreItemRepairCost = config.getBoolean("ignoreItemRepairCost");
         allowCreativeSelection = config.getBoolean("allowCreativeSelection");
         forceDisplayToNoneIfBlocked = config.getBoolean("forceDisplayToNoneIfBlocked");
         displayLightLevel = config.getInt("displayLightLevel");
@@ -664,6 +666,9 @@ public class Shop extends JavaPlugin {
 
     public boolean checkItemDurability(){
         return checkItemDurability;
+    }
+    public boolean ignoreItemRepairCost(){
+        return ignoreItemRepairCost;
     }
 
     public boolean allowCreativeSelection(){

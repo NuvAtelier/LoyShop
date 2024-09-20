@@ -154,6 +154,9 @@ creationMethod:
 
 # This will make it so shops will only complete transactions if the item durabilities are the same #
 checkItemDurability: true
+# This will make it so shops will still complete transactions if the item "repair cost" is different, like with enchanted books or armor
+# * "repair cost" defines how many times an item has been combined in an anvil
+ignoreItemRepairCost: true
 
 # This will allow players to use the limited creative selection tool to choose shop items #
 allowCreativeSelection: true

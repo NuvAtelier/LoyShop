@@ -8,6 +8,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.Repairable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -139,19 +140,28 @@ public class InventoryUtils {
         ItemStack itemStack1 = i1.clone();
         ItemStack itemStack2 = i2.clone();
 
-        ItemMeta i1Meta = itemStack1.getItemMeta();
-        ItemMeta i2Meta = itemStack2.getItemMeta();
-
         // Check if we are ignoring item durability, if so, reset the durability of both items and continue with later checks
         if (!Shop.getPlugin().checkItemDurability()) {
-            Damageable is1Damagable = (Damageable)i1Meta;
+            Damageable is1Damagable = (Damageable) itemStack1.getItemMeta();
             is1Damagable.setDamage(0);
 
-            Damageable is2Damagable = (Damageable)i2Meta;
+            Damageable is2Damagable = (Damageable) itemStack2.getItemMeta();
             is2Damagable.setDamage(0);
 
             itemStack1.setItemMeta(is1Damagable);
             itemStack2.setItemMeta(is2Damagable);
+        }
+
+        // Check if we are ignoring item durability, if so, reset the durability of both items and continue with later checks
+        if (Shop.getPlugin().ignoreItemRepairCost()) {
+            Repairable item1Cost = (Repairable) itemStack1.getItemMeta();
+            item1Cost.setRepairCost(0);
+
+            Repairable item2Cost = (Repairable) itemStack2.getItemMeta();
+            item2Cost.setRepairCost(0);
+
+            itemStack1.setItemMeta(item2Cost);
+            itemStack2.setItemMeta(item2Cost);
         }
 
         //special case to check for beehives
@@ -163,6 +173,9 @@ public class InventoryUtils {
 //                return true;
 //        }
 
+
+        ItemMeta i1Meta = itemStack1.getItemMeta();
+        ItemMeta i2Meta = itemStack2.getItemMeta();
         //fix NBT attributes for cached older items to be compatible with Spigot serializer updates
         if (i1Meta != null && i2Meta != null && i1Meta.hasAttributeModifiers() && i2Meta.hasAttributeModifiers()) {
             i1Meta.setAttributeModifiers(i1Meta.getAttributeModifiers());
