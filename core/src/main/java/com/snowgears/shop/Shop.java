@@ -13,6 +13,7 @@ import com.snowgears.shop.util.*;
 import de.bluecolored.bluemap.api.BlueMapAPI;
 import net.milkbowl.vault.economy.Economy;
 import net.md_5.bungee.api.ChatColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -32,6 +33,7 @@ public class Shop extends JavaPlugin {
 
     private static final Logger log = Logger.getLogger("Minecraft");
     private static Shop plugin;
+    private final ShopLogger logger = new ShopLogger(this);
 
     private ShopListener shopListener;
     private DisplayListener displayListener;
@@ -99,6 +101,7 @@ public class Shop extends JavaPlugin {
     private boolean returnCreationCost;
     private boolean allowPartialSales;
     private double taxPercent;
+    private boolean offlinePurchaseNotificationsEnabled;
     private ItemListType itemListType;
     private List<String> worldBlackList;
     private HashMap<ShopClickType, ShopAction> clickTypeActionMap;
@@ -115,9 +118,13 @@ public class Shop extends JavaPlugin {
         return plugin;
     }
 
-    //preload the main config.yml to look for the worldguard boolean, as it needs a flag registered before worldguard is enabled
+    // Return the custom ShopLogger so that we can log at higher levels.
+    @Override
+    public ShopLogger getLogger() { return logger; }
+
     @Override
     public void onLoad(){
+        //preload the main config.yml to look for the worldguard boolean, as it needs a flag registered before worldguard is enabled
         File configFile = new File(getDataFolder(), "config.yml");
         if (!configFile.exists()) {
             configFile.getParentFile().mkdirs();
@@ -203,6 +210,8 @@ public class Shop extends JavaPlugin {
         playerUUIDNameSpacedKey = new NamespacedKey(this, "playerUUID");
 
         config = YamlConfiguration.loadConfiguration(configFile);
+
+        plugin.getLogger().setLogLevel(config.getString("logLevel"));
 
         nmsBullshitHandler = new NMSBullshitHandler(this);
 

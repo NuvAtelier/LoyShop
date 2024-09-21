@@ -3,12 +3,14 @@ package com.snowgears.shop.handler;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
+import com.snowgears.shop.util.ItemNameUtil;
 import com.snowgears.shop.util.OfflineTransactions;
 import com.snowgears.shop.util.ShopActionType;
 import com.snowgears.shop.util.UtilMethods;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -159,7 +161,6 @@ public class LogHandler {
                 stmt.setInt(7, shop.getSignLocation().getBlockY());
                 stmt.setInt(8, shop.getSignLocation().getBlockZ());
                 execute(stmt);
-                return true;
             } catch (SQLException e){
                 plugin.getLogger().log(Level.WARNING, "SQL error occurred while trying to log player action.");
                 e.printStackTrace();
@@ -171,6 +172,25 @@ public class LogHandler {
             e.printStackTrace();
             return false;
         }
+
+        if (actionType == ShopActionType.INIT) {
+            plugin.getLogger().notice(
+                player.getName() + " created a " + shop.getType().name().toUpperCase() + " shop at ("
+                + "x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ()
+                + ") item: " + new ItemNameUtil().getName(shop.getItemStack())
+                + (shop.getSecondaryItemStack() != null ? " barterItem: " + new ItemNameUtil().getName(shop.getSecondaryItemStack()) : "")
+            );
+        }
+        if (actionType == ShopActionType.DESTROY) {
+            plugin.getLogger().notice(
+                    player.getName() + " destroyed a " + shop.getType().name().toUpperCase() + " shop at ("
+                    + "x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ()
+                    + ") item: " + new ItemNameUtil().getName(shop.getItemStack())
+                    + (shop.getSecondaryItemStack() != null ? " barterItem: " + new ItemNameUtil().getName(shop.getSecondaryItemStack()) : "")
+            );
+        }
+
+        return true;
     }
 
     public void logTransaction(Player player, AbstractShop shop, ShopType transactionType, double price, int amount){
@@ -216,7 +236,6 @@ public class LogHandler {
                         stmt.setInt(9, shop.getSignLocation().getBlockZ());
                         stmt.execute();
                         conn.close();
-                        return;
                     } catch (SQLException e) {
                         plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction.");
                         e.printStackTrace();
@@ -232,6 +251,15 @@ public class LogHandler {
                     e.printStackTrace();
                     return;
                 }
+
+//                String purchaseType = shop.getType().name().toUpperCase();
+//                if (shop.getType() == ShopType.SELL) { purchaseType = "bought"; }
+//                if (shop.getType() == ShopType.BUY) { purchaseType = "sold"; }
+                plugin.getLogger().helpful(
+                    "Shop " + shop.getType().name().toUpperCase() + " from/to " + player.getName() + ": "
+                    + new ItemNameUtil().getName(shop.getItemStack()) + "(x" + amount + ")" + " for " + plugin.getPriceString(price, true)
+                    + " | Shop owned by " + plugin.getServer().getOfflinePlayer(shop.getOwnerUUID()).getName() + " at (x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ() + ")"
+                );
             }
         });
     }
