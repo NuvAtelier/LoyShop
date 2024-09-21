@@ -124,14 +124,17 @@ public class Shop extends JavaPlugin {
 
     @Override
     public void onLoad(){
-        //preload the main config.yml to look for the worldguard boolean, as it needs a flag registered before worldguard is enabled
         File configFile = new File(getDataFolder(), "config.yml");
         if (!configFile.exists()) {
             configFile.getParentFile().mkdirs();
             UtilMethods.copy(getResource("config.yml"), configFile);
         }
         config = YamlConfiguration.loadConfiguration(configFile);
+        // Load logger
+        this.getLogger().setLogLevel(config.getString("logLevel"));
+        this.getLogger().enableColor(config.getBoolean("enableLogColor"));
 
+        // look for the worldguard boolean, as it needs a flag registered before worldguard is enabled
         hookWorldGuard = config.getBoolean("hookWorldGuard");
         // Check if WorldGuard exists
         // Note: If WorldGuard exists we will check to verify a user can build in the region
@@ -210,8 +213,9 @@ public class Shop extends JavaPlugin {
         playerUUIDNameSpacedKey = new NamespacedKey(this, "playerUUID");
 
         config = YamlConfiguration.loadConfiguration(configFile);
-
-        plugin.getLogger().setLogLevel(config.getString("logLevel"));
+        // Load logger values again in case the log level was changed on a reload
+        this.getLogger().setLogLevel(config.getString("logLevel"));
+        this.getLogger().enableColor(config.getBoolean("enableLogColor"));
 
         nmsBullshitHandler = new NMSBullshitHandler(this);
 

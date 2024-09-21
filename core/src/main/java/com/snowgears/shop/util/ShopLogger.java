@@ -121,6 +121,8 @@ public class ShopLogger extends Logger {
     private static final String WHITE  = "\u001B[37m";
     private static final String INTENSE_WHITE  = "\u001B[97m";
 
+    private boolean enableColor = true;
+
     public ShopLogger(@NotNull Plugin context) {
         super(context.getDescription().getName(), null);
         setParent(context.getServer().getLogger());
@@ -143,15 +145,20 @@ public class ShopLogger extends Logger {
         if (this.getLogLevel().intValue() > level.intValue()) { return; }
         super.log(Level.INFO, message);
     }
+
+    public String addColor(String color, String message) {
+        if (!enableColor) return message;
+        return color + message + RESET;
+    }
     // Identical to base Logger
 //    public void severe(String message) { log(Level.SEVERE, message); }
 //    public void warning(String message) {  log(Level.WARNING, message); }
-    public void info(String message) { addPrefixAndLog(Level.INFO, INTENSE_CYAN + message + RESET); }
-    public void notice(String message) { addPrefixAndLog(NOTICE, INTENSE_WHITE + "[Notice] " + message + RESET); }
-    public void helpful(String message) { addPrefixAndLog(HELPFUL, YELLOW + "[Helpful] " + message + RESET); }
-    public void debug(String message) { addPrefixAndLog(DEBUG, CYAN + "[Debug] " + message + RESET); }
-    public void trace(String message) { addPrefixAndLog(TRACE, PURPLE + "[Trace] " + message + RESET); }
-    public void spam(String message) { addPrefixAndLog(SPAM, BLUE + "[Spam] " + message + RESET); }
+    public void info(String message) { addPrefixAndLog(Level.INFO, addColor(INTENSE_CYAN, message)); }
+    public void notice(String message) { addPrefixAndLog(NOTICE, addColor(INTENSE_WHITE, "[Notice] " + message)); }
+    public void helpful(String message) { addPrefixAndLog(HELPFUL, addColor(YELLOW, "[Helpful] " + message)); }
+    public void debug(String message) { addPrefixAndLog(DEBUG, addColor(CYAN, "[Debug] " + message)); }
+    public void trace(String message) { addPrefixAndLog(TRACE, addColor(PURPLE, "[Trace] " + message)); }
+    public void spam(String message) { addPrefixAndLog(SPAM, addColor(BLUE, "[Spam] " + message)); }
 
     public void setLogLevel(String level) {
         if (level == null) { setLevel(Level.INFO); return; }
@@ -165,5 +172,9 @@ public class ShopLogger extends Logger {
 
     public Level getLogLevel() {
         return getLevel();
+    }
+
+    public void enableColor(boolean enabled) {
+        enableColor = enabled;
     }
 }

@@ -284,6 +284,7 @@ offlinePurchaseNotifications:
 # * TRACE  : Logs step-by-step execution details
 # * SPAM   : Logs extremely verbose information for deep diagnostics
 logLevel: DEBUG
+enableLogColor: true
 
 debug:
    # (default: false) Should owners be able to buy/sell from their own shop
