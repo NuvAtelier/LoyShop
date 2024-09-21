@@ -479,7 +479,7 @@ public class ShopHandler {
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if(shop != null && player != null && player.isOnline() && shop.isInitialized())
                         shop.getDisplay().spawn(player);
-                }, 50L); // Delay of 50 ticks to allow player to finish logging in, otherwise the item display doesn't appear!
+                }, 5L); // Delay of 5 ticks to allow player to finish logging in, otherwise the item display doesn't appear!
             }
         }
         playersWithActiveShopDisplays.put(player.getUniqueId(), shopsNearPlayer);

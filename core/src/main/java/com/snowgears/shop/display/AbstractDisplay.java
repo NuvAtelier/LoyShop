@@ -73,7 +73,7 @@ public abstract class AbstractDisplay {
 
         AbstractShop shop = this.getShop();
 
-        if (shop.getItemStack() == null || shop.getChestLocation() == null)
+        if (shop == null || shop.getItemStack() == null || shop.getChestLocation() == null)
             return;
 
         //define the initial display item
