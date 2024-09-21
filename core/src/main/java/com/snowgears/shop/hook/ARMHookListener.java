@@ -36,6 +36,7 @@ public class ARMHookListener implements Listener {
             for(AbstractShop shop : plugin.getShopHandler().getShops(shopOwnerUUID)) {
                 if (shop != null && shop.getSignLocation() != null && shop.getSignLocation().getWorld().getName().equals(region.getRegionworld().getName())) {
                     if (region.getRegion().contains(shop.getSignLocation().getBlockX(), shop.getSignLocation().getBlockY(), shop.getSignLocation().getBlockZ())) {
+                        plugin.getLogger().notice("Deleting Shop because ARM region is being restored! " + shop);
                         shop.delete();
                         shopOwnersToSave.add(shopOwnerUUID);
                         shopsDeleted++;

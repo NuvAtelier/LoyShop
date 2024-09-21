@@ -154,6 +154,7 @@ public class ShopListener implements Listener {
                 }
 
                 if((!plugin.getShopHandler().isChest(shop.getChestLocation().getBlock())) || !(shop.getSignLocation().getBlock().getBlockData() instanceof WallSign)){
+                    plugin.getLogger().warning("Deleting Shop because chest does not exist, or sign is not exist! " + shop);
                     shop.delete();
                     return;
                 }
@@ -342,6 +343,7 @@ public class ShopListener implements Listener {
 
                     if (hoursSinceLastPlayed >= plugin.getHoursOfflineToRemoveShops()) {
                         for (AbstractShop shop : plugin.getShopHandler().getShops(offlinePlayer.getUniqueId())) {
+                            plugin.getLogger().notice("Deleting Shop because player " + offlinePlayer.getName() + " has not logged in within the required " + (int) hoursSinceLastPlayed + " hours! " + shop);
                             shop.delete();
                         }
                         plugin.getShopHandler().saveShops(offlinePlayer.getUniqueId());

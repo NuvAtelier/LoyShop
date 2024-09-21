@@ -602,6 +602,7 @@ public class MiscListener implements Listener {
                 String message = ShopMessage.getMessage(shop.getType().toString(), "destroy", shop, player);
                 if(message != null && !message.isEmpty())
                     player.sendMessage(message);
+                // We already log on ShopActionType.DESTROY in the Log Handler, so don't log the shop destroy reason
                 shop.delete();
                 plugin.getShopHandler().saveShops(shop.getOwnerUUID());
 

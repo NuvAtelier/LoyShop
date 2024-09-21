@@ -52,6 +52,7 @@ public class TransactionHandler {
 
         //delete shop if it does not have a chest attached to it
         if(!(plugin.getShopHandler().isChest(shop.getChestLocation().getBlock()))){
+            plugin.getLogger().warning("Deleting Shop because chest does not exist! " + shop);
             shop.delete();
             return;
         }

@@ -137,13 +137,16 @@ public abstract class AbstractShop {
                 this.setGuiIcon();
                 // Stock is recalculated in setGuiIcon
                 this.updateSign();
+                Shop.getPlugin().getLogger().trace("Loaded shop: " + this);
                 return true;
             } catch (ClassCastException cce) {
                 //this shop has no sign on it. return false
+                Shop.getPlugin().getLogger().trace("Failed to load shop, no sign for chest: " + this);
                 return false;
             }
         } else {
             //this shop has no sign location defined
+            Shop.getPlugin().getLogger().trace("Failed to load shop, no signLocation: " + this);
             return false;
         }
     }
@@ -515,6 +518,7 @@ public abstract class AbstractShop {
 
         //finally remove the shop from the shop handler
         Shop.getPlugin().getShopHandler().removeShop(this);
+        Shop.getPlugin().getLogger().debug("Deleted Shop " + this);
     }
 
     public void teleportPlayer(Player player){
@@ -591,5 +595,19 @@ public abstract class AbstractShop {
                 break;
         }
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "AbstractShop{" +
+                "type=" + type.toString().toUpperCase() +
+                ", item=" + item +
+                ", price=" + price +
+                (secondaryItem != null ? ", secondaryItem=" + secondaryItem : "") +
+                (isAdmin ? ", isAdmin=" + isAdmin : "") +
+                ", stock=" + stock +
+                ", owner=" + owner +
+                ", chestLocation=" + chestLocation.getWorld().getName() + ":" + chestLocation.getBlockX() + "/" + chestLocation.getBlockY() + "/" + chestLocation.getBlockZ() +
+                '}';
     }
 }

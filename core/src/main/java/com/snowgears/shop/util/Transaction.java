@@ -264,4 +264,20 @@ public class Transaction {
         this.error = error;
         return this.error;
     }
+
+    @Override
+    public String toString() {
+        return "Transaction{" +
+                "type=" + transactionType +
+                (price != originalPrice ? ", originalPrice=" + originalPrice : "") +
+                (amountBeingSold != originalAmountBeingSold ? ", originalAmountBeingSold=" + originalAmountBeingSold : "") +
+                ", price=" + price +
+                ", amountBeingSold=" + amountBeingSold +
+                ", itemBeingSold=" + itemBeingSold +
+                ", buyer=" + buyer +
+                ", seller=" + seller +
+                ", player=" + player +
+                ", shop=" + shop +
+                '}';
+    }
 }

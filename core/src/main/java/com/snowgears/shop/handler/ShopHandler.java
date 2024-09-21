@@ -638,7 +638,7 @@ public class ShopHandler {
     }
 
     private void saveShopsDriver(UUID player){
-        //System.out.println("[Shop] saving shops for player - "+player.toString());
+        plugin.getLogger().trace("saving shops for player - "+player.toString());
         try {
 
             File fileDirectory = new File(plugin.getDataFolder(), "Data");
