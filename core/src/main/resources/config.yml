@@ -271,9 +271,19 @@ logging:
 # If you are running into issues, or doing a lot of testing, you can enable these debug settings
 # in order to speed up your debugging!
 
+# To get more visibility into Shop actions, you can increase the log level to see more!
+# Available Log Levels:
+# * INFO   : Standard logging, only logs on startup, warnings, and errors
+# * NOTICE : Logs significant events like shop creation/deletion
+# * HELPFUL: Logs important in-game events such as transactions
+# * DEBUG  : Logs detailed information useful for debugging features
+# * TRACE  : Logs step-by-step execution details
+# * SPAM   : Logs extremely verbose information for deep diagnostics
+logLevel: DEBUG
+
 debug:
    # (default: false) Should owners be able to buy/sell from their own shop
    allowUseOwnShop: false
-   # (default: false) Show price calculation logs when purchases are made
+   # (default: false) Show price calculation debug logs when purchases are made
    transactionDebugLogs: false
 
