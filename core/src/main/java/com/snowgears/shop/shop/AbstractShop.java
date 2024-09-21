@@ -189,7 +189,6 @@ public abstract class AbstractShop {
         if(stock != oldStock){
             signLinesRequireRefresh = true;
             this.updateSign();
-            Shop.getPlugin().getShopHandler().saveShops(getOwnerUUID());
 
             //also set marker in here if using a marker integration
             if(Shop.getPlugin().getBluemapHookListener() != null) {

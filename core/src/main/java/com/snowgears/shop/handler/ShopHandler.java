@@ -317,10 +317,11 @@ public class ShopHandler {
             }
             unloadedShopsByChunk.remove(key);
 
-            //resave all shops for the player with the facing variable missing
-            for(UUID playerUUID : playerUUIDs){
-                saveShops(playerUUID);
-            }
+            // No need to save all the shops here anymore
+//            //resave all shops for the player with the facing variable missing
+//            for(UUID playerUUID : playerUUIDs){
+//                saveShops(playerUUID);
+//            }
         }
     }
 
