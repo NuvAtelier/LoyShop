@@ -340,6 +340,9 @@ public class Shop extends JavaPlugin {
         } catch(Exception e){
             currencyType = CurrencyType.ITEM;
         }
+
+        offlinePurchaseNotificationsEnabled = config.getBoolean("offlinePurchaseNotifications.enabled");
+
         //TODO
 //        taxPercent = config.getDouble("taxPercent");
 
@@ -730,6 +733,10 @@ public class Shop extends JavaPlugin {
 
     public ItemStack getItemCurrency() {
         return itemCurrency;
+    }
+
+    public boolean offlinePurchaseNotificationsEnabled() {
+        return offlinePurchaseNotificationsEnabled;
     }
 
     public boolean getDebug_allowUseOwnShop() { return debug_allowUseOwnShop; }

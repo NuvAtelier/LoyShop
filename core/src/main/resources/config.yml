@@ -262,6 +262,10 @@ logging:
    properties:
       - "useSSL=false"
 
+offlinePurchaseNotifications:
+   # Should offline purchases be shown to the user
+   enabled: true
+
 # =================================================================== #
 #                            DEBUG TOOLS                              #
 # =================================================================== #

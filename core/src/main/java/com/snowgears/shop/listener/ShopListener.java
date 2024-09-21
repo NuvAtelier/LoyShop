@@ -399,7 +399,7 @@ public class ShopListener implements Listener {
                         }
                     }
                 }
-            }.runTaskTimer(plugin, 2L, 2L);
+            }.runTaskTimer(plugin, 10L, 2L);
         }
     }
 
@@ -409,7 +409,7 @@ public class ShopListener implements Listener {
         long lastPlayed = player.getLastPlayed();
 
         //create an object that will calculate offline transactions (if sql is being used)
-        if(plugin.getLogHandler().isEnabled()) {
+        if(plugin.getLogHandler().isEnabled() && plugin.offlinePurchaseNotificationsEnabled()) {
             OfflineTransactions offlineTransactions = new OfflineTransactions(player.getUniqueId(), lastPlayed);
             transactionsWhileOffline.put(event.getUniqueId(), offlineTransactions);
         }
