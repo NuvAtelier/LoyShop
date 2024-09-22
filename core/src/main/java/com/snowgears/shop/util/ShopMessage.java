@@ -29,7 +29,7 @@ public class ShopMessage {
 
     private final static Shop plugin = Shop.getPlugin();
 
-    private final Map<String, Function<PlaceholderContext, TextComponent>> placeholders = new HashMap<>();
+    private static final Map<String, Function<PlaceholderContext, TextComponent>> placeholders = new HashMap<>();
     // Regex pattern to identify placeholders within square brackets, e.g., [owner]
     private static final String COLOR_CODE_REGEX = "(&[0-9A-FK-ORa-fk-or])";
     private static final String PLACEHOLDER_REGEX = "(\\[[^\\]]+\\])|([^&\\[]+)";
@@ -73,7 +73,7 @@ public class ShopMessage {
      * @param placeholder The placeholder string without brackets, e.g., "owner"
      * @param valueFunction A function that takes a PlaceholderContext instance and returns the replacement string
      */
-    public void registerPlaceholder(String placeholder, Function<PlaceholderContext, TextComponent> valueFunction) {
+    public static void registerPlaceholder(String placeholder, Function<PlaceholderContext, TextComponent> valueFunction) {
         placeholders.put(placeholder.toLowerCase(), valueFunction);
     }
 
@@ -84,7 +84,7 @@ public class ShopMessage {
      * @param context     The PlaceholderContext instance containing Shop and Player
      * @return The replacement string or an empty string if replacement fails
      */
-    public TextComponent replacePlaceholder(String placeholder, PlaceholderContext context) {
+    public static TextComponent replacePlaceholder(String placeholder, PlaceholderContext context) {
         plugin.getLogger().trace("[ShopMessage.replacePlaceholder] Attempting to replace placeholder: " + placeholder + " " + context);
         Function<PlaceholderContext, TextComponent> valueFunction = placeholders.get(placeholder.toLowerCase());
         if (valueFunction != null) {
@@ -110,7 +110,7 @@ public class ShopMessage {
      * @param context The PlaceholderContext instance containing Shop and Player
      * @return The formatted message with all placeholders replaced
      */
-    public TextComponent format(String message, PlaceholderContext context) {
+    public static TextComponent format(String message, PlaceholderContext context) {
         plugin.getLogger().spam("[ShopMessage.format] raw input: \n" + message);
         TextComponent formattedMessage = new TextComponent("");
 
@@ -152,6 +152,8 @@ public class ShopMessage {
                 if (placeholders.get(part) != null) {
                     plugin.getLogger().spam("[ShopMessage.format]     replacing placeholder... " + part);
                     partComponent = replacePlaceholder(part, context);
+                    // Check if we set a color inside our part (for example [stock color])
+                    if (partComponent.getColor() != latestColor && partComponent.getColor() != null && partComponent.getColor() != ChatColor.WHITE) { latestColor = partComponent.getColor(); }
                 }
             }
 
@@ -182,7 +184,7 @@ public class ShopMessage {
     /**
      * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
      */
-    public void sendMessage(String message, Player player, AbstractShop shop) {
+    public static void sendMessage(String message, Player player, AbstractShop shop) {
         TextComponent fancyMessage = format(message, new PlaceholderContext(shop, player, false));
         player.spigot().sendMessage(fancyMessage);
     }
@@ -191,7 +193,7 @@ public class ShopMessage {
      * Loads all available placeholders into the map.
      * This method should be called during the plugin's initialization phase.
      */
-    public void loadPlaceholders() {
+    public static void loadPlaceholders() {
         registerPlaceholder("[plugin]", context -> new TextComponent(plugin.getCommandAlias()));
         registerPlaceholder("[server name]", context -> new TextComponent(ShopMessage.getServerDisplayName()));
         registerPlaceholder("[owner]", context -> new TextComponent(context.getShop().isAdmin() ? ShopMessage.getServerDisplayName() : context.getShop().getOwnerName()));
@@ -199,7 +201,7 @@ public class ShopMessage {
         registerPlaceholder("[user]", context -> new TextComponent(context.getPlayer().getName()));
         registerPlaceholder("[world]", context -> new TextComponent(context.getShop().getSignLocation().getWorld().getName()));
         registerPlaceholder("[shop type]", context -> new TextComponent(ShopMessage.getCreationWord(context.getShop().getType().toString().toUpperCase())));
-        registerPlaceholder("[shop types]", this::getShopTypesPlaceholder);
+        registerPlaceholder("[shop types]", ShopMessage::getShopTypesPlaceholder);
         registerPlaceholder("[total shops]", context -> new TextComponent(String.valueOf(plugin.getShopHandler().getNumberOfShops())));
 
         // Player Info Placeholders
@@ -212,7 +214,7 @@ public class ShopMessage {
         registerPlaceholder("[currency item]", context -> embedItem(plugin.getItemNameUtil().getName(plugin.getItemCurrency()), plugin.getItemCurrency()));
 
         // Shop Item placeholders
-        registerPlaceholder("[item]", this::getItemPlaceholder);
+        registerPlaceholder("[item]", ShopMessage::getItemPlaceholder);
         registerPlaceholder("[item amount]", context -> new TextComponent(String.valueOf(context.getShop().getItemStack().getAmount())));
         registerPlaceholder("[location]", context -> new TextComponent(UtilMethods.getCleanLocation(context.getShop().getSignLocation(), false)));
         registerPlaceholder("[item enchants]", context -> embedItem(UtilMethods.getEnchantmentsString(context.getShop().getItemStack()), context.getShop().getItemStack()));
@@ -225,7 +227,7 @@ public class ShopMessage {
 
         // Shop Barter Item Placeholders
         registerPlaceholder("[barter item amount]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(String.valueOf(context.getShop().getSecondaryItemStack().getAmount())); } return null; });
-        registerPlaceholder("[barter item]", this::getBarterItemPlaceholder);
+        registerPlaceholder("[barter item]", ShopMessage::getBarterItemPlaceholder);
         registerPlaceholder("[barter item durability]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(String.valueOf(context.getShop().getSecondaryItemDurabilityPercent())); } return null; });
         registerPlaceholder("[barter item type]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(Shop.getPlugin().getItemNameUtil().getName(context.getShop().getSecondaryItemStack().getType())); } return null; });
         registerPlaceholder("[barter item enchants]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return embedItem(UtilMethods.getEnchantmentsString(context.getShop().getSecondaryItemStack()), context.getShop().getSecondaryItemStack()); } return null; });
@@ -252,9 +254,9 @@ public class ShopMessage {
             // This also sets sign lines to require refresh
             // @TODO: Why do they require a refresh...?
             context.getShop().setSignLinesRequireRefresh(true);
-            // @TODO: LOAD FROM CONFIG!
-//            return (context.getShop().getStock() > 0) ? ChatColor.GREEN.toString() : ChatColor.DARK_RED.toString();
-            return new TextComponent("");
+            TextComponent component = new TextComponent("");
+            component.setColor((context.getShop().getStock() > 0) ? ChatColor.GREEN : ChatColor.DARK_RED);
+            return component;
         });
 
         // Notify Placeholders
@@ -284,7 +286,7 @@ public class ShopMessage {
         });
     }
 
-    private HoverEvent getItemHoverEvent(ItemStack item) {
+    private static HoverEvent getItemHoverEvent(ItemStack item) {
         try {
             ItemStack hoverItem = item.clone();
             hoverItem.setAmount(1);
@@ -294,7 +296,7 @@ public class ShopMessage {
         return null;
     }
 
-    private TextComponent embedItem(String message, ItemStack item) {
+    private static TextComponent embedItem(String message, ItemStack item) {
         TextComponent msg = new TextComponent(message);
         HoverEvent event = getItemHoverEvent(item);
         if (event != null) { msg.setHoverEvent(event); }
@@ -308,7 +310,7 @@ public class ShopMessage {
      * @param context The PlaceholderContext instance.
      * @return A comma-separated list of shop types the player can create.
      */
-    private TextComponent getShopTypesPlaceholder(PlaceholderContext context) {
+    private static TextComponent getShopTypesPlaceholder(PlaceholderContext context) {
         List<ShopType> typeList = new ArrayList<>(Arrays.asList(ShopType.values()));
         Player player = context.getPlayer();
 
@@ -342,7 +344,7 @@ public class ShopMessage {
      * @param context The PlaceholderContext instance.
      * @return The item name, potentially truncated to fit sign constraints.
      */
-    private TextComponent getItemPlaceholder(PlaceholderContext context) {
+    private static TextComponent getItemPlaceholder(PlaceholderContext context) {
         if (context.getShop() == null || context.getShop().getItemStack() == null) {
             return null;
         }
@@ -367,7 +369,7 @@ public class ShopMessage {
      * @param context The PlaceholderContext instance.
      * @return The barter item name, potentially truncated to fit sign constraints.
      */
-    private TextComponent getBarterItemPlaceholder(PlaceholderContext context) {
+    private static TextComponent getBarterItemPlaceholder(PlaceholderContext context) {
         if (context.getShop() == null || context.getShop().getSecondaryItemStack() == null) {
             return null;
         }
@@ -679,6 +681,14 @@ public class ShopMessage {
         return newMessage.toString().trim();
     }
 
+    public static String formatMessage(String unformattedMessage, AbstractShop shop, Player player, boolean forSign) {
+        PlaceholderContext context = new PlaceholderContext(shop, player, forSign);
+        TextComponent formattedMessage = format(unformattedMessage, context);
+        // Return the legacy version since we are requesting the legacy formatter!
+        return ChatColor.translateAlternateColorCodes('§', formattedMessage.toLegacyText());
+    }
+
+    /*
     public static String formatMessage(String unformattedMessage, AbstractShop shop, Player player, boolean forSign){
         if(unformattedMessage == null) {
             loadMessagesFromConfig();
@@ -862,6 +872,7 @@ public class ShopMessage {
         unformattedMessage = ChatColor.translateAlternateColorCodes('&', unformattedMessage);
         return unformattedMessage;
     }
+     */
 
     public static String partialFormatMessageUUID(String unformattedMessage, UUID playerUUID){
         if(playerUUID.equals(Shop.getPlugin().getShopHandler().getAdminUUID()))

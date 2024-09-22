@@ -189,7 +189,7 @@ public class TransactionHandler {
         ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_SALE_USER);
         if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_USER_ON) {
             if(message != null && !message.isEmpty()) {
-                ShopMessage.embedAndSendHoverItemsMessage(message, player, transaction.getItems());
+                ShopMessage.sendMessage(message, player, shop);
 //                player.sendMessage(message);
             }
         }
