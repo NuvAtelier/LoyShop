@@ -545,8 +545,9 @@ public abstract class AbstractShop {
                 Map<ItemStack, Integer> items = new HashMap<>();
                 items.put(this.item, this.amount);
                 if (this.getSecondaryItemStack() != null) { items.put(this.getSecondaryItemStack(), (int) this.price); }
-                String formattedMsg = ShopMessage.formatMessage(message, this, player, false);
-                ShopMessage.embedAndSendHoverItemsMessage(formattedMsg, player, items);
+//                String formattedMsg = ShopMessage.formatMessage(message, this, player, false);
+                (new ShopMessage(Shop.getPlugin())).sendMessage(message, player, this);
+//                ShopMessage.embedAndSendHoverItemsMessage(formattedMsg, player, items);
             }
         }
     }

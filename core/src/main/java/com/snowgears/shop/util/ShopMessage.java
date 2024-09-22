@@ -7,13 +7,11 @@ import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import de.tr7zw.changeme.nbtapi.NBT;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -21,10 +19,21 @@ import org.bukkit.inventory.ItemStack;
 import java.io.File;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class ShopMessage {
+
+    private final static Shop plugin = Shop.getPlugin();
+
+    private final Map<String, Function<PlaceholderContext, TextComponent>> placeholders = new HashMap<>();
+    // Regex pattern to identify placeholders within square brackets, e.g., [owner]
+    private static final String COLOR_CODE_REGEX = "(&[0-9A-FK-ORa-fk-or])";
+    private static final String PLACEHOLDER_REGEX = "(\\[[^\\]]+\\])|([^&\\[]+)";
+    private static final String MESSAGE_PARTS_REGEX = COLOR_CODE_REGEX + "|" + PLACEHOLDER_REGEX + "|.?";
 
     private static HashMap<String, String> messageMap = new HashMap<String, String>();
     private static HashMap<String, String[]> shopSignTextMap = new HashMap<String, String[]>();
@@ -38,7 +47,6 @@ public class ShopMessage {
     private static YamlConfiguration displayConfig;
 
     public ShopMessage(Shop plugin) {
-
         File chatConfigFile = new File(plugin.getDataFolder(), "chatConfig.yml");
         chatConfig = YamlConfiguration.loadConfiguration(chatConfigFile);
         File signConfigFile = new File(plugin.getDataFolder(), "signConfig.yml");
@@ -54,6 +62,332 @@ public class ShopMessage {
         freePriceWord = signConfig.getString("sign_text.zeroPrice");
         adminStockWord = signConfig.getString("sign_text.adminStock");
         serverDisplayName = signConfig.getString("sign_text.serverDisplayName");
+
+        // Load in our placeholders
+        this.loadPlaceholders();
+    }
+
+    /**
+     * Registers a placeholder with its corresponding value retrieval function.
+     *
+     * @param placeholder The placeholder string without brackets, e.g., "owner"
+     * @param valueFunction A function that takes a PlaceholderContext instance and returns the replacement string
+     */
+    public void registerPlaceholder(String placeholder, Function<PlaceholderContext, TextComponent> valueFunction) {
+        placeholders.put(placeholder.toLowerCase(), valueFunction);
+    }
+
+    /**
+     * Attempts to replace a single placeholder within a message.
+     *
+     * @param placeholder The placeholder string without brackets, e.g., "owner"
+     * @param context     The PlaceholderContext instance containing Shop and Player
+     * @return The replacement string or an empty string if replacement fails
+     */
+    public TextComponent replacePlaceholder(String placeholder, PlaceholderContext context) {
+        plugin.getLogger().trace("[ShopMessage.replacePlaceholder] Attempting to replace placeholder: " + placeholder + " " + context);
+        Function<PlaceholderContext, TextComponent> valueFunction = placeholders.get(placeholder.toLowerCase());
+        if (valueFunction != null) {
+            try {
+                plugin.getLogger().trace("[ShopMessage.replacePlaceholder]     Running placeholder function... " + placeholder);
+                TextComponent message = valueFunction.apply(context);
+                plugin.getLogger().trace("[ShopMessage.replacePlaceholder]  *** placeholder replaced message:  " + message);
+                if (message != null) return message;
+            } catch (Exception e) {
+                // Log the exception
+                Bukkit.getLogger().warning("Error replacing placeholder [" + placeholder + "]: " + e.getMessage());
+            }
+        }
+        // If placeholder not found, remove the placeholder and just return an empty string
+        plugin.getLogger().trace("[ShopMessage.replacePlaceholder] *** returning empty string, unable to get function to replace placeholder: " + placeholder);
+        return new TextComponent("");
+    }
+
+    /**
+     * Formats a message by replacing all placeholders with their respective values.
+     *
+     * @param message The message containing placeholders
+     * @param context The PlaceholderContext instance containing Shop and Player
+     * @return The formatted message with all placeholders replaced
+     */
+    public TextComponent format(String message, PlaceholderContext context) {
+        plugin.getLogger().spam("[ShopMessage.format] raw input: \n" + message);
+        TextComponent formattedMessage = new TextComponent("");
+
+        // Define the regex pattern
+//        MESSAGE_PARTS_REGEX
+        Matcher matcher = Pattern.compile("([&§][0-9A-FK-ORa-fk-or])|(\\[[^\\[\\]]+\\])|([^&\\[]+)|.").matcher(message);
+        List<String> parts = new ArrayList<>();
+        while (matcher.find()) {
+            parts.add(matcher.group());
+        }
+
+        ChatColor latestColor = null;
+        for (String part : parts) {
+            plugin.getLogger().spam("\n\n");
+            plugin.getLogger().trace("[ShopMessage.format] part: " + part + "\n");
+            TextComponent partComponent = new TextComponent(part);
+
+            // Check if we are a color code
+            if (part.matches(COLOR_CODE_REGEX)) {
+                try {
+                    char abc;
+                    ChatColor newColor = ChatColor.getByChar(part.charAt(1));
+                    if (newColor != null) {
+                        latestColor = newColor;
+                    }
+                    plugin.getLogger().spam("[ShopMessage.format]     matched COLOR_CODE_REGEX: " + part);
+                    plugin.getLogger().spam("[ShopMessage.format]     newColor: " + newColor.toString());
+                    plugin.getLogger().spam("[ShopMessage.format] *** skipping to next part: " + newColor.getName().toUpperCase());
+                    continue; // Don't add this text to the message, just go to the next part
+                } catch (Exception e) {
+                    plugin.getLogger().spam("[ShopMessage.format] XXX unknown color code! Going to add this as a normal string! " + part);
+                }
+            }
+
+            // If we match to a placeholder, then we want to use it's TextComponent instead of the "normal" one
+            if (part.matches(PLACEHOLDER_REGEX)) {
+                plugin.getLogger().spam("[ShopMessage.format]     matched PLACEHOLDER_REGEX: " + part);
+                plugin.getLogger().spam("[ShopMessage.format]     is part placeholder? " + (placeholders.get(part) != null));
+                if (placeholders.get(part) != null) {
+                    plugin.getLogger().spam("[ShopMessage.format]     replacing placeholder... " + part);
+                    partComponent = replacePlaceholder(part, context);
+                }
+            }
+
+            // Set the color
+            if (latestColor != null) {
+                plugin.getLogger().spam("[ShopMessage.format]     setting part color to: " + latestColor.getName().toUpperCase());
+                partComponent.setColor(latestColor);
+            }
+            // Add the part of the string to the
+            formattedMessage.addExtra(partComponent);
+            plugin.getLogger().spam("[ShopMessage.format] *** add part TextComponent to main message: " + partComponent);
+        }
+
+        plugin.getLogger().spam("[ShopMessage.format] return formattedMessage: \n" + formattedMessage.toLegacyText());
+        return formattedMessage;
+    }
+
+    /**
+     * Translates color codes using Bukkit's ChatColor.
+     *
+     * @param message The message with color codes (e.g., &a, &7)
+     * @return The message with color codes translated to Bukkit's format
+     */
+    public String translateColorCodes(String message) {
+        return ChatColor.translateAlternateColorCodes('&', message);
+    }
+
+    /**
+     * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
+     */
+    public void sendMessage(String message, Player player, AbstractShop shop) {
+        TextComponent fancyMessage = format(message, new PlaceholderContext(shop, player, false));
+        player.spigot().sendMessage(fancyMessage);
+    }
+
+    /**
+     * Loads all available placeholders into the map.
+     * This method should be called during the plugin's initialization phase.
+     */
+    public void loadPlaceholders() {
+        registerPlaceholder("[plugin]", context -> new TextComponent(plugin.getCommandAlias()));
+        registerPlaceholder("[server name]", context -> new TextComponent(ShopMessage.getServerDisplayName()));
+        registerPlaceholder("[owner]", context -> new TextComponent(context.getShop().isAdmin() ? ShopMessage.getServerDisplayName() : context.getShop().getOwnerName()));
+        registerPlaceholder("[player]", context -> { Player player = context.getPlayer(); return new TextComponent((player != null) ? player.getName() : ""); });
+        registerPlaceholder("[user]", context -> new TextComponent(context.getPlayer().getName()));
+        registerPlaceholder("[world]", context -> new TextComponent(context.getShop().getSignLocation().getWorld().getName()));
+        registerPlaceholder("[shop type]", context -> new TextComponent(ShopMessage.getCreationWord(context.getShop().getType().toString().toUpperCase())));
+        registerPlaceholder("[shop types]", this::getShopTypesPlaceholder);
+        registerPlaceholder("[total shops]", context -> new TextComponent(String.valueOf(plugin.getShopHandler().getNumberOfShops())));
+
+        // Player Info Placeholders
+        registerPlaceholder("[user amount]", context -> new TextComponent(String.valueOf(plugin.getShopHandler().getNumberOfShops(context.getPlayer()))));
+        registerPlaceholder("[build limit]", context -> new TextComponent(String.valueOf(plugin.getShopListener().getBuildLimit(context.getPlayer()))));
+        registerPlaceholder("[tp time remaining]", context -> new TextComponent(String.valueOf(plugin.getShopListener().getTeleportCooldownRemaining(context.getPlayer()))));
+
+        // Currency Placeholders
+        registerPlaceholder("[currency name]", context -> new TextComponent(plugin.getCurrencyName()));
+        registerPlaceholder("[currency item]", context -> embedItem(plugin.getItemNameUtil().getName(plugin.getItemCurrency()), plugin.getItemCurrency()));
+
+        // Shop Item placeholders
+        registerPlaceholder("[item]", this::getItemPlaceholder);
+        registerPlaceholder("[item amount]", context -> new TextComponent(String.valueOf(context.getShop().getItemStack().getAmount())));
+        registerPlaceholder("[location]", context -> new TextComponent(UtilMethods.getCleanLocation(context.getShop().getSignLocation(), false)));
+        registerPlaceholder("[item enchants]", context -> embedItem(UtilMethods.getEnchantmentsString(context.getShop().getItemStack()), context.getShop().getItemStack()));
+
+        registerPlaceholder("[item lore]", context -> embedItem(UtilMethods.getLoreString(context.getShop().getItemStack()), context.getShop().getItemStack()));
+        registerPlaceholder("[item durability]", context -> new TextComponent(String.valueOf(context.getShop().getItemDurabilityPercent())));
+        registerPlaceholder("[item type]", context -> { if (context.getShop().getType() == ShopType.GAMBLE) { return new TextComponent("???"); } else { return new TextComponent(Shop.getPlugin().getItemNameUtil().getName(context.getShop().getItemStack().getType())); } });
+        registerPlaceholder("[gamble item amount]", context -> { if (context.getShop().getType() == ShopType.GAMBLE) { return new TextComponent(String.valueOf(context.getShop().getAmount())); } return null; });
+        registerPlaceholder("[gamble item]", context -> { if (context.getShop().getType() == ShopType.GAMBLE) { return embedItem(plugin.getItemNameUtil().getName(plugin.getGambleDisplayItem()), plugin.getGambleDisplayItem()); } return null; });
+
+        // Shop Barter Item Placeholders
+        registerPlaceholder("[barter item amount]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(String.valueOf(context.getShop().getSecondaryItemStack().getAmount())); } return null; });
+        registerPlaceholder("[barter item]", this::getBarterItemPlaceholder);
+        registerPlaceholder("[barter item durability]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(String.valueOf(context.getShop().getSecondaryItemDurabilityPercent())); } return null; });
+        registerPlaceholder("[barter item type]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(Shop.getPlugin().getItemNameUtil().getName(context.getShop().getSecondaryItemStack().getType())); } return null; });
+        registerPlaceholder("[barter item enchants]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return embedItem(UtilMethods.getEnchantmentsString(context.getShop().getSecondaryItemStack()), context.getShop().getSecondaryItemStack()); } return null; });
+        registerPlaceholder("[barter item lore]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return embedItem(UtilMethods.getLoreString(context.getShop().getSecondaryItemStack()), context.getShop().getSecondaryItemStack()); } return null; });
+
+        // Shop Pricing Placeholders
+        registerPlaceholder("[amount]", context -> new TextComponent(String.valueOf(context.getShop().getAmount())));
+        registerPlaceholder("[price sell]", context -> { if (context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceSellString()); } return null; });
+        registerPlaceholder("[price sell per item]", context -> { if (context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceSellPerItemString()); } return null; });
+        registerPlaceholder("[price combo]", context -> { if (context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceComboString()); } return null; });
+        registerPlaceholder("[price per item]", context -> new TextComponent(context.getShop().getPricePerItemString()));
+        registerPlaceholder("[price]", context -> new TextComponent(context.getShop().getPriceString()));
+        registerPlaceholder("[stock]", context -> {
+            if (context.getShop().isAdmin()) {
+                return new TextComponent(String.valueOf(ShopMessage.getAdminStockWord()));
+            } else {
+                // This also sets sign lines to require refresh
+                // @TODO: Why do they require a refresh...?
+                context.getShop().setSignLinesRequireRefresh(true);
+                return new TextComponent(String.valueOf(context.getShop().getStock()));
+            }
+        });
+        registerPlaceholder("[stock color]", context -> {
+            // This also sets sign lines to require refresh
+            // @TODO: Why do they require a refresh...?
+            context.getShop().setSignLinesRequireRefresh(true);
+            // @TODO: LOAD FROM CONFIG!
+//            return (context.getShop().getStock() > 0) ? ChatColor.GREEN.toString() : ChatColor.DARK_RED.toString();
+            return new TextComponent("");
+        });
+
+        // Notify Placeholders
+        registerPlaceholder("[notify user]", context -> {
+            // @TODO: is this correct?
+            String text_on = getUnformattedMessage("command", "notify_on");
+            String text_off = getUnformattedMessage("command", "notify_off");
+
+            ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(context.getPlayer(), PlayerSettings.Option.NOTIFICATION_SALE_USER);
+            return new TextComponent((guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_USER_ON) ? text_on : text_off);
+        });
+
+        registerPlaceholder("[notify owner]", context -> {
+            String text_on = getUnformattedMessage("command", "notify_on");
+            String text_off = getUnformattedMessage("command", "notify_off");
+
+            ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(context.getPlayer(), PlayerSettings.Option.NOTIFICATION_SALE_OWNER);
+            return new TextComponent((guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_OWNER_ON) ? text_on : text_off);
+        });
+
+        registerPlaceholder("[notify stock]", context -> {
+            String text_on = getUnformattedMessage("command", "notify_on");
+            String text_off = getUnformattedMessage("command", "notify_off");
+
+            ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(context.getPlayer(), PlayerSettings.Option.NOTIFICATION_STOCK);
+            return new TextComponent((guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON) ? text_on : text_off);
+        });
+    }
+
+    private HoverEvent getItemHoverEvent(ItemStack item) {
+        try {
+            ItemStack hoverItem = item.clone();
+            hoverItem.setAmount(1);
+            BaseComponent[] component = new BaseComponent[]{new TextComponent(NBT.itemStackToNBT(hoverItem).toString())};
+            return new HoverEvent(HoverEvent.Action.SHOW_ITEM, component);
+        } catch (Exception e) {}
+        return null;
+    }
+
+    private TextComponent embedItem(String message, ItemStack item) {
+        TextComponent msg = new TextComponent(message);
+        HoverEvent event = getItemHoverEvent(item);
+        if (event != null) { msg.setHoverEvent(event); }
+        return msg;
+    }
+
+
+    /**
+     * Helper method to handle the [shop types] placeholder.
+     *
+     * @param context The PlaceholderContext instance.
+     * @return A comma-separated list of shop types the player can create.
+     */
+    private TextComponent getShopTypesPlaceholder(PlaceholderContext context) {
+        List<ShopType> typeList = new ArrayList<>(Arrays.asList(ShopType.values()));
+        Player player = context.getPlayer();
+
+        if ((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
+            typeList.remove(ShopType.GAMBLE);
+        }
+
+        if (plugin.usePerms()) {
+            Iterator<ShopType> typeIterator = typeList.iterator();
+            while (typeIterator.hasNext()) {
+                ShopType type = typeIterator.next();
+                if (!player.hasPermission("shop.operator") && !player.hasPermission("shop.create." + type.toString())) {
+                    typeIterator.remove();
+                }
+            }
+        }
+
+        StringBuilder types = new StringBuilder();
+        for (int i = 0; i < typeList.size(); i++) {
+            types.append(typeList.get(i).toCreationWord());
+            if (i < typeList.size() - 1) {
+                types.append(", ");
+            }
+        }
+        return new TextComponent(types.toString());
+    }
+
+    /**
+     * Helper method to handle the [item] placeholder with truncation for signs.
+     *
+     * @param context The PlaceholderContext instance.
+     * @return The item name, potentially truncated to fit sign constraints.
+     */
+    private TextComponent getItemPlaceholder(PlaceholderContext context) {
+        if (context.getShop() == null || context.getShop().getItemStack() == null) {
+            return null;
+        }
+
+        String itemName = plugin.getItemNameUtil().getName(context.getShop().getItemStack());
+        if (!context.isForSign()) {
+            return embedItem(itemName, context.getShop().getItemStack());
+        }
+
+        // Truncate item name if total length exceeds 17
+        int maxLength = 17;
+        int totalLength = itemName.length();
+        if (totalLength > maxLength) {
+            return new TextComponent(itemName.substring(0, maxLength));
+        }
+        return new TextComponent(itemName);
+    }
+
+    /**
+     * Helper method to handle the [barter item] placeholder with truncation for signs.
+     *
+     * @param context The PlaceholderContext instance.
+     * @return The barter item name, potentially truncated to fit sign constraints.
+     */
+    private TextComponent getBarterItemPlaceholder(PlaceholderContext context) {
+        if (context.getShop() == null || context.getShop().getSecondaryItemStack() == null) {
+            return null;
+        }
+
+        if (context.getShop().getType() != ShopType.BARTER) {
+            return null;
+        }
+
+        String itemName = plugin.getItemNameUtil().getName(context.getShop().getSecondaryItemStack());
+        if (!context.isForSign()) {
+            return embedItem(itemName, context.getShop().getSecondaryItemStack());
+        }
+
+        // Truncate item name if total length exceeds 17
+        int maxLength = 17;
+        int totalLength = itemName.length();
+        if (totalLength > maxLength) {
+            return new TextComponent(itemName.substring(0, maxLength));
+        }
+        return new TextComponent(itemName);
     }
 
     public static String getCreationWord(String type) {
