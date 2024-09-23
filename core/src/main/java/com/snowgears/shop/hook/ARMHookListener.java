@@ -46,11 +46,11 @@ public class ARMHookListener implements Listener {
         }
 
         for(UUID shopOwner : shopOwnersToSave) {
-            plugin.getShopHandler().saveShops(shopOwner);
+            plugin.getShopHandler().saveShops(shopOwner, true);
         }
 
         if (shopsDeleted > 0) {
-            plugin.getLogger().log(Level.INFO, "(ARM Hook) Deleted " + shopsDeleted + " Shops inside ARM Region `" + region.getRegion().getId() + "` during region restore");
+            plugin.getLogger().notice("(ARM Hook) Deleted " + shopsDeleted + " Shops inside ARM Region `" + region.getRegion().getId() + "` during region restore");
         }
     }
 }

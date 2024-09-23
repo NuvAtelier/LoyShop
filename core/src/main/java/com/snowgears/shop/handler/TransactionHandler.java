@@ -128,8 +128,10 @@ public class TransactionHandler {
         sendExchangeMessagesAndLog(shop, player, actionType, transaction);
         sendEffects(true, player, shop);
         //make sure to update the shop sign, but only if the sign lines use a variable that requires a refresh (like stock that is dynamically updated)
-        if(shop.getSignLinesRequireRefresh())
+        if(shop.getSignLinesRequireRefresh()){
+            plugin.getLogger().debug("[TransactionHandler.executeTransactionSequence] updateSign");
             shop.updateSign();
+        }
     }
 
     private void sendErrorMessage(Player player, AbstractShop shop, ShopType actionType, Transaction transaction) {

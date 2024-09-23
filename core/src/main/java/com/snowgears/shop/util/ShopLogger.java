@@ -91,14 +91,16 @@
  */
 package com.snowgears.shop.util;
 
+import com.snowgears.shop.Shop;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 public class ShopLogger extends Logger {
+
+    Plugin plugin;
 
     // Custom log levels - Note: must be greater than INFO (800) to show up!
     public static final Level NOTICE = new Level("NOTICE", 700) {};
@@ -106,42 +108,62 @@ public class ShopLogger extends Logger {
     public static final Level DEBUG = new Level("DEBUG", 500) {};
     public static final Level TRACE = new Level("TRACE", 400) {};
     public static final Level SPAM = new Level("SPAM", 300) {};
+    public static final Level HYPER = new Level("HYPER", 100) {};
 
     // ANSI color codes for console output
     private static final String RESET  = "\u001B[0m";
     private static final String BOLD  = "\u001B[1m";
     private static final String RED    = "\u001B[31m";
+    private static final String INTENSE_RED    = "\u001B[91m";
     private static final String YELLOW = "\u001B[33m";
     private static final String GREEN  = "\u001B[32m";
     private static final String BLUE   = "\u001B[34m";
     private static final String PURPLE = "\u001B[35m";
     private static final String CYAN   = "\u001B[36m";
+    private static final String SOFT_PURPLE   = "\u001B[38;5;141m";
+    private static final String CASH_GREEN   = "\u001B[38;5;40m";
+    private static final String CASH_GREEN_BACKGROUND   = "\u001B[48;5;22m";
     private static final String INTENSE_YELLOW   = "\u001B[93m"; // Intense Yellow
     private static final String INTENSE_CYAN   = "\u001B[96m"; // Intense Yellow
     private static final String WHITE  = "\u001B[37m";
     private static final String INTENSE_WHITE  = "\u001B[97m";
 
+    private static final String GREY  = "\u001B[38;5;250m";
+    private static final String DIM_GREY  = "\u001B[38;5;242m";
+    private static final String VERY_DIM_GREY  = "\u001B[38;5;237m";
+    private static final String VERY_VERY_DIM_GREY  = "\u001B[38;5;235m";
+    private static final String ALMOST_BLACK  = "\u001B[38;5;233m";
+
     private boolean enableColor = true;
 
-    public ShopLogger(@NotNull Plugin context) {
-        super(context.getDescription().getName(), null);
+    public ShopLogger(@NotNull Plugin context, boolean colorEnabled) {
+        super(!colorEnabled ? context.getDescription().getName() : INTENSE_WHITE + context.getDescription().getName() + RESET, null);
+        plugin = context;
+        enableColor = colorEnabled;
+
         setParent(context.getServer().getLogger());
         setLevel(Level.ALL);
     }
 
     @Override
     public void log(@NotNull Level level, @NotNull String message) {
-        if (level == Level.INFO) { info(message); }
+
+        if (this.getLogLevel().intValue() > level.intValue()) { return; }
+        // Add color formatting & reroute messages
+        if (level == Level.SEVERE) { severe(message); }
+        else if (level == Level.WARNING) { warning(message); }
+        else if (level == Level.INFO) { info(message); }
         else if (level == NOTICE) { notice(message); }
         else if (level == HELPFUL) { helpful(message); }
         else if (level == DEBUG) { debug(message); }
         else if (level == TRACE) { trace(message); }
         else if (level == SPAM) { spam(message); }
-        // Catch WARNING and SEVERE
+        else if (level == HYPER) { hyper(message); }
+        // Catch some custom unknown log level
         else super.log(level, message);
     }
 
-    public void addPrefixAndLog(Level level, String message) {
+    public void logFilterLevel(Level level, String message) {
         if (this.getLogLevel().intValue() > level.intValue()) { return; }
         super.log(Level.INFO, message);
     }
@@ -150,15 +172,18 @@ public class ShopLogger extends Logger {
         if (!enableColor) return message;
         return color + message + RESET;
     }
-    // Identical to base Logger
-//    public void severe(String message) { log(Level.SEVERE, message); }
-//    public void warning(String message) {  log(Level.WARNING, message); }
-    public void info(String message) { addPrefixAndLog(Level.INFO, addColor(INTENSE_CYAN, message)); }
-    public void notice(String message) { addPrefixAndLog(NOTICE, addColor(INTENSE_WHITE, "[Notice] " + message)); }
-    public void helpful(String message) { addPrefixAndLog(HELPFUL, addColor(YELLOW, "[Helpful] " + message)); }
-    public void debug(String message) { addPrefixAndLog(DEBUG, addColor(CYAN, "[Debug] " + message)); }
-    public void trace(String message) { addPrefixAndLog(TRACE, addColor(PURPLE, "[Trace] " + message)); }
-    public void spam(String message) { addPrefixAndLog(SPAM, addColor(BLUE, "[Spam] " + message)); }
+
+    // Normal Logging functions
+    public void severe(String message) { super.log(Level.SEVERE, addColor(BOLD + INTENSE_RED, message)); }
+    public void warning(String message) { super.log(Level.WARNING, addColor(BOLD + INTENSE_YELLOW, message)); }
+    public void info(String message) { super.log(Level.INFO, addColor(INTENSE_WHITE, message)); }
+    // Additional Log Levels
+    public void notice(String message) { logFilterLevel(NOTICE, addColor(INTENSE_CYAN, "[Notice] " + message)); }
+    public void helpful(String message) { logFilterLevel(HELPFUL, addColor(CYAN, "[Helpful] " + message)); }
+    public void debug(String message) { logFilterLevel(DEBUG, addColor(DIM_GREY, "[Debug] " + message)); }
+    public void trace(String message) { logFilterLevel(TRACE, addColor(VERY_DIM_GREY, "[Trace] " + message)); }
+    public void spam(String message) { logFilterLevel(SPAM, addColor(VERY_VERY_DIM_GREY, "[Spam] " + message)); }
+    public void hyper(String message) { logFilterLevel(SPAM, addColor(ALMOST_BLACK, "[Hyper] " + message)); }
 
     public void setLogLevel(String level) {
         if (level == null) { setLevel(Level.INFO); return; }
@@ -168,6 +193,7 @@ public class ShopLogger extends Logger {
         else if (level.equalsIgnoreCase("debug")) { setLevel(DEBUG); }
         else if (level.equalsIgnoreCase("trace")) { setLevel(TRACE); }
         else if (level.equalsIgnoreCase("spam")) { setLevel(SPAM); }
+        else if (level.equalsIgnoreCase("hyper")) { setLevel(HYPER); }
     }
 
     public Level getLogLevel() {

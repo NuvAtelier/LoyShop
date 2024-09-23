@@ -68,8 +68,8 @@ public class LogHandler {
             return;
         }
 
-        plugin.getLogger().log(Level.INFO, "Shop Database Logging initialized successfully!");
-        plugin.getLogger().log(Level.INFO, "Offline Purchase Notifications are Enabled!");
+        plugin.getLogger().notice("Shop Database Logging initialized successfully!");
+        plugin.getLogger().helpful("Offline Purchase Notifications are Enabled!");
     }
 
     public void defineDataSource(YamlConfiguration shopConfig){
@@ -87,7 +87,7 @@ public class LogHandler {
             return;
         }
 
-        plugin.getLogger().log(Level.INFO, "Starting Database (" + type + ") to track purchases and Shop actions!");
+        plugin.getLogger().debug("Starting Database (" + type + ") to track purchases and Shop actions!");
 
         if(type.equalsIgnoreCase("MYSQL")){
             dataSource = new HikariDataSource();
@@ -380,7 +380,7 @@ public class LogHandler {
             }
             else{
                 enabled = true;
-                plugin.getLogger().log(Level.INFO,"Established connection to database.");
+                plugin.getLogger().debug("Established connection to database.");
                 conn.close();
             }
         }
@@ -414,7 +414,7 @@ public class LogHandler {
             stmt.close();
         }
         conn.close();
-        plugin.getLogger().log(Level.INFO,"Successfully initialized database.");
+        plugin.getLogger().debug("Successfully initialized database.");
     }
 
     public void execute(final PreparedStatement preparedStatement) {

@@ -352,9 +352,12 @@ public abstract class AbstractDisplay {
         this.setType(cycle[index], true);
         this.spawn(player);
         Shop.getPlugin().getShopHandler().addActiveShopDisplay(player, this.shopSignLocation);
-        getShop().updateSign();
+        Shop.getPlugin().getLogger().debug("[AbstractDisplay.cycleType] updateSign");
 
-        Shop.getPlugin().getShopHandler().saveShops(getShop().getOwnerUUID());
+//        getShop().updateSign();
+        getShop().setNeedsSave(true);
+        // We save upon shutdown now
+//        Shop.getPlugin().getShopHandler().saveShops(getShop().getOwnerUUID());
     }
 
     public void remove(Player player) {

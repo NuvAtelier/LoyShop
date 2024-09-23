@@ -23,17 +23,16 @@ public class BuyShop extends AbstractShop {
 
     @Override
     protected int calculateStock(){
-        // Reset stock to start with
-        stock = 0;
-
         if(this.isAdmin) {
             stock = Integer.MAX_VALUE;
+            return stock;
         }
         else {
             double funds = EconomyUtils.getFunds(this.getOwner(), this.getInventory());
-            if (this.getPrice() == 0)
+            if (this.getPrice() == 0) {
                 stock = Integer.MAX_VALUE;
-            else{
+                return stock;
+            } else {
                 // Check if the player has enough funds to cover a full transaction
                 stock = (int) Math.floor(funds / this.getPrice());
                 // If the player doesn't have enough funds for a full transaction, see if they can accept a partial one

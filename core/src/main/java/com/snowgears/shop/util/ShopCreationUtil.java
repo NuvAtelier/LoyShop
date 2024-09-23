@@ -221,6 +221,7 @@ public class ShopCreationUtil {
             }
 
             plugin.getShopHandler().addShop(shop);
+            Shop.getPlugin().getLogger().debug("[ShopCreationUtil.createShop] updateSign");
             shop.updateSign();
         }
         return shop;
@@ -228,12 +229,15 @@ public class ShopCreationUtil {
 
     public void sendCreationSuccess(Player player, AbstractShop shop){
         shop.getDisplay().spawn(player);
+        Shop.getPlugin().getLogger().debug("[ShopCreationUtil.sendCreationSuccess] updateSign");
         shop.updateSign();
+        shop.setNeedsSave(true);
         String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
         if(message != null && !message.isEmpty())
             player.sendMessage(message);
         Shop.getPlugin().getTransactionHelper().sendEffects(true, player, shop);
-        Shop.getPlugin().getShopHandler().saveShops(shop.getOwnerUUID());
+        // Save the shop to disk
+        Shop.getPlugin().getShopHandler().saveShops(shop.getOwnerUUID(), true);
     }
 
     public boolean itemsCanBeInitialized(Player player, ItemStack itemStack, ItemStack barterItemStack){

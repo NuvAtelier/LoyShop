@@ -33,6 +33,7 @@ import static com.snowgears.shop.util.UtilMethods.isMCVersion17Plus;
 
 public abstract class AbstractShop {
 
+    protected boolean needsSave = false;
     protected Location signLocation;
     protected Location chestLocation;
     protected BlockFace facing;
@@ -136,7 +137,7 @@ public abstract class AbstractShop {
                 }
                 this.setGuiIcon();
                 // Stock is recalculated in setGuiIcon
-                this.updateSign();
+//                this.updateSign();
                 Shop.getPlugin().getLogger().trace("Loaded shop: " + this);
                 return true;
             } catch (ClassCastException cce) {
@@ -151,10 +152,19 @@ public abstract class AbstractShop {
         }
     }
 
+    public boolean needsSave() {
+        return needsSave;
+    }
+
+    public void setNeedsSave(boolean shouldSave) {
+        needsSave = shouldSave;
+    }
+
     //abstract methods that must be implemented in each shop subclass
 
     protected int calculateStock() {
         if(this.isAdmin) {
+            // There is always stock in the admin shop!
             stock = Integer.MAX_VALUE;
             return stock;
         }
@@ -188,12 +198,15 @@ public abstract class AbstractShop {
         // Update sign if needed
         if(stock != oldStock){
             signLinesRequireRefresh = true;
+            Shop.getPlugin().getLogger().debug("[AbstractShop.updateStock] updateSign, new stock != oldStock! newStock: " + stock + " old stock: " + oldStock + "\n" + this);
             this.updateSign();
 
             //also set marker in here if using a marker integration
             if(Shop.getPlugin().getBluemapHookListener() != null) {
                 Shop.getPlugin().getBluemapHookListener().updateMarker(this);
             }
+
+            needsSave = true;
         }
     }
 
@@ -395,7 +408,7 @@ public abstract class AbstractShop {
     }
 
     public void setGuiIcon(){
-        this.updateStock();
+        if (!this.isAdmin) this.updateStock();
 
         if(this.type != ShopType.GAMBLE) {
             if (this.getItemStack() == null)
@@ -453,6 +466,9 @@ public abstract class AbstractShop {
     }
 
     public void updateSign() {
+        // If we don't need to update the lines, then don't update them!
+        if (!signLinesRequireRefresh) { return; }
+
         signLines = ShopMessage.getSignLines(this, this.type);
 
         Shop.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(Shop.getPlugin(), new Runnable() {
@@ -607,7 +623,7 @@ public abstract class AbstractShop {
                 (isAdmin ? ", isAdmin=" + isAdmin : "") +
                 ", stock=" + stock +
                 ", owner=" + owner +
-                ", chestLocation=" + chestLocation.getWorld().getName() + ":" + chestLocation.getBlockX() + "/" + chestLocation.getBlockY() + "/" + chestLocation.getBlockZ() +
+                ", chestLocation=" + ((chestLocation != null) ? chestLocation.getWorld().getName() + ":" + chestLocation.getBlockX() + "/" + chestLocation.getBlockY() + "/" + chestLocation.getBlockZ() : "null") +
                 '}';
     }
 }

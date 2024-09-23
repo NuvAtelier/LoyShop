@@ -47,7 +47,7 @@ public class WorldGuardHook {
     private static class Internal {
 
         public static void registerAllowShopFlag() {
-            Bukkit.getLogger().log(Level.INFO,"Registering WorldGuard flag '" + FLAG_ALLOW_SHOP + "'.");
+            Shop.getPlugin().getLogger().debug("Registering WorldGuard flag '" + FLAG_ALLOW_SHOP + "'.");
             try {
                 StateFlag allowShopFlag = new StateFlag(FLAG_ALLOW_SHOP, false);
                 WorldGuard.getInstance().getFlagRegistry().register(allowShopFlag);

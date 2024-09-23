@@ -240,6 +240,7 @@ public class MiscListener implements Listener {
                     }
                 }
                 event.setCancelled(true); //cancel event regardless
+                Shop.getPlugin().getLogger().debug("[MiscListener.onPreShopSignClick] updateSign");
                 shop.updateSign();
             }
             else if(plugin.getShopHandler().isChest(clicked)){
@@ -539,6 +540,7 @@ public class MiscListener implements Listener {
             if(plugin.getDestroyShopRequiresSneak()){
                 if(!player.isSneaking()){
                     event.setCancelled(true);
+                    Shop.getPlugin().getLogger().debug("[MiscListener.shopDestroy : getDestroyShopRequiresSneak] updateSign");
                     shop.updateSign();
                     return;
                 }
@@ -604,7 +606,7 @@ public class MiscListener implements Listener {
                     player.sendMessage(message);
                 // We already log on ShopActionType.DESTROY in the Log Handler, so don't log the shop destroy reason
                 shop.delete();
-                plugin.getShopHandler().saveShops(shop.getOwnerUUID());
+                plugin.getShopHandler().saveShops(shop.getOwnerUUID(), true);
 
                 return;
             }
@@ -634,7 +636,7 @@ public class MiscListener implements Listener {
                     if(message != null && !message.isEmpty())
                         player.sendMessage(message);
                     shop.delete();
-                    plugin.getShopHandler().saveShops(shop.getOwnerUUID());
+                    plugin.getShopHandler().saveShops(shop.getOwnerUUID(), true);
                 } else
                     event.setCancelled(true);
             }

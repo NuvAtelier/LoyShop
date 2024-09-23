@@ -181,8 +181,10 @@ public class DisplayListener implements Listener {
                 shop.setGuiIcon();
 
                 //if the sign lines use a variable that requires a refresh (like stock that is dynamically updated), then refresh sign
-                if(shop.getSignLinesRequireRefresh())
+                if(shop.getSignLinesRequireRefresh()) {
+                    plugin.getLogger().debug("[DisplayListener.onShopInventoryClose] updateSign");
                     shop.updateSign();
+                }
 
                 //make sure to set gamble item again if player set it to new custom items
                 if(shop.getType() == ShopType.GAMBLE){
@@ -202,8 +204,10 @@ public class DisplayListener implements Listener {
                 shop.setGuiIcon();
 
                 //if the sign lines use a variable that requires a refresh (like stock that is dynamically updated), then refresh sign
-                if(shop.getSignLinesRequireRefresh())
+                if(shop.getSignLinesRequireRefresh()) {
+                    Shop.getPlugin().getLogger().debug("[DisplayListener.onShopInventoryClose #2] updateSign");
                     shop.updateSign();
+                }
 
                 //make sure to set gamble item again if player set it to new custom items
                 if(shop.getType() == ShopType.GAMBLE){
@@ -228,8 +232,10 @@ public class DisplayListener implements Listener {
                 shop.setGuiIcon();
 
                 //if the sign lines use a variable that requires a refresh (like stock that is dynamically updated), then refresh sign
-                if(shop.getSignLinesRequireRefresh())
+                if(shop.getSignLinesRequireRefresh()) {
+                    Shop.getPlugin().getLogger().debug("[DisplayListener.onShopInventoryClos #3] updateSign");
                     shop.updateSign();
+                }
 
                 //make sure to set gamble item again if player set it to new custom items
                 if(shop.getType() == ShopType.GAMBLE){
