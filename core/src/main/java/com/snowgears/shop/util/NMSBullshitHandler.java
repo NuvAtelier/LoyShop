@@ -20,6 +20,7 @@ public class NMSBullshitHandler {
     private Class<?> craftItemStackClass;
     private Class<?> craftWorldClass;
     private Class<?> craftPlayerClass;
+    private Class<?> craftChatMessageClass;
     private Class<?> enumDirectionClass;
 
     public NMSBullshitHandler(Shop plugin){
@@ -46,6 +47,7 @@ public class NMSBullshitHandler {
 
         try {
             this.craftItemStackClass = Class.forName(mcVersion + ".inventory.CraftItemStack");
+            this.craftChatMessageClass = Class.forName(mcVersion + ".util.CraftChatMessage");
             // Server Version will be 0 for Paper
             if (Math.floor(this.getServerVersion()) >= 117.0D || this.getServerVersion() == 0) {
                 this.craftWorldClass = Class.forName(mcVersion + ".CraftWorld");
@@ -53,9 +55,9 @@ public class NMSBullshitHandler {
 
                 // java.lang.ClassNotFoundException: net.minecraft.server.v1_17_R1.ItemStack
 
-                Shop.getPlugin().getLogger().log(Level.FINE, "CraftItemStack: " + this.craftItemStackClass.toString());
-                Shop.getPlugin().getLogger().log(Level.FINE, "CraftWorld: " + this.craftWorldClass.toString());
-                Shop.getPlugin().getLogger().log(Level.FINE, "CraftPlayer: " + this.craftPlayerClass.toString());
+                Shop.getPlugin().getLogger().spam("CraftItemStack: " + this.craftItemStackClass.toString());
+                Shop.getPlugin().getLogger().spam("CraftWorld: " + this.craftWorldClass.toString());
+                Shop.getPlugin().getLogger().spam("CraftPlayer: " + this.craftPlayerClass.toString());
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -77,6 +79,15 @@ public class NMSBullshitHandler {
 
     public Class<?> getCraftPlayerClass() {
         return craftPlayerClass;
+    }
+
+    public net.minecraft.network.chat.Component getFormattedChatMessage(String text) {
+        try {
+            Method chatMessageFromString = craftChatMessageClass.getMethod("fromStringOrNull", String.class);
+            return (net.minecraft.network.chat.Component) chatMessageFromString.invoke(chatMessageFromString.getClass(), text);
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public net.minecraft.world.item.ItemStack getMCItemStack(ItemStack is) {

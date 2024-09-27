@@ -213,15 +213,16 @@ public abstract class AbstractDisplay {
                 if (tagLine.contains("[lshift]")) {
                     asTagLocation = asTagLocation.add(getLargeItemBarterOffset(false));
                     asTagLocation = asTagLocation.add(getLargeItemBarterOffset(false));
-                    tagLine = tagLine.replace("[lshift]", "");
+//                    tagLine = tagLine.replace("[lshift]", "");
                 }
                 if (tagLine.contains("[rshift]")) {
                     asTagLocation = asTagLocation.add(getLargeItemBarterOffset(true));
                     asTagLocation = asTagLocation.add(getLargeItemBarterOffset(true));
-                    tagLine = tagLine.replace("[rshift]", "");
+//                    tagLine = tagLine.replace("[rshift]", "");
                 }
 
                 asTagLocation = asTagLocation.add(0, verticalAddition, 0);
+                Shop.getPlugin().getLogger().debug("[Display] Adding tag line: " + tagLine, true);
                 createTagEntity(player, tagLine, asTagLocation);
                 verticalAddition += 0.3;
             }

@@ -7,7 +7,6 @@ import com.snowgears.shop.util.NMSBullshitHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Rotations;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.*;
 import net.minecraft.server.level.ServerLevel;
@@ -75,7 +74,7 @@ public class Display extends AbstractDisplay {
         armorStand.setYRot((float)(armorStandData.getYaw()));
 
         if(text != null) {
-            armorStand.setCustomName(Component.literal(text));
+            armorStand.setCustomName(nmsHelper.getFormattedChatMessage(text));
             this.addDisplayTag(player, armorStand.getId());
         }
         else{
