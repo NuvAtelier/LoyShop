@@ -776,7 +776,7 @@ public class ShopMessage {
             formattedLine = formatMessage(line, shop, null, false);
 //            formattedLine = ChatColor.translateAlternateColorCodes('&', formattedLine);
 
-            if(!ChatColor.stripColor(formattedLine).isEmpty())
+            if(!ChatColor.stripColor(formattedLine).trim().isEmpty())
                 formattedLines.add(formattedLine);
         }
         return formattedLines;
