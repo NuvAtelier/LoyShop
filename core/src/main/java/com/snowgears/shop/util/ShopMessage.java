@@ -31,9 +31,10 @@ public class ShopMessage {
 
     private static final Map<String, Function<PlaceholderContext, TextComponent>> placeholders = new HashMap<>();
     // Regex pattern to identify placeholders within square brackets, e.g., [owner]
-    private static final String COLOR_CODE_REGEX = "(&[0-9A-FK-ORa-fk-or])";
-    private static final String PLACEHOLDER_REGEX = "(\\[[^\\]]+\\])|([^&\\[]+)";
-    private static final String MESSAGE_PARTS_REGEX = COLOR_CODE_REGEX + "|" + PLACEHOLDER_REGEX + "|.?";
+    private static final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORa-fk-or])";
+    private static final String HEX_CODE_REGEX = "#[0-9a-fA-F]{6}";
+    private static final String PLACEHOLDER_REGEX = "(\\[[^\\[\\]]+\\])|([^&\\[]+)";
+    private static final String MESSAGE_PARTS_REGEX = COLOR_CODE_REGEX + "|" + HEX_CODE_REGEX + "|" + PLACEHOLDER_REGEX + "|.";
 
     private static HashMap<String, String> messageMap = new HashMap<String, String>();
     private static HashMap<String, String[]> shopSignTextMap = new HashMap<String, String[]>();
@@ -118,7 +119,7 @@ public class ShopMessage {
 
         // Define the regex pattern
 //        MESSAGE_PARTS_REGEX
-        Matcher matcher = Pattern.compile("([&§][0-9A-FK-ORa-fk-or])|(\\[[^\\[\\]]+\\])|([^&\\[]+)|.").matcher(message);
+        Matcher matcher = Pattern.compile(MESSAGE_PARTS_REGEX).matcher(message);
         List<String> parts = new ArrayList<>();
         while (matcher.find()) {
             parts.add(matcher.group());
@@ -131,10 +132,13 @@ public class ShopMessage {
             TextComponent partComponent = new TextComponent(part);
 
             // Check if we are a color code
-            if (part.matches(COLOR_CODE_REGEX)) {
+            if (part.matches(COLOR_CODE_REGEX) || part.matches(HEX_CODE_REGEX)) {
                 try {
-                    char abc;
-                    ChatColor newColor = ChatColor.getByChar(part.charAt(1));
+                    ChatColor newColor = null;
+                    if (part.matches(HEX_CODE_REGEX)) { newColor = ChatColor.of(part); }
+                    else if (part.matches(COLOR_CODE_REGEX)) {
+                        newColor = ChatColor.getByChar(part.charAt(1));
+                    }
                     if (newColor != null) {
                         latestColor = newColor;
                     }
