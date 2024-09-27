@@ -36,9 +36,7 @@ public class CommandHandler extends BukkitCommand {
     }
 
     private void sendCommandMessage(String subType, Player player) {
-        String message = ShopMessage.getMessage("command", subType, null, player);
-        if(message != null && !message.isEmpty())
-            player.sendMessage(message);
+        ShopMessage.sendMessage("command", subType, player, null);
     }
 
     @Override

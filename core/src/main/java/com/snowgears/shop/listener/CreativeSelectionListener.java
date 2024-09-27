@@ -70,27 +70,21 @@ public class CreativeSelectionListener implements Listener {
                 String message = null;
                 if (!player.getUniqueId().equals(shop.getOwnerUUID())) {
                     if((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
-                        message = ShopMessage.getMessage("interactionIssue", "initialize", shop, player);
-                        if(message != null && !message.isEmpty())
-                            player.sendMessage(message);
+                        ShopMessage.sendMessage("interactionIssue", "initialize", player, shop);
                         plugin.getTransactionHelper().sendEffects(false, player, shop);
                         event.setCancelled(true);
                         return;
                     }
                 }
                 if (shop.getType() == ShopType.BARTER && shop.getItemStack() == null) {
-                    message = ShopMessage.getMessage("interactionIssue", "noItem", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
+                    ShopMessage.sendMessage("interactionIssue", "noItem", player, shop);
                     event.setCancelled(true);
                     return;
                 }
 
                 if (player.getInventory().getItemInMainHand().getType() == Material.AIR) {
                     if (shop.getType() == ShopType.SELL) {
-                        message = ShopMessage.getMessage("interactionIssue", "noItem", shop, player);
-                        if(message != null && !message.isEmpty())
-                            player.sendMessage(message);
+                        ShopMessage.sendMessage("interactionIssue", "noItem", player, shop);
                     } else {
                         if ((shop.getType() == ShopType.BARTER && shop.getItemStack() != null && shop.getSecondaryItemStack() == null)
                                 || shop.getType() == ShopType.BUY || shop.getType() == ShopType.COMBO) {
@@ -255,23 +249,13 @@ public class CreativeSelectionListener implements Listener {
                         if(currentProcess.getStep() == ITEM){
                             currentProcess.setItemStack(event.getCursor());
                             currentProcess.setShopType(ShopType.BUY);
-
-                            String message = ShopMessage.getUnformattedMessage(currentProcess.getShopType().toString(), "createHitChestAmount");
-                            message = ShopMessage.formatMessage(message, currentProcess, player);
-                            if (message != null && !message.isEmpty())
-                                player.sendMessage(message);
-
+                            ShopMessage.sendMessage(currentProcess.getShopType().toString(), "createHitChestAmount", currentProcess, player);
                             removePlayerFromCreativeSelection(player);
                         }
                         //they just hit a chest with an open hand when creating a barter shop and need choose a barter item from creative selection
                         else if(currentProcess.getStep() == ShopCreationProcess.ChatCreationStep.BARTER_ITEM){
                             currentProcess.setBarterItemStack(event.getCursor());
-
-                            String message = ShopMessage.getUnformattedMessage(currentProcess.getShopType().toString(), "createHitChestBarterAmount");
-                            message = ShopMessage.formatMessage(message, currentProcess, player);
-                            if (message != null && !message.isEmpty())
-                                player.sendMessage(message);
-
+                            ShopMessage.sendMessage(currentProcess.getShopType().toString(), "createHitChestBarterAmount", currentProcess, player);
                             removePlayerFromCreativeSelection(player);
                         }
                     }
@@ -343,15 +327,15 @@ public class CreativeSelectionListener implements Listener {
 
     private void sendPlayerLockedMessages(Player player, PlayerData playerData){
         if(playerData.isGuiSearch()){
-            for (String message : ShopMessage.getMessageList("guiSearchSelection", "enter", null, null)) {
+            for (String message : ShopMessage.getUnformattedMessageList("guiSearchSelection", "enter")) {
                 if (message != null && !message.isEmpty())
-                    player.sendMessage(message);
+                    ShopMessage.sendMessage(message, player);
             }
         }
         else {
-            for (String message : ShopMessage.getMessageList("creativeSelection", "enter", null, null)) {
+            for (String message : ShopMessage.getUnformattedMessageList("creativeSelection", "enter")) {
                 if (message != null && !message.isEmpty())
-                    player.sendMessage(message);
+                    ShopMessage.sendMessage(message, player);
             }
         }
     }

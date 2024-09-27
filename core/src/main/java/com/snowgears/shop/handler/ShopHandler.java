@@ -765,7 +765,7 @@ public class ShopHandler {
                     shopNumber++;
                 }
             }
-            plugin.getLogger().trace("    built config to save... \n" + config.saveToString());
+            plugin.getLogger().spam("    built config to save... \n" + config.saveToString());
             config.save(currentFile);
             plugin.getLogger().helpful("Saved " + shopNumber + " Shops for Player " + playerName + " to file: " + currentFile);
             return shopNumber;

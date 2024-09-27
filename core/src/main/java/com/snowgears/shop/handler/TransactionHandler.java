@@ -29,9 +29,7 @@ public class TransactionHandler {
         Player player = event.getPlayer();
 
         if(shop.isPerformingTransaction()) {
-            String message = ShopMessage.getMessage("interactionIssue", "useShopAlreadyInUse", shop, player);
-            if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+            ShopMessage.sendMessage("interactionIssue", "useShopAlreadyInUse", player, shop);
             event.setCancelled(true);
             return;
         }
@@ -43,9 +41,7 @@ public class TransactionHandler {
 
         //check that player can use the shop if it is in a WorldGuard region
         if(!canUseShopInRegion){
-            String message = ShopMessage.getMessage("interactionIssue", "regionRestriction", null, player);
-            if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+            ShopMessage.sendMessage("interactionIssue", "regionRestriction", player, shop);
             event.setCancelled(true);
             return;
         }
@@ -66,9 +62,7 @@ public class TransactionHandler {
 
             if (plugin.usePerms() && !(player.hasPermission("shop.use."+shop.getType().toString().toLowerCase()) || player.hasPermission("shop.use"))) {
                 if (!player.hasPermission("shop.operator")) {
-                    String message = ShopMessage.getMessage("permission", "use", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
+                    ShopMessage.sendMessage("permission", "use", player, shop);
                     return;
                 }
             }
@@ -94,9 +88,7 @@ public class TransactionHandler {
                 executeTransactionSequence(player, shop, shop.getType(), fullStackOrder);
             }
         } else {
-            String message = ShopMessage.getMessage("interactionIssue", "useOwnShop", shop, player);
-            if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+            ShopMessage.sendMessage("interactionIssue", "useOwnShop", player, shop);
             sendEffects(false, player, shop);
         }
         event.setCancelled(true);
@@ -145,16 +137,14 @@ public class TransactionHandler {
                         ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_STOCK);
 
                         if (guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON) {
-                            String ownerMessage = ShopMessage.getMessage(actionType.toString(), "ownerNoStock", shop, owner);
-                            if (ownerMessage != null && !ownerMessage.isEmpty())
-                                owner.sendMessage(ownerMessage);
+                            ShopMessage.sendMessage(actionType.toString(), "ownerNoStock", owner, shop);
                         }
                     }
                 }
-                message = ShopMessage.getMessage(actionType.toString(), "shopNoStock", shop, player);
+                message = ShopMessage.getUnformattedMessage(actionType.toString(), "shopNoStock");
                 break;
             case INSUFFICIENT_FUNDS_PLAYER:
-                message = ShopMessage.getMessage(actionType.toString(), "playerNoStock", shop, player);
+                message = ShopMessage.getUnformattedMessage(actionType.toString(), "playerNoStock");
                 break;
             case INVENTORY_FULL_SHOP:
                 if (!shop.isAdmin()) {
@@ -164,22 +154,20 @@ public class TransactionHandler {
                         ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_STOCK);
 
                         if (guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON) {
-                            String ownerMessage = ShopMessage.getMessage(actionType.toString(), "ownerNoSpace", shop, owner);
-                            if (ownerMessage != null && !ownerMessage.isEmpty())
-                                owner.sendMessage(ownerMessage);
+                            ShopMessage.sendMessage(actionType.toString(), "ownerNoSpace", owner, shop);
                         }
                     }
                 }
-                message = ShopMessage.getMessage(actionType.toString(), "shopNoSpace", shop, player);
+                message = ShopMessage.getUnformattedMessage(actionType.toString(), "shopNoSpace");
                 break;
             case INVENTORY_FULL_PLAYER:
-                message = ShopMessage.getMessage(actionType.toString(), "playerNoSpace", shop, player);
+                message = ShopMessage.getUnformattedMessage(actionType.toString(), "playerNoSpace");
                 break;
         }
 
         // Since there was an error during the transaction, send the message, then exit the transaction early.
         if (message != null && !message.isEmpty())
-            player.sendMessage(message);
+            ShopMessage.sendMessage(message, player, shop);
         sendEffects(false, player, shop);
     }
 
@@ -192,7 +180,6 @@ public class TransactionHandler {
         if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_USER_ON) {
             if(message != null && !message.isEmpty()) {
                 ShopMessage.sendMessage(message, player, shop);
-//                player.sendMessage(message);
             }
         }
 
@@ -203,7 +190,7 @@ public class TransactionHandler {
             guiIcon = plugin.getGuiHandler().getIconFromOption(owner, PlayerSettings.Option.NOTIFICATION_SALE_OWNER);
             if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_OWNER_ON) {
                 if(message != null && !message.isEmpty())
-                    ShopMessage.embedAndSendHoverItemsMessage(message, owner, transaction.getItems());
+                    ShopMessage.sendMessage(message, owner, shop);
 //                    owner.sendMessage(message);
             }
         }
@@ -228,7 +215,8 @@ public class TransactionHandler {
             int amount = (int) transaction.getPrice();
             message = message.replace("[barter item amount]", "" + amount);
         }
-        message = ShopMessage.formatMessage(message, shop, player, false);
+        // We format the message when we send it to the player now using ShopMessage.sendMessage(message, player, shop)
+//        message = ShopMessage.formatMessage(message, shop, player, false);
         return message;
     }
 

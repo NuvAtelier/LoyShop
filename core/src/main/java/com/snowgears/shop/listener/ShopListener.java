@@ -6,6 +6,11 @@ import com.snowgears.shop.hook.WorldGuardHook;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.*;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -146,9 +151,7 @@ public class ShopListener implements Listener {
 
                 //check that player can use the shop if it is in a WorldGuard region
                 if(!canUseShopInRegion){
-                    String message = ShopMessage.getMessage("interactionIssue", "regionRestriction", null, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
+                    ShopMessage.sendMessage("interactionIssue", "regionRestriction", player, null);
                     event.setCancelled(true);
                     return;
                 }
@@ -197,10 +200,7 @@ public class ShopListener implements Listener {
                             //we are cancelling this event regardless so no need to check if the action was performed
 
                         } else {
-                            String message = ShopMessage.getMessage(shop.getType().toString(), "opOpen", shop, player);
-                            if(message != null && !message.isEmpty())
-                                player.sendMessage(message);
-
+                            ShopMessage.sendMessage(shop.getType().toString(), "opOpen", player, shop);
                         }
                     } else {
                         event.setCancelled(true);
@@ -393,9 +393,9 @@ public class ShopListener implements Listener {
                                         Map<ItemStack, Integer> allItems = new HashMap<>();
                                         allItems.putAll(offlineTransactions.getItemsSold());
                                         allItems.putAll(offlineTransactions.getItemsBought());
+                                        // @TODO: Add item map into PlaceholderContext
                                         ShopMessage.embedAndSendHoverItemsMessage(message, player, allItems);
                                     }
-//                                        player.sendMessage(message);
                                 }
                             }
                             transactionsWhileOffline.remove(player.getUniqueId());

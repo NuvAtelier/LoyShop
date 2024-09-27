@@ -36,6 +36,16 @@ public class UtilMethods {
 
     private static ArrayList<Material> nonIntrusiveMaterials = new ArrayList<Material>();
 
+    public static String trimForSign(String text) {
+        // Check if we can fit on a sign, max length is 17.
+        int maxLength = 17;
+        int totalLength = text.length();
+        if (totalLength > maxLength) {
+            return text.substring(0, maxLength);
+        }
+        return text;
+    }
+
     //this is used for formatting numbers like 5000 to 5k
     public static String formatLongToKString(double value, boolean formatZeros) {
         //Long.MIN_VALUE == -Long.MIN_VALUE so we need an adjustment here

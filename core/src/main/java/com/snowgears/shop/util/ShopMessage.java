@@ -85,21 +85,23 @@ public class ShopMessage {
      * @return The replacement string or an empty string if replacement fails
      */
     public static TextComponent replacePlaceholder(String placeholder, PlaceholderContext context) {
-        plugin.getLogger().trace("[ShopMessage.replacePlaceholder] Attempting to replace placeholder: " + placeholder + " " + context);
+        plugin.getLogger().spam("[ShopMessage.replacePlaceholder] Attempting to replace placeholder: " + placeholder + " " + context);
         Function<PlaceholderContext, TextComponent> valueFunction = placeholders.get(placeholder.toLowerCase());
         if (valueFunction != null) {
             try {
-                plugin.getLogger().trace("[ShopMessage.replacePlaceholder]     Running placeholder function... " + placeholder);
+                plugin.getLogger().spam("[ShopMessage.replacePlaceholder]     Running placeholder function... " + placeholder);
                 TextComponent message = valueFunction.apply(context);
-                plugin.getLogger().trace("[ShopMessage.replacePlaceholder]  *** placeholder replaced message:  " + message);
-                if (message != null) return message;
+                if (message != null) {
+                    plugin.getLogger().trace("[ShopMessage.replacePlaceholder]  *** placeholder " + placeholder + "  value: " + message);
+                    return message;
+                }
             } catch (Exception e) {
                 // Log the exception
                 Bukkit.getLogger().warning("Error replacing placeholder [" + placeholder + "]: " + e.getMessage());
             }
         }
         // If placeholder not found, remove the placeholder and just return an empty string
-        plugin.getLogger().trace("[ShopMessage.replacePlaceholder] *** returning empty string, unable to get function to replace placeholder: " + placeholder);
+        plugin.getLogger().spam("[ShopMessage.replacePlaceholder] *** returning empty string, unable to get function to replace placeholder: " + placeholder);
         return new TextComponent("");
     }
 
@@ -111,7 +113,7 @@ public class ShopMessage {
      * @return The formatted message with all placeholders replaced
      */
     public static TextComponent format(String message, PlaceholderContext context) {
-        plugin.getLogger().spam("[ShopMessage.format] raw input: \n" + message);
+        plugin.getLogger().debug("[ShopMessage] pre-format: " + ChatColor.translateAlternateColorCodes('&', message), true);
         TextComponent formattedMessage = new TextComponent("");
 
         // Define the regex pattern
@@ -125,7 +127,7 @@ public class ShopMessage {
         ChatColor latestColor = null;
         for (String part : parts) {
             plugin.getLogger().spam("\n\n");
-            plugin.getLogger().trace("[ShopMessage.format] part: " + part + "\n");
+            plugin.getLogger().trace("[ShopMessage.format] part: " + part);
             TextComponent partComponent = new TextComponent(part);
 
             // Check if we are a color code
@@ -147,7 +149,7 @@ public class ShopMessage {
 
             // If we match to a placeholder, then we want to use it's TextComponent instead of the "normal" one
             if (part.matches(PLACEHOLDER_REGEX)) {
-                plugin.getLogger().spam("[ShopMessage.format]     matched PLACEHOLDER_REGEX: " + part);
+                plugin.getLogger().hyper("[ShopMessage.format]     matched PLACEHOLDER_REGEX: " + part);
                 plugin.getLogger().spam("[ShopMessage.format]     is part placeholder? " + (placeholders.get(part) != null));
                 if (placeholders.get(part) != null) {
                     plugin.getLogger().spam("[ShopMessage.format]     replacing placeholder... " + part);
@@ -167,26 +169,55 @@ public class ShopMessage {
             plugin.getLogger().spam("[ShopMessage.format] *** add part TextComponent to main message: " + partComponent);
         }
 
-        plugin.getLogger().spam("[ShopMessage.format] return formattedMessage: \n" + formattedMessage.toLegacyText());
+        plugin.getLogger().debug("[ShopMessage] postFormat: " + formattedMessage.toLegacyText(), true);
         return formattedMessage;
     }
 
     /**
-     * Translates color codes using Bukkit's ChatColor.
-     *
-     * @param message The message with color codes (e.g., &a, &7)
-     * @return The message with color codes translated to Bukkit's format
+     * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
      */
-    public String translateColorCodes(String message) {
-        return ChatColor.translateAlternateColorCodes('&', message);
+    public static void sendMessage(String message, Player player, PlaceholderContext context) {
+        TextComponent fancyMessage = format(message, context);
+        player.spigot().sendMessage(fancyMessage);
+    }
+
+    /**
+     * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
+     */
+    public static void sendMessage(String message, Player player) {
+        sendMessage(message, player, new PlaceholderContext(null, player, false, null, null));
+    }
+
+    /**
+     * Loads message, swaps in placeholder values, sends fancy message with Click/Hover events to Player
+     */
+    public static void sendMessage(String key, String subkey, Player player, AbstractShop shop) {
+        String message = getUnformattedMessage(key, subkey);
+        if(message != null && !message.isEmpty())
+            sendMessage(message, player, shop);
+    }
+
+    /**
+     * Loads message, swaps in placeholder values, sends fancy message with Click/Hover events to Player
+     */
+    public static void sendMessage(String key, String subkey, ShopCreationProcess process, Player player) {
+        String message = getUnformattedMessage(key, subkey);
+        if(message != null && !message.isEmpty())
+            sendMessage(message, player, new PlaceholderContext(null, player, false, null, process));
     }
 
     /**
      * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
      */
     public static void sendMessage(String message, Player player, AbstractShop shop) {
-        TextComponent fancyMessage = format(message, new PlaceholderContext(shop, player, false));
-        player.spigot().sendMessage(fancyMessage);
+        sendMessage(message, player, new PlaceholderContext(shop, player, false, null, null));
+    }
+
+    /**
+     * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
+     */
+    public static void sendMessage(String message, ShopCreationProcess process, Player player) {
+        sendMessage(message, player, new PlaceholderContext(null, player, false, null, process));
     }
 
     /**
@@ -196,18 +227,37 @@ public class ShopMessage {
     public static void loadPlaceholders() {
         registerPlaceholder("[plugin]", context -> new TextComponent(plugin.getCommandAlias()));
         registerPlaceholder("[server name]", context -> new TextComponent(ShopMessage.getServerDisplayName()));
-        registerPlaceholder("[owner]", context -> new TextComponent(context.getShop().isAdmin() ? ShopMessage.getServerDisplayName() : context.getShop().getOwnerName()));
         registerPlaceholder("[player]", context -> { Player player = context.getPlayer(); return new TextComponent((player != null) ? player.getName() : ""); });
         registerPlaceholder("[user]", context -> new TextComponent(context.getPlayer().getName()));
-        registerPlaceholder("[world]", context -> new TextComponent(context.getShop().getSignLocation().getWorld().getName()));
-        registerPlaceholder("[shop type]", context -> new TextComponent(ShopMessage.getCreationWord(context.getShop().getType().toString().toUpperCase())));
+        registerPlaceholder("[shop type]", context -> {
+            if (context.getProcess() != null && context.getProcess().getShopType() != null) return new TextComponent(context.getProcess().getShopType().toString());
+            return new TextComponent(ShopMessage.getCreationWord(context.getShop().getType().toString().toUpperCase()));
+        });
         registerPlaceholder("[shop types]", ShopMessage::getShopTypesPlaceholder);
         registerPlaceholder("[total shops]", context -> new TextComponent(String.valueOf(plugin.getShopHandler().getNumberOfShops())));
 
         // Player Info Placeholders
+        registerPlaceholder("[owner]", context -> {
+            if (context.getProcess() != null) return new TextComponent(String.valueOf(Bukkit.getOfflinePlayer(context.getProcess().getPlayerUUID())));
+            return new TextComponent(context.getShop().isAdmin() ? ShopMessage.getServerDisplayName() : context.getShop().getOwnerName());
+        });
         registerPlaceholder("[user amount]", context -> new TextComponent(String.valueOf(plugin.getShopHandler().getNumberOfShops(context.getPlayer()))));
         registerPlaceholder("[build limit]", context -> new TextComponent(String.valueOf(plugin.getShopListener().getBuildLimit(context.getPlayer()))));
         registerPlaceholder("[tp time remaining]", context -> new TextComponent(String.valueOf(plugin.getShopListener().getTeleportCooldownRemaining(context.getPlayer()))));
+
+        // Location Placeholders
+        registerPlaceholder("[world]", context -> {
+            if (context.getProcess() != null) return new TextComponent(context.getProcess().getClickedChest().getWorld().getName());
+            else if (context.getShop() != null) new TextComponent(context.getShop().getSignLocation().getWorld().getName());
+            return null;
+        });
+        registerPlaceholder("[location]", context -> {
+            Location loc = null;
+            if (context.getProcess() != null) loc = context.getProcess().getClickedChest().getLocation();
+            else if (context.getShop() != null) loc = context.getShop().getSignLocation();
+            if (loc == null) return null;
+            return new TextComponent(UtilMethods.getCleanLocation(loc, false));
+        });
 
         // Currency Placeholders
         registerPlaceholder("[currency name]", context -> new TextComponent(plugin.getCurrencyName()));
@@ -215,8 +265,10 @@ public class ShopMessage {
 
         // Shop Item placeholders
         registerPlaceholder("[item]", ShopMessage::getItemPlaceholder);
-        registerPlaceholder("[item amount]", context -> new TextComponent(String.valueOf(context.getShop().getItemStack().getAmount())));
-        registerPlaceholder("[location]", context -> new TextComponent(UtilMethods.getCleanLocation(context.getShop().getSignLocation(), false)));
+        registerPlaceholder("[item amount]", context -> {
+            if (context.getProcess() != null) return new TextComponent(String.valueOf(context.getProcess().getItemAmount()));
+            return new TextComponent(String.valueOf(context.getShop().getItemStack().getAmount()));
+        });
         registerPlaceholder("[item enchants]", context -> embedItem(UtilMethods.getEnchantmentsString(context.getShop().getItemStack()), context.getShop().getItemStack()));
 
         registerPlaceholder("[item lore]", context -> embedItem(UtilMethods.getLoreString(context.getShop().getItemStack()), context.getShop().getItemStack()));
@@ -226,7 +278,10 @@ public class ShopMessage {
         registerPlaceholder("[gamble item]", context -> { if (context.getShop().getType() == ShopType.GAMBLE) { return embedItem(plugin.getItemNameUtil().getName(plugin.getGambleDisplayItem()), plugin.getGambleDisplayItem()); } return null; });
 
         // Shop Barter Item Placeholders
-        registerPlaceholder("[barter item amount]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(String.valueOf(context.getShop().getSecondaryItemStack().getAmount())); } return null; });
+        registerPlaceholder("[barter item amount]", context -> {
+            if (context.getProcess() != null) return new TextComponent(String.valueOf(context.getProcess().getBarterItemAmount()));
+            return new TextComponent(String.valueOf(context.getShop().getSecondaryItemStack().getAmount()));
+        });
         registerPlaceholder("[barter item]", ShopMessage::getBarterItemPlaceholder);
         registerPlaceholder("[barter item durability]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(String.valueOf(context.getShop().getSecondaryItemDurabilityPercent())); } return null; });
         registerPlaceholder("[barter item type]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(Shop.getPlugin().getItemNameUtil().getName(context.getShop().getSecondaryItemStack().getType())); } return null; });
@@ -345,22 +400,20 @@ public class ShopMessage {
      * @return The item name, potentially truncated to fit sign constraints.
      */
     private static TextComponent getItemPlaceholder(PlaceholderContext context) {
-        if (context.getShop() == null || context.getShop().getItemStack() == null) {
-            return null;
+        ItemStack item = null;
+        if (context.getProcess() != null) { 
+            item = context.getProcess().getItemStack(); 
         }
+        else if (context.getShop() != null || context.getShop().getItemStack() != null) {
+            item = context.getShop().getItemStack();
+        }
+        if (item == null) { return null; }
 
-        String itemName = plugin.getItemNameUtil().getName(context.getShop().getItemStack());
-        if (!context.isForSign()) {
-            return embedItem(itemName, context.getShop().getItemStack());
+        String itemName = plugin.getItemNameUtil().getName(item);
+        if (context.isForSign()) {
+            return new TextComponent(UtilMethods.trimForSign(itemName));
         }
-
-        // Truncate item name if total length exceeds 17
-        int maxLength = 17;
-        int totalLength = itemName.length();
-        if (totalLength > maxLength) {
-            return new TextComponent(itemName.substring(0, maxLength));
-        }
-        return new TextComponent(itemName);
+        return embedItem(itemName, item);
     }
 
     /**
@@ -370,26 +423,23 @@ public class ShopMessage {
      * @return The barter item name, potentially truncated to fit sign constraints.
      */
     private static TextComponent getBarterItemPlaceholder(PlaceholderContext context) {
-        if (context.getShop() == null || context.getShop().getSecondaryItemStack() == null) {
-            return null;
+        ItemStack item = null;
+        if (context.getProcess() != null) {
+            item = context.getProcess().getBarterItemStack();
         }
+        else if (context.getShop() != null || context.getShop().getSecondaryItemStack() != null) {
+            if (context.getShop().getType() != ShopType.BARTER) {
+                return null;
+            }
+            item = context.getShop().getSecondaryItemStack();
+        }
+        if (item == null) { return null; }
 
-        if (context.getShop().getType() != ShopType.BARTER) {
-            return null;
+        String itemName = plugin.getItemNameUtil().getName(item);
+        if (context.isForSign()) {
+            return new TextComponent(UtilMethods.trimForSign(itemName));
         }
-
-        String itemName = plugin.getItemNameUtil().getName(context.getShop().getSecondaryItemStack());
-        if (!context.isForSign()) {
-            return embedItem(itemName, context.getShop().getSecondaryItemStack());
-        }
-
-        // Truncate item name if total length exceeds 17
-        int maxLength = 17;
-        int totalLength = itemName.length();
-        if (totalLength > maxLength) {
-            return new TextComponent(itemName.substring(0, maxLength));
-        }
-        return new TextComponent(itemName);
+        return embedItem(itemName, item);
     }
 
     public static String getCreationWord(String type) {
@@ -406,22 +456,6 @@ public class ShopMessage {
 
     public static String getServerDisplayName() {
         return serverDisplayName;
-    }
-
-    public static String getMessage(String key, String subKey, AbstractShop shop, Player player) {
-        String message = "";
-        String mainKey = key;
-        if (subKey != null) {
-            mainKey = key + "_" + subKey;
-        }
-
-        if (messageMap.containsKey(mainKey))
-            message = messageMap.get(mainKey);
-        else
-            return message;
-
-        message = formatMessage(message, shop, player, false);
-        return message;
     }
 
     public static String getUnformattedMessage(String key, String subKey) {
@@ -478,59 +512,6 @@ public class ShopMessage {
             }
         }
         player.spigot().sendMessage(fancyMessage);
-    }
-
-    public static String formatMessage(String unformattedMessage, ShopCreationProcess process, Player player) {
-        if (unformattedMessage == null) {
-            loadMessagesFromConfig();
-            return "";
-        }
-
-        if (process != null) {
-            unformattedMessage = unformattedMessage.replace("[item amount]", "" + process.getItemAmount());
-            unformattedMessage = unformattedMessage.replace("[item]", "" + Shop.getPlugin().getItemNameUtil().getName(process.getItemStack()));
-            unformattedMessage = unformattedMessage.replace("[barter item]", "" + Shop.getPlugin().getItemNameUtil().getName(process.getBarterItemStack()));
-            unformattedMessage = unformattedMessage.replace("[barter item amount]", "" + process.getBarterItemAmount());
-            if (process.getShopType() != null) {
-                unformattedMessage = unformattedMessage.replace("[shop type]", "" + process.getShopType().toString());
-            }
-            if (process.getClickedChest() != null) {
-                unformattedMessage = unformattedMessage.replace("[location]", UtilMethods.getCleanLocation(process.getClickedChest().getLocation(), false));
-                unformattedMessage = unformattedMessage.replace("[world]", process.getClickedChest().getWorld().getName());
-            }
-        }
-
-        if (player != null) {
-            unformattedMessage = unformattedMessage.replace("[owner]", "" + Bukkit.getOfflinePlayer(process.getPlayerUUID()));
-
-            if (unformattedMessage.contains("[shop types]")) {
-                List<ShopType> typeList = new ArrayList(Arrays.asList(ShopType.values()));
-                if ((!Shop.getPlugin().usePerms() && !player.isOp()) || (Shop.getPlugin().usePerms() && !player.hasPermission("shop.operator"))) {
-                    typeList.remove(ShopType.GAMBLE);
-                }
-                if (Shop.getPlugin().usePerms()) {
-                    if (!player.hasPermission("shop.create")) {
-                        Iterator<ShopType> typeIterator = typeList.iterator();
-                        while (typeIterator.hasNext()) {
-                            ShopType type = typeIterator.next();
-                            if (!player.hasPermission("shop.operator") && !player.hasPermission("shop.create." + type.toString().toLowerCase())) {
-                                typeIterator.remove();
-                            }
-                        }
-                    }
-                }
-                String types = "";
-                for (int i = 0; i < typeList.size(); i++) {
-                    if (i < typeList.size() - 1)
-                        types += typeList.get(i).toCreationWord() + ", ";
-                    else
-                        types += typeList.get(i).toCreationWord();
-                }
-                unformattedMessage = unformattedMessage.replace("[shop types]", types);
-            }
-        }
-        unformattedMessage = ChatColor.translateAlternateColorCodes('&', unformattedMessage);
-        return unformattedMessage;
     }
 
     public static String formatMessage(String unformattedMessage, Player player, OfflineTransactions offlineTransactions) {
@@ -610,16 +591,6 @@ public class ShopMessage {
         return newMessage.toString().trim();
     }
 
-    private static String addRows(String message, String placeholder, List<String> rowData) {
-        Map<String, String> newRowData = new HashMap<>();
-
-        for (String row : rowData) {
-            newRowData.put(row, null);
-        }
-
-        return addRowsDualPlaceholder(message, placeholder, null, newRowData);
-    }
-
     private static String processItemRows(
             String message,
             String itemNamePlaceholder,
@@ -682,197 +653,11 @@ public class ShopMessage {
     }
 
     public static String formatMessage(String unformattedMessage, AbstractShop shop, Player player, boolean forSign) {
-        PlaceholderContext context = new PlaceholderContext(shop, player, forSign);
+        PlaceholderContext context = new PlaceholderContext(shop, player, forSign, null, null);
         TextComponent formattedMessage = format(unformattedMessage, context);
         // Return the legacy version since we are requesting the legacy formatter!
         return ChatColor.translateAlternateColorCodes('§', formattedMessage.toLegacyText());
     }
-
-    /*
-    public static String formatMessage(String unformattedMessage, AbstractShop shop, Player player, boolean forSign){
-        if(unformattedMessage == null) {
-            loadMessagesFromConfig();
-            return "";
-        }
-        unformattedMessage = unformattedMessage.replace("\\n", System.lineSeparator());
-        if(shop != null && shop.getItemStack() != null) {
-            unformattedMessage = unformattedMessage.replace("[item amount]", "" + shop.getItemStack().getAmount());
-            unformattedMessage = unformattedMessage.replace("[location]", UtilMethods.getCleanLocation(shop.getSignLocation(), false));
-            unformattedMessage = unformattedMessage.replace("[item enchants]", UtilMethods.getEnchantmentsString(shop.getItemStack()));
-            unformattedMessage = unformattedMessage.replace("[item lore]", UtilMethods.getLoreString(shop.getItemStack()));
-            //dont replace [item] tag on first run through if its for a sign
-            if(!forSign)
-                unformattedMessage = unformattedMessage.replace("[item]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack()));
-            unformattedMessage = unformattedMessage.replace("[item durability]", "" + shop.getItemDurabilityPercent());
-            if(shop.getType() == ShopType.GAMBLE)
-                unformattedMessage = unformattedMessage.replace("[item type]", "???");
-            else
-                unformattedMessage = unformattedMessage.replace("[item type]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack().getType()));
-
-            if(shop.getType() == ShopType.GAMBLE) {
-                unformattedMessage = unformattedMessage.replace("[gamble item amount]", "" + shop.getAmount());
-                unformattedMessage = unformattedMessage.replace("[gamble item]", "" + Shop.getPlugin().getItemNameUtil().getName(Shop.getPlugin().getGambleDisplayItem()));
-            }
-        }
-
-        if(shop != null && shop.getSecondaryItemStack() != null) {
-            if(shop.getType() == ShopType.BARTER) {
-                unformattedMessage = unformattedMessage.replace("[barter item amount]", "" + shop.getSecondaryItemStack().getAmount());
-                //dont replace [barter item] tag on first run through if its for a sign
-                if (!forSign)
-                    unformattedMessage = unformattedMessage.replace("[barter item]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getSecondaryItemStack()));
-                unformattedMessage = unformattedMessage.replace("[barter item durability]", "" + shop.getSecondaryItemDurabilityPercent());
-                unformattedMessage = unformattedMessage.replace("[barter item type]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getSecondaryItemStack().getType()));
-                unformattedMessage = unformattedMessage.replace("[barter item enchants]", UtilMethods.getEnchantmentsString(shop.getSecondaryItemStack()));
-                unformattedMessage = unformattedMessage.replace("[barter item lore]", UtilMethods.getLoreString(shop.getSecondaryItemStack()));
-            }
-        }
-        if(shop != null) {
-            if(shop.isAdmin())
-                unformattedMessage = unformattedMessage.replace("[owner]", "" + ShopMessage.getServerDisplayName());
-            else
-                unformattedMessage = unformattedMessage.replace("[owner]", "" + shop.getOwnerName());
-
-            unformattedMessage = unformattedMessage.replace("[amount]", "" + shop.getAmount());
-            if(shop.getSignLocation() != null) {
-                unformattedMessage = unformattedMessage.replace("[location]", "" + UtilMethods.getCleanLocation(shop.getSignLocation(), false));
-                unformattedMessage = unformattedMessage.replace("[world]", "" + shop.getSignLocation().getWorld().getName());
-            }
-
-            if(shop.getType() == ShopType.COMBO) {
-                unformattedMessage = unformattedMessage.replace("[price sell]", "" + ((ComboShop)shop).getPriceSellString());
-                unformattedMessage = unformattedMessage.replace("[price sell per item]", "" + ((ComboShop)shop).getPriceSellPerItemString());
-                unformattedMessage = unformattedMessage.replace("[price combo]", "" + ((ComboShop)shop).getPriceComboString());
-            }
-            if(shop.getType() == ShopType.BARTER) {
-                String amountPerString = new DecimalFormat("#.##").format(shop.getPrice() / shop.getAmount()).toString();
-                amountPerString = amountPerString + " " + Shop.getPlugin().getItemNameUtil().getName(shop.getSecondaryItemStack());
-                unformattedMessage = unformattedMessage.replace("[price per item]", "" + amountPerString);
-                unformattedMessage = unformattedMessage.replace("[price]", "" + (int) shop.getPrice());
-            }
-            else {
-                unformattedMessage = unformattedMessage.replace("[price per item]", "" + shop.getPricePerItemString());
-                unformattedMessage = unformattedMessage.replace("[price]", "" + shop.getPriceString());
-            }
-            unformattedMessage = unformattedMessage.replace("[shop type]", "" + ShopMessage.getCreationWord(shop.getType().toString().toUpperCase())); //sub in user's word for SELL,BUY,BARTER
-            if(unformattedMessage.contains("[stock]")) {
-                if(shop.isAdmin()){
-                    unformattedMessage = unformattedMessage.replace("[stock]", "" + adminStockWord);
-                }
-                else {
-                    unformattedMessage = unformattedMessage.replace("[stock]", "" + shop.getStock());
-                    //if shop is displaying stock on sign, it will require a sign refresh on transactions
-                    shop.setSignLinesRequireRefresh(true);
-                }
-            }
-            if(unformattedMessage.contains("[stock color]")) {
-                if(shop.getStock() > 0)
-                    unformattedMessage = unformattedMessage.replace("[stock color]", "" + ChatColor.GREEN);
-                else
-                    unformattedMessage = unformattedMessage.replace("[stock color]", "" + ChatColor.DARK_RED);
-                //if shop is displaying stock on sign, it will require a sign refresh on transactions
-                shop.setSignLinesRequireRefresh(true);
-            }
-        }
-        else{
-            //hacky workaround (for now). If shop is null, set shop type to nothing
-            //this is so permissions message reads "you are not able to make shops" instead of "you are not able to make [shop type] shops"
-            unformattedMessage = unformattedMessage.replace("[shop type] ", "");
-        }
-        if(player != null) {
-            unformattedMessage = unformattedMessage.replace("[user]", "" + player.getName());
-            unformattedMessage = unformattedMessage.replace("[user amount]", "" + Shop.getPlugin().getShopHandler().getNumberOfShops(player));
-            unformattedMessage = unformattedMessage.replace("[build limit]", "" + Shop.getPlugin().getShopListener().getBuildLimit(player));
-            unformattedMessage = unformattedMessage.replace("[tp time remaining]", "" + Shop.getPlugin().getShopListener().getTeleportCooldownRemaining(player));
-
-            if(unformattedMessage.contains("[shop types]")) {
-                List<ShopType> typeList = new ArrayList(Arrays.asList(ShopType.values()));
-                if((!Shop.getPlugin().usePerms() && !player.isOp()) || (Shop.getPlugin().usePerms() && !player.hasPermission("shop.operator"))){
-                    typeList.remove(ShopType.GAMBLE);
-                }
-                if(Shop.getPlugin().usePerms()){
-                    Iterator<ShopType> typeIterator = typeList.iterator();
-                    while(typeIterator.hasNext()){
-                        ShopType type = typeIterator.next();
-                        if(!player.hasPermission("shop.operator") && !player.hasPermission("shop.create."+type.toString())){
-                            typeIterator.remove();
-                        }
-                    }
-                }
-                String types = "";
-                for(int i=0; i<typeList.size(); i++){
-                    if(i < typeList.size() - 1)
-                        types += typeList.get(i).toCreationWord() + ", ";
-                    else
-                        types += typeList.get(i).toCreationWord();
-                }
-                unformattedMessage = unformattedMessage.replace("[shop types]", types);
-            }
-
-            if(unformattedMessage.contains("[notify")) {
-
-                String text_on = getUnformattedMessage("command", "notify_on");
-                String text_off = getUnformattedMessage("command", "notify_off");
-
-                ShopGuiHandler.GuiIcon guiIcon = Shop.getPlugin().getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_SALE_USER);
-                if(guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_USER_ON)
-                    unformattedMessage = unformattedMessage.replace("[notify user]", "" + text_on);
-                else
-                    unformattedMessage = unformattedMessage.replace("[notify user]", "" + text_off);
-
-                guiIcon = Shop.getPlugin().getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_SALE_OWNER);
-                if(guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_OWNER_ON)
-                    unformattedMessage = unformattedMessage.replace("[notify owner]", "" + text_on);
-                else
-                    unformattedMessage = unformattedMessage.replace("[notify owner]", "" + text_off);
-
-                guiIcon = Shop.getPlugin().getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_STOCK);
-                if(guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON)
-                    unformattedMessage = unformattedMessage.replace("[notify stock]", "" + text_on);
-                else
-                    unformattedMessage = unformattedMessage.replace("[notify stock]", "" + text_off);
-            }
-        }
-        unformattedMessage = unformattedMessage.replace("[server name]", "" + ShopMessage.getServerDisplayName());
-        unformattedMessage = unformattedMessage.replace("[currency name]", "" + Shop.getPlugin().getCurrencyName());
-        unformattedMessage = unformattedMessage.replace("[currency item]", "" + Shop.getPlugin().getItemNameUtil().getName(Shop.getPlugin().getItemCurrency()));
-        unformattedMessage = unformattedMessage.replace("[total shops]", "" + Shop.getPlugin().getShopHandler().getNumberOfShops());
-        unformattedMessage = unformattedMessage.replace("[plugin]", "" + Shop.getPlugin().getCommandAlias());
-
-        if(forSign){
-            if(unformattedMessage.contains("[item]") && shop != null && shop.getItemStack() != null){
-                int tagLength = "[item]".length();
-                String itemName = Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack());
-                int itemNameLength = itemName.length();
-                int totalLength = unformattedMessage.length() - tagLength + itemNameLength;
-                if(totalLength > 17){
-                    String cutItemName = itemName.substring(0, (itemName.length()-(Math.abs(17 - totalLength))));
-                    unformattedMessage = unformattedMessage.replace("[item]", cutItemName);
-                }
-                else{
-                    unformattedMessage = unformattedMessage.replace("[item]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack()));
-                }
-            }
-            if(unformattedMessage.contains("[barter item]") && shop != null && shop.getSecondaryItemStack() != null){
-                if(shop.getType() == ShopType.BARTER) {
-                    int tagLength = "[barter item]".length();
-                    String itemName = Shop.getPlugin().getItemNameUtil().getName(shop.getSecondaryItemStack());
-                    int itemNameLength = itemName.length();
-                    int totalLength = unformattedMessage.length() - tagLength + itemNameLength;
-                    if (totalLength > 17) {
-                        String cutItemName = itemName.substring(0, (itemName.length() - (Math.abs(17 - totalLength))));
-                        unformattedMessage = unformattedMessage.replace("[barter item]", cutItemName);
-                    } else {
-                        unformattedMessage = unformattedMessage.replace("[barter item]", "" + Shop.getPlugin().getItemNameUtil().getName(shop.getSecondaryItemStack()));
-                    }
-                }
-            }
-        }
-
-        unformattedMessage = ChatColor.translateAlternateColorCodes('&', unformattedMessage);
-        return unformattedMessage;
-    }
-     */
 
     public static String partialFormatMessageUUID(String unformattedMessage, UUID playerUUID){
         if(playerUUID.equals(Shop.getPlugin().getShopHandler().getAdminUUID()))
@@ -957,20 +742,6 @@ public class ShopMessage {
                 formattedLines.add(formattedLine);
         }
         return formattedLines;
-    }
-
-    public static List<String> getMessageList(String key, String subKey, AbstractShop shop, Player player){
-        List<String> messages = new ArrayList<>();
-
-        int count = 1;
-        String message = "-1";
-        while (message != null && !message.isEmpty()) {
-            message = getMessage(key, subKey + count, shop, player);
-            if (message != null && !message.isEmpty())
-                messages.add(message);
-            count++;
-        }
-        return messages;
     }
 
     public static List<String> getUnformattedMessageList(String key, String subKey){

@@ -92,6 +92,8 @@
 package com.snowgears.shop.util;
 
 import com.snowgears.shop.Shop;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -170,7 +172,7 @@ public class ShopLogger extends Logger {
 
     public String addColor(String color, String message) {
         if (!enableColor) return message;
-        return color + message + RESET;
+        return ChatColor.translateAlternateColorCodes('&',color + message + RESET);
     }
 
     // Normal Logging functions
@@ -181,6 +183,10 @@ public class ShopLogger extends Logger {
     public void notice(String message) { logFilterLevel(NOTICE, addColor(INTENSE_CYAN, "[Notice] " + message)); }
     public void helpful(String message) { logFilterLevel(HELPFUL, addColor(CYAN, "[Helpful] " + message)); }
     public void debug(String message) { logFilterLevel(DEBUG, addColor(DIM_GREY, "[Debug] " + message)); }
+    public void debug(String message, boolean withChatColors) {
+        if (this.getLogLevel().intValue() > DEBUG.intValue()) { return; }
+        Bukkit.getConsoleSender().sendMessage(INTENSE_WHITE + "[" + plugin.getDescription().getName() + "] " + DIM_GREY + "[Debug] " + message + RESET);
+    }
     public void trace(String message) { logFilterLevel(TRACE, addColor(VERY_DIM_GREY, "[Trace] " + message)); }
     public void spam(String message) { logFilterLevel(SPAM, addColor(VERY_VERY_DIM_GREY, "[Spam] " + message)); }
     public void hyper(String message) { logFilterLevel(SPAM, addColor(ALMOST_BLACK, "[Hyper] " + message)); }
