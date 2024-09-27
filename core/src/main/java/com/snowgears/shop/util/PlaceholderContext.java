@@ -8,36 +8,49 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PlaceholderContext {
-    private final AbstractShop shop;
-    private final Player player;
-    private final boolean forSign;
-    private final List<ItemStack> items;
-    private final ShopCreationProcess process;
+    private AbstractShop shop;
+    private Player player;
+    private boolean forSign = false;
+    private ItemStack item = null;
+    private ShopCreationProcess process;
 
-    public PlaceholderContext(AbstractShop shop, Player player, boolean forSign, List<ItemStack> items, ShopCreationProcess process) {
+    // Create empty Placeholder Context
+    public PlaceholderContext() { }
+
+    public void setShop(AbstractShop shop) {
         this.shop = shop;
-        this.player = player;
-        this.forSign = forSign;
-        this.process = process;
-
-        if (items == null) this.items = new ArrayList<>();
-        else this.items = items;
     }
 
     public AbstractShop getShop() {
         return shop;
     }
 
+    public void setPlayer(Player player) {
+        this.player = player;
+    }
+
     public Player getPlayer() {
         return player;
     }
 
-    public List<ItemStack> getItems() {
-        return items;
+    public void setItem(ItemStack item) {
+        this.item = item;
+    }
+
+    public ItemStack getItem() {
+        return item;
+    }
+
+    public void setProcess(ShopCreationProcess process) {
+        this.process = process;
     }
 
     public ShopCreationProcess getProcess() {
         return process;
+    }
+
+    public void setForSign(boolean forSign) {
+        this.forSign = forSign;
     }
 
     public boolean isForSign() {

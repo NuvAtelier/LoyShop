@@ -264,7 +264,7 @@ public class ShopHandler {
             chunkShops.put(chunkKey, chunkShopLocations);
         }
 
-        plugin.getGuiHandler().reloadPlayerHeadIcon(shop.getOwnerUUID());
+        plugin.getGuiHandler().reloadPlayerHeadIcon(shop);
     }
 
     //This method should only be used by AbstractShop object to delete

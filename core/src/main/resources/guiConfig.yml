@@ -37,7 +37,6 @@ icons:
          name: "[item] &7(x[item amount])"
          lore:
             - "&7Type: &b[shop type]"
-            - "&7Barter: &f[barter item] &7(x[barter item amount])"
             - "&7Price: &a[price]"
             - "[stock color]Stocked"
       player_icon:

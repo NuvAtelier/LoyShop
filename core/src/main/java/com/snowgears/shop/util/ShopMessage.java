@@ -189,7 +189,19 @@ public class ShopMessage {
      * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
      */
     public static void sendMessage(String message, Player player) {
-        sendMessage(message, player, new PlaceholderContext(null, player, false, null, null));
+        PlaceholderContext context = new PlaceholderContext();
+        context.setPlayer(player);
+        sendMessage(message, player, context);
+    }
+
+    /**
+     * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
+     */
+    public static void sendMessage(String message, Player player, ItemStack item) {
+        PlaceholderContext context = new PlaceholderContext();
+        context.setPlayer(player);
+        context.setItem(item);
+        sendMessage(message, player, context);
     }
 
     /**
@@ -205,23 +217,32 @@ public class ShopMessage {
      * Loads message, swaps in placeholder values, sends fancy message with Click/Hover events to Player
      */
     public static void sendMessage(String key, String subkey, ShopCreationProcess process, Player player) {
+        PlaceholderContext context = new PlaceholderContext();
+        context.setPlayer(player);
+        context.setProcess(process);
         String message = getUnformattedMessage(key, subkey);
         if(message != null && !message.isEmpty())
-            sendMessage(message, player, new PlaceholderContext(null, player, false, null, process));
+            sendMessage(message, player, context);
     }
 
     /**
      * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
      */
     public static void sendMessage(String message, Player player, AbstractShop shop) {
-        sendMessage(message, player, new PlaceholderContext(shop, player, false, null, null));
+        PlaceholderContext context = new PlaceholderContext();
+        context.setPlayer(player);
+        context.setShop(shop);
+        sendMessage(message, player, context);
     }
 
     /**
      * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
      */
     public static void sendMessage(String message, ShopCreationProcess process, Player player) {
-        sendMessage(message, player, new PlaceholderContext(null, player, false, null, process));
+        PlaceholderContext context = new PlaceholderContext();
+        context.setPlayer(player);
+        context.setProcess(process);
+        sendMessage(message, player, context);
     }
 
     /**
@@ -243,9 +264,14 @@ public class ShopMessage {
         // Player Info Placeholders
         registerPlaceholder("[owner]", context -> {
             if (context.getProcess() != null) return new TextComponent(String.valueOf(Bukkit.getOfflinePlayer(context.getProcess().getPlayerUUID())));
-            return new TextComponent(context.getShop().isAdmin() ? ShopMessage.getServerDisplayName() : context.getShop().getOwnerName());
+            else if (context.getShop() != null) return new TextComponent(context.getShop().isAdmin() ? ShopMessage.getServerDisplayName() : context.getShop().getOwnerName());
+            return null;
         });
-        registerPlaceholder("[user amount]", context -> new TextComponent(String.valueOf(plugin.getShopHandler().getNumberOfShops(context.getPlayer()))));
+        registerPlaceholder("[user amount]", context -> {
+            if (context.getPlayer() != null) return new TextComponent(String.valueOf(plugin.getShopHandler().getNumberOfShops(context.getPlayer())));
+            else if (context.getShop().getOwner() != null) return new TextComponent(String.valueOf(plugin.getShopHandler().getNumberOfShops(context.getShop().getOwner().getUniqueId())));
+            return new TextComponent("0"); // If they don't have any shops, it should be 0
+        });
         registerPlaceholder("[build limit]", context -> new TextComponent(String.valueOf(plugin.getShopListener().getBuildLimit(context.getPlayer()))));
         registerPlaceholder("[tp time remaining]", context -> new TextComponent(String.valueOf(plugin.getShopListener().getTeleportCooldownRemaining(context.getPlayer()))));
 
@@ -405,7 +431,10 @@ public class ShopMessage {
      */
     private static TextComponent getItemPlaceholder(PlaceholderContext context) {
         ItemStack item = null;
-        if (context.getProcess() != null) { 
+        if (context.getItem() != null) {
+            item = context.getItem();
+        }
+        else if (context.getProcess() != null) {
             item = context.getProcess().getItemStack(); 
         }
         else if (context.getShop() != null || context.getShop().getItemStack() != null) {
@@ -428,10 +457,13 @@ public class ShopMessage {
      */
     private static TextComponent getBarterItemPlaceholder(PlaceholderContext context) {
         ItemStack item = null;
-        if (context.getProcess() != null) {
+        if (context.getItem() != null) {
+            item = context.getItem();
+        }
+        else if (context.getProcess() != null) {
             item = context.getProcess().getBarterItemStack();
         }
-        else if (context.getShop() != null || context.getShop().getSecondaryItemStack() != null) {
+        else if (context.getShop() != null && context.getShop().getSecondaryItemStack() != null) {
             if (context.getShop().getType() != ShopType.BARTER) {
                 return null;
             }
@@ -656,20 +688,22 @@ public class ShopMessage {
         return newMessage.toString().trim();
     }
 
-    public static String formatMessage(String unformattedMessage, AbstractShop shop, Player player, boolean forSign) {
-        PlaceholderContext context = new PlaceholderContext(shop, player, forSign, null, null);
+    public static String formatMessage(String unformattedMessage, AbstractShop shop) {
+        PlaceholderContext context = new PlaceholderContext();
+        context.setShop(shop);
         TextComponent formattedMessage = format(unformattedMessage, context);
         // Return the legacy version since we are requesting the legacy formatter!
         return ChatColor.translateAlternateColorCodes('§', formattedMessage.toLegacyText());
     }
 
-    public static String partialFormatMessageUUID(String unformattedMessage, UUID playerUUID){
-        if(playerUUID.equals(Shop.getPlugin().getShopHandler().getAdminUUID()))
-            unformattedMessage = unformattedMessage.replace("[owner]", "" + creationWords.get("ADMIN"));
-        else
-            unformattedMessage = unformattedMessage.replace("[owner]", "" + Bukkit.getOfflinePlayer(playerUUID).getName());
-        unformattedMessage = unformattedMessage.replace("[user amount]", "" + Shop.getPlugin().getShopHandler().getNumberOfShops(playerUUID));
-        return unformattedMessage;
+    public static String formatMessage(String unformattedMessage, AbstractShop shop, Player player, boolean forSign) {
+        PlaceholderContext context = new PlaceholderContext();
+        context.setPlayer(player);
+        context.setShop(shop);
+        context.setForSign(forSign);
+        TextComponent formattedMessage = format(unformattedMessage, context);
+        // Return the legacy version since we are requesting the legacy formatter!
+        return ChatColor.translateAlternateColorCodes('§', formattedMessage.toLegacyText());
     }
 
     //      # [amount] : The amount of items the shop is selling/buying/bartering #
