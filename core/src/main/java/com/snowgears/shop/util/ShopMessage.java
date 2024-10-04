@@ -246,6 +246,16 @@ public class ShopMessage {
     }
 
     /**
+     * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
+     */
+    public static void sendMessage(String message, Player player, OfflineTransactions offlineTxs) {
+        PlaceholderContext context = new PlaceholderContext();
+        context.setPlayer(player);
+        context.setOfflineTransactions(offlineTxs);
+        sendMessage(message, player, context);
+    }
+
+    /**
      * Loads all available placeholders into the map.
      * This method should be called during the plugin's initialization phase.
      */
@@ -296,7 +306,8 @@ public class ShopMessage {
         // Shop Item placeholders
         registerPlaceholder("[item]", ShopMessage::getItemPlaceholder);
         registerPlaceholder("[item amount]", context -> {
-            if (context.getProcess() != null) return new TextComponent(String.valueOf(context.getProcess().getItemAmount()));
+            if (context.getItem() != null) return new TextComponent(String.valueOf(context.getItem().getAmount()));
+            else if (context.getProcess() != null) return new TextComponent(String.valueOf(context.getProcess().getItemAmount()));
             return new TextComponent(String.valueOf(context.getShop().getItemStack().getAmount()));
         });
         registerPlaceholder("[item enchants]", context -> embedItem(UtilMethods.getEnchantmentsString(context.getShop().getItemStack()), context.getShop().getItemStack()));
@@ -330,7 +341,7 @@ public class ShopMessage {
                 return new TextComponent(String.valueOf(ShopMessage.getAdminStockWord()));
             } else {
                 // This also sets sign lines to require refresh
-                // @TODO: Why do they require a refresh...?
+                // @TODO: Why do they require a refresh...? Maybe upon shop creation?
                 context.getShop().setSignLinesRequireRefresh(true);
                 return new TextComponent(String.valueOf(context.getShop().getStock()));
             }
@@ -369,6 +380,22 @@ public class ShopMessage {
             ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(context.getPlayer(), PlayerSettings.Option.NOTIFICATION_STOCK);
             return new TextComponent((guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON) ? text_on : text_off);
         });
+
+        // Offline Transaction Updates
+        registerPlaceholder("[offline transactions]", context -> new TextComponent(String.valueOf(context.getOfflineTransactions().getNumTransactions())));
+        registerPlaceholder("[offline profit]", context -> {
+            String boughtString = Shop.getPlugin().getPriceString(context.getOfflineTransactions().getTotalProfit(), false);
+            if (boughtString.equals(freePriceWord)) { boughtString = "0"; }
+            return new TextComponent(boughtString);
+        });
+        registerPlaceholder("[offline spent]", context -> {
+            String spentString = Shop.getPlugin().getPriceString(context.getOfflineTransactions().getTotalSpent(), false);
+            if (spentString.equals(freePriceWord)) { spentString = "0"; }
+            return new TextComponent(spentString);
+        });
+        registerPlaceholder("[offline items sold]", context -> ShopMessage.getOfflineItemsPlaceholder(context, context.getOfflineTransactions().getItemsSold()));
+        registerPlaceholder("[offline items bought]", context -> ShopMessage.getOfflineItemsPlaceholder(context, context.getOfflineTransactions().getItemsBought()));
+        registerPlaceholder("[shops out of stock]", ShopMessage::getShopsOutOfStockPlaceholder);
     }
 
     private static HoverEvent getItemHoverEvent(ItemStack item) {
@@ -478,6 +505,62 @@ public class ShopMessage {
         return embedItem(itemName, item);
     }
 
+    private static TextComponent getOfflineItemsPlaceholder(PlaceholderContext context, Map<ItemStack, Integer> items) {
+        TextComponent itemRowsText = new TextComponent("");
+        String itemRow = getUnformattedMessage("offline", "itemRow");
+
+        for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
+            ItemStack item = entry.getKey();
+            item.setAmount(entry.getValue());
+
+            PlaceholderContext itemContext = new PlaceholderContext();
+            itemContext.setPlayer(context.getPlayer());
+            itemContext.setItem(item);
+
+            TextComponent currentRow = format(itemRow, itemContext);
+            itemRowsText.addExtra(currentRow);
+        }
+
+        return itemRowsText;
+    }
+
+    private static TextComponent getShopsOutOfStockPlaceholder(PlaceholderContext context) {
+        TextComponent shopsOutOfStock = new TextComponent("");
+        List<AbstractShop> playerShops = Shop.getPlugin().getShopHandler().getShops(context.getPlayer().getUniqueId());
+        if (playerShops != null && !playerShops.isEmpty()) {
+            // For each item, generate a line based on the template line
+            int outOfStockShops = 0;
+            int remainingOutOfStock = 0;
+
+            for (AbstractShop shop : playerShops) {
+                if (shop.getStock() > 0) { continue; }
+                outOfStockShops++;
+                // Limit out of stock shop rows to just 3
+                if (outOfStockShops > 3) {
+                    remainingOutOfStock++;
+                    continue;
+                }
+
+                PlaceholderContext shopContext = new PlaceholderContext();
+                shopContext.setPlayer(context.getPlayer());
+                shopContext.setShop(shop);
+
+                TextComponent currentRow = format(getUnformattedMessage("offline", "outOfStockShop") + "\n", shopContext);
+                shopsOutOfStock.addExtra(currentRow);
+            }
+
+            if (remainingOutOfStock > 0) {
+                String remainingMsg = getUnformattedMessage("offline", "moreOutOfStock");
+                shopsOutOfStock.addExtra(format(remainingMsg.replace("[out of stock remaining]", "" + remainingOutOfStock), context));
+            }
+
+            if (outOfStockShops > 0) return shopsOutOfStock;
+        }
+
+        // No shops out of stock, don't add anything!
+        return null;
+    }
+
     public static String getCreationWord(String type) {
         return creationWords.get(type);
     }
@@ -501,191 +584,6 @@ public class ShopMessage {
         else
             message = messageMap.get(key);
         return message;
-    }
-
-    // Embeds hover objects for items!
-    public static void embedAndSendHoverItemsMessage(String message, Player player, Map<ItemStack, Integer> items){
-        if(message == null)
-            return;
-
-        String[] parts = message.replace("§", "&").split("(?=&[0-9A-FK-ORa-fk-or])");
-        TextComponent fancyMessage = new TextComponent("");
-
-        for(String part : parts){
-            ComponentBuilder builder = new ComponentBuilder("");
-            net.md_5.bungee.api.ChatColor cc = UtilMethods.getChatColor(part);
-            if(cc != null)
-                part = part.substring(2, part.length());
-            builder.append(part);
-            if(cc != null) {
-                builder.color(ChatColor.valueOf(cc.name()));
-            }
-
-            ItemStack item = null;
-            for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
-                if (part.contains(Shop.getPlugin().getItemNameUtil().getName(entry.getKey()))) {
-                    item = entry.getKey();
-                }
-            }
-
-            try {
-                if (item != null) {
-                    // Clear out the item aount
-                    ItemStack hoverItem = item.clone();
-                    hoverItem.setAmount(1); // Force it to be a single unit just in case we were selling a large quantity greater than a single stack, otherwise this will throw an error!
-                    BaseComponent[] hoverEventComponents = new BaseComponent[]{new TextComponent(NBT.itemStackToNBT(hoverItem).toString())}; // The only element of the hover events basecomponents is the item json
-                    HoverEvent event = new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents);
-                    builder.event(event);
-                }
-            } catch (Exception e) {
-                // Some sort of error occured, likely with the NBT api, just don't embed the hover event
-                // For now, log an error
-                Shop.getPlugin().getLogger().log(Level.WARNING, "Unable to generate Item Hover, there is likely an issue with NBT data! Item: " + item.serialize());
-            }
-
-            for(BaseComponent b : builder.create()) {
-                fancyMessage.addExtra(b);
-            }
-        }
-        player.spigot().sendMessage(fancyMessage);
-    }
-
-    public static String formatMessage(String unformattedMessage, Player player, OfflineTransactions offlineTransactions) {
-        if (offlineTransactions != null && player != null) {
-            // Replace basic placeholders
-            unformattedMessage = unformattedMessage.replace("[offline transactions]", String.valueOf(offlineTransactions.getNumTransactions()));
-            String boughtString = Shop.getPlugin().getPriceString(offlineTransactions.getTotalProfit(), false);
-            if (boughtString.equals("FREE")) { boughtString = "0"; }
-            unformattedMessage = unformattedMessage.replace("[offline profit]", boughtString);
-            String spentString = Shop.getPlugin().getPriceString(offlineTransactions.getTotalSpent(), false);
-            if (spentString.equals("FREE")) { spentString = "0"; }
-            unformattedMessage = unformattedMessage.replace("[offline spent]", spentString);
-
-            List<AbstractShop> playerShops = Shop.getPlugin().getShopHandler().getShops(player.getUniqueId());
-
-            // Process items sold
-            unformattedMessage = processItemRows(
-                    unformattedMessage,
-                    "[item name sold row]",
-                    "[item amount sold row]",
-                    offlineTransactions.getItemsSold()
-            );
-
-            // Process items bought
-            unformattedMessage = processItemRows(
-                    unformattedMessage,
-                    "[item name bought row]",
-                    "[item amount bought row]",
-                    offlineTransactions.getItemsBought()
-            );
-
-            // Process shops out of stock
-            unformattedMessage = processShopStockRows(
-                    unformattedMessage,
-                    "[out of stock item]",
-                    "[out of stock location]",
-                    playerShops
-            );
-        }
-
-        return unformattedMessage;
-    }
-
-    private static String addRowsDualPlaceholder(
-            String message,
-            String placeholderOne,
-            String placeholderTwo,
-            Map<String, String> rowData
-    ) {
-        // Split the message into lines
-        String[] lines = message.split("\\r?\\n");
-        StringBuilder newMessage = new StringBuilder();
-
-        for (String line : lines) {
-            boolean foundLine = line.contains(placeholderOne);
-            if (placeholderTwo != null) { foundLine = foundLine && line.contains(placeholderTwo); };
-            // Does this line contain the placeholders we are looking for?
-            if (foundLine) {
-                if (rowData != null && !rowData.isEmpty()) {
-                    // For each item, generate a line based on the template line
-                    for (Map.Entry<String, String> entry : rowData.entrySet()) {
-                        String itemLine = line;
-                        itemLine = itemLine.replace(placeholderOne, entry.getKey());
-                        if (placeholderTwo != null) { itemLine = itemLine.replace(placeholderTwo, entry.getValue()); }
-                        newMessage.append(itemLine).append("\n");
-                    }
-                } else {
-                    // No objects were sent to us to log, just log nothing (remove line with placeholders)
-                    // If we want to log something like "No Items" in the future we could do that here.
-                }
-            } else {
-                // This line didn't contain the placeholders, add it and continue
-                newMessage.append(line).append("\n");
-            }
-        }
-
-        return newMessage.toString().trim();
-    }
-
-    private static String processItemRows(
-            String message,
-            String itemNamePlaceholder,
-            String itemAmountPlaceholder,
-            Map<ItemStack, Integer> items
-    ) {
-        Map<String, String> rowData = new HashMap<>();
-        for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
-            String itemName = Shop.getPlugin().getItemNameUtil().getName(entry.getKey());
-            String itemAmount = String.valueOf(entry.getValue());
-            rowData.put(itemName, itemAmount);
-        }
-
-        return addRowsDualPlaceholder(message, itemNamePlaceholder, itemAmountPlaceholder, rowData);
-    }
-
-    private static String processShopStockRows(
-            String message,
-            String shopItemPlaceholder,
-            String locationPlaceholder,
-            List<AbstractShop> shops
-    ) {
-        // Split the message into lines
-        String[] lines = message.split("\\r?\\n");
-        StringBuilder newMessage = new StringBuilder();
-
-        for (String line : lines) {
-            if (line.contains(shopItemPlaceholder) && line.contains(locationPlaceholder)) {
-                if (shops != null && !shops.isEmpty()) {
-                    // For each item, generate a line based on the template line
-                    int outOfStockShops = 0;
-                    int remainingOutOfStock = 0;
-                    for (AbstractShop shop : shops) {
-                        if (shop.getStock() > 0) { continue; }
-                        outOfStockShops++;
-                        if (outOfStockShops > 3) {
-                            remainingOutOfStock++;
-                            continue;
-                        }
-                        String itemLine = line;
-                        itemLine = itemLine.replace(shopItemPlaceholder, Shop.getPlugin().getItemNameUtil().getName(shop.getItemStack()));
-                        Location loc = shop.getChestLocation();
-                        itemLine = itemLine.replace(locationPlaceholder, "(" + loc.getBlockX() + "," + loc.getBlockY() + ","+ loc.getBlockZ() + ")");
-                        newMessage.append(itemLine).append("\n");
-                    }
-
-                    if (remainingOutOfStock > 0) {
-                        String remainingMsg = messageMap.get("too_many_out_of_stock");
-                        newMessage.append(remainingMsg.replace("[out of stock remaining]", "" + remainingOutOfStock)).append("\n");
-                    }
-                } else {
-                    // No items, don't log anything
-                }
-            } else {
-                newMessage.append(line).append("\n");
-            }
-        }
-
-        return newMessage.toString().trim();
     }
 
     public static String formatMessage(String unformattedMessage, AbstractShop shop) {
@@ -901,10 +799,12 @@ public class ShopMessage {
 
         count = 1;
         for(String s : chatConfig.getStringList("transaction.OFFLINE_TRANSACTIONS_NOTIFICATION.summary")){
-            messageMap.put("offline_transactions"+count, s);
+            messageMap.put("offline_summary"+count, s);
             count++;
         }
-        messageMap.put("too_many_out_of_stock", chatConfig.getString("transaction.OFFLINE_TRANSACTIONS_NOTIFICATION.tooManyOutOfStock"));
+        messageMap.put("offline_itemRow", chatConfig.getString("transaction.OFFLINE_TRANSACTIONS_NOTIFICATION.itemRow"));
+        messageMap.put("offline_outOfStockShop", chatConfig.getString("transaction.OFFLINE_TRANSACTIONS_NOTIFICATION.outOfStockShop"));
+        messageMap.put("offline_moreOutOfStock", chatConfig.getString("transaction.OFFLINE_TRANSACTIONS_NOTIFICATION.moreOutOfStock"));
 
         messageMap.put("command_list", chatConfig.getString("command.list"));
         messageMap.put("command_list_output_total", chatConfig.getString("command.list_output_total"));

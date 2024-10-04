@@ -13,6 +13,7 @@ public class PlaceholderContext {
     private boolean forSign = false;
     private ItemStack item = null;
     private ShopCreationProcess process;
+    private OfflineTransactions offlineTransactions;
 
     // Create empty Placeholder Context
     public PlaceholderContext() { }
@@ -47,6 +48,14 @@ public class PlaceholderContext {
 
     public ShopCreationProcess getProcess() {
         return process;
+    }
+
+    public void setOfflineTransactions(OfflineTransactions offlineTransactions) {
+        this.offlineTransactions = offlineTransactions;
+    }
+
+    public OfflineTransactions getOfflineTransactions() {
+        return offlineTransactions;
     }
 
     public void setForSign(boolean forSign) {

@@ -83,6 +83,9 @@ transaction:
       user: '&7You gambled &a[price] &7and received &f[item]&7(x[item amount]).'
 
    OFFLINE_TRANSACTIONS_NOTIFICATION:
+      itemRow: '&d| &f - &b[[item]] &7(x&e[item amount]&7)'
+      outOfStockShop: '&d| &6Out Of Stock Shop: &b[item] &6at &b[location]'
+      moreOutOfStock: '&d| &b[out of stock remaining] &6more Shops Out Of Stock...'
       summary:
          - '&d+---------------------------------------------------+'
          - '&d| &bShop Sales &7(while offline):'
@@ -90,16 +93,14 @@ transaction:
          - '&d| &7Transactions: &b[offline transactions]'
          - '&d| &7Profits: &a[offline profit]'
          - '&d| &7Spent: &6[offline spent]'
-         - '&d|             &7v (hover over items to see details)'
+         - '&d|'
          - '&d| &7Items Sold: '
-         - '&d| &f - &b[[item name sold row]] &7(x&e[item amount sold row]&7)'
-         - '&d|'
+         - '[offline items sold]'
          - '&d| &7Items Bought: '
-         - '&d| &f - &b[[item name bought row]] &7(x&e[item amount bought row]&7)'
+         - '[offline items bought]'
          - '&d|'
-         - '&d| &6Out Of Stock Shop: &b[out of stock item] &6at &b[out of stock location]'
+         - '[shops out of stock]'
          - '&d+---------------------------------------------------+'
-      tooManyOutOfStock: '&d| &b[out of stock remaining] &6more Shops Out Of Stock...'
 
 transaction_issue:
    SELL:

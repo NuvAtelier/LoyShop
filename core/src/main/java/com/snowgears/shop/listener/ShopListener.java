@@ -385,17 +385,9 @@ public class ShopListener implements Listener {
                         if (offlineTransactions != null && !offlineTransactions.isCalculating()) {
                             //only display the message if some transactions happened while they were offline
                             if(offlineTransactions.getNumTransactions() > 0) {
-                                List<String> messageList = ShopMessage.getUnformattedMessageList("offline", "transactions");
+                                List<String> messageList = ShopMessage.getUnformattedMessageList("offline", "summary");
                                 for (String message : messageList) {
-                                    message = ShopMessage.formatMessage(message, player, offlineTransactions);
-                                    message = ShopMessage.formatMessage(message, null, player, false);
-                                    if (message != null && !message.isEmpty()) {
-                                        Map<ItemStack, Integer> allItems = new HashMap<>();
-                                        allItems.putAll(offlineTransactions.getItemsSold());
-                                        allItems.putAll(offlineTransactions.getItemsBought());
-                                        // @TODO: Add item map into PlaceholderContext
-                                        ShopMessage.embedAndSendHoverItemsMessage(message, player, allItems);
-                                    }
+                                    ShopMessage.sendMessage(message, player, offlineTransactions);
                                 }
                             }
                             transactionsWhileOffline.remove(player.getUniqueId());
