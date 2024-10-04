@@ -182,7 +182,9 @@ public class ShopMessage {
      */
     public static void sendMessage(String message, Player player, PlaceholderContext context) {
         TextComponent fancyMessage = format(message, context);
-        player.spigot().sendMessage(fancyMessage);
+        // Verify we are not trying to send an empty string or null
+        if(!ChatColor.stripColor(fancyMessage.toLegacyText()).trim().isEmpty())
+            player.spigot().sendMessage(fancyMessage);
     }
 
     /**
@@ -509,7 +511,11 @@ public class ShopMessage {
         TextComponent itemRowsText = new TextComponent("");
         String itemRow = getUnformattedMessage("offline", "itemRow");
 
+        int i = 0;
         for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
+            i++;
+            // Add a new line character between our rows, don't add it if we are the last item (since we don't want an extra line!
+            String addNewLine = i < (items.size()) ? "\n" : "";
             ItemStack item = entry.getKey();
             item.setAmount(entry.getValue());
 
@@ -517,9 +523,11 @@ public class ShopMessage {
             itemContext.setPlayer(context.getPlayer());
             itemContext.setItem(item);
 
-            TextComponent currentRow = format(itemRow, itemContext);
+            TextComponent currentRow = format(itemRow + addNewLine, itemContext);
             itemRowsText.addExtra(currentRow);
         }
+        // If there were no lines added, just return null so that we don't log a blank line!
+        if (i == 0) return null;
 
         return itemRowsText;
     }
@@ -528,36 +536,48 @@ public class ShopMessage {
         TextComponent shopsOutOfStock = new TextComponent("");
         List<AbstractShop> playerShops = Shop.getPlugin().getShopHandler().getShops(context.getPlayer().getUniqueId());
         if (playerShops != null && !playerShops.isEmpty()) {
-            // For each item, generate a line based on the template line
-            int outOfStockShops = 0;
-            int remainingOutOfStock = 0;
-
+            // Collect all the out of stock shops
+            List<AbstractShop> outOfStock = new ArrayList<>();
             for (AbstractShop shop : playerShops) {
-                if (shop.getStock() > 0) { continue; }
-                outOfStockShops++;
-                // Limit out of stock shop rows to just 3
-                if (outOfStockShops > 3) {
-                    remainingOutOfStock++;
-                    continue;
+                if (shop.getStock() == 0) {
+                    outOfStock.add(shop);
                 }
+            }
+            // No out of stock shops!
+            if (outOfStock.isEmpty()) { return null; }
+
+            // Add the lines for each
+            int i = 0;
+            int remainingOutOfStock = 0;
+            List<String> remainingShopsMsgs = new ArrayList<>();
+            for (AbstractShop shop : outOfStock) {
+                i++;
 
                 PlaceholderContext shopContext = new PlaceholderContext();
                 shopContext.setPlayer(context.getPlayer());
                 shopContext.setShop(shop);
 
-                TextComponent currentRow = format(getUnformattedMessage("offline", "outOfStockShop") + "\n", shopContext);
-                shopsOutOfStock.addExtra(currentRow);
+                // For each item, generate a line based on the template line
+                String addNewLine = (i < (outOfStock.size()) && i <= 3) ? "\n" : "";
+                TextComponent currentRow = format(getUnformattedMessage("offline", "outOfStockShop") + addNewLine, shopContext);
+                // Limit out of stock shops to 3
+                if (i > 3) {
+                    remainingShopsMsgs.add(currentRow.toLegacyText());
+                } else {
+                    shopsOutOfStock.addExtra(currentRow);
+                }
             }
 
-            if (remainingOutOfStock > 0) {
+            if (!remainingShopsMsgs.isEmpty()) {
                 String remainingMsg = getUnformattedMessage("offline", "moreOutOfStock");
-                shopsOutOfStock.addExtra(format(remainingMsg.replace("[out of stock remaining]", "" + remainingOutOfStock), context));
+                TextComponent remaining = format(remainingMsg.replace("[out of stock remaining]", "" + remainingShopsMsgs.size()), context);
+                remaining.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(String.join("\n", remainingShopsMsgs)).create()));
+                shopsOutOfStock.addExtra(remaining);
             }
 
-            if (outOfStockShops > 0) return shopsOutOfStock;
+            return shopsOutOfStock;
         }
-
-        // No shops out of stock, don't add anything!
+        // No shops for player! don't add anything! p.s. should never get here.
         return null;
     }
 
