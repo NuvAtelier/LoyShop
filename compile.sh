@@ -10,6 +10,10 @@ cp target/Shop-*.jar ../paper-test-1.21/plugins
 rm ../spigot-test-1.21/plugins/Shop-*.jar 
 cp target/Shop-*.jar ../spigot-test-1.21/plugins
 
+rm ~/Downloads/Shop-*.jar # Remove any pre-existing jars
+# rm -r ~/Downloads/Shop-* # Remove unzipped files
+cp target/Shop-*.jar ~/Downloads
+
 # Startup latest minecraft server version to test
 # cd ../paper-test-1.20.6/
 # rm -r plugins/.paper-remapped
@@ -17,7 +21,7 @@ cp target/Shop-*.jar ../spigot-test-1.21/plugins
 
 cd ../paper-test-1.21/
 # rm -r plugins/.paper-remapped
-java -Xms1g -Xmx2g -jar paper-1.21*.jar --nogui
+java -jar paper-1.21*.jar --nogui
 
 # cd ../spigot-test-1.21/
 # java -jar spigot-1.21.jar --nogui
