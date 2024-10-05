@@ -54,6 +54,11 @@ sign_creation:
    ADMIN: "admin"
    COMBO: "combo"
 
+# Configure the color/message that is displayed when using [stock color] #
+# It supports minecraft color codes, and hex codes. You can include text in this field if you want custom messages for in stock vs out of stock #
+stock_color:
+   in_stock: "&a"
+   out_of_stock: "&4"
 
 sign_text:
    SELL:

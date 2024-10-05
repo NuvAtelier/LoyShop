@@ -106,6 +106,17 @@ public class ShopMessage {
         return new TextComponent("");
     }
 
+    // Gets the ChatColor from a string, supports Hex Colors.
+    // Returns null if no color is found.
+    public static ChatColor getColor(String color) {
+        ChatColor newColor = null;
+        if (color.matches(HEX_CODE_REGEX)) { newColor = ChatColor.of(color); }
+        else if (color.matches(COLOR_CODE_REGEX)) {
+            newColor = ChatColor.getByChar(color.charAt(1));
+        }
+        return newColor;
+    }
+
     /**
      * Formats a message by replacing all placeholders with their respective values.
      *
@@ -126,6 +137,7 @@ public class ShopMessage {
         }
 
         ChatColor latestColor = null;
+        boolean addedText = false;
         for (String part : parts) {
             plugin.getLogger().spam("\n\n");
             plugin.getLogger().trace("[ShopMessage.format] part: " + part);
@@ -134,11 +146,7 @@ public class ShopMessage {
             // Check if we are a color code
             if (part.matches(COLOR_CODE_REGEX) || part.matches(HEX_CODE_REGEX)) {
                 try {
-                    ChatColor newColor = null;
-                    if (part.matches(HEX_CODE_REGEX)) { newColor = ChatColor.of(part); }
-                    else if (part.matches(COLOR_CODE_REGEX)) {
-                        newColor = ChatColor.getByChar(part.charAt(1));
-                    }
+                    ChatColor newColor = getColor(part);
                     if (newColor != null) {
                         latestColor = newColor;
                     }
@@ -170,8 +178,12 @@ public class ShopMessage {
             }
             // Add the part of the string to the
             formattedMessage.addExtra(partComponent);
+            addedText = true;
             plugin.getLogger().spam("[ShopMessage.format] *** add part TextComponent to main message: " + partComponent);
         }
+
+        // Handle if we are just a color code with an empty string
+        if (!addedText && latestColor != null) formattedMessage.setColor(latestColor);
 
         plugin.getLogger().debug("[ShopMessage] postFormat: " + formattedMessage.toLegacyText(), true);
         return formattedMessage;
@@ -342,19 +354,14 @@ public class ShopMessage {
             if (context.getShop().isAdmin()) {
                 return new TextComponent(String.valueOf(ShopMessage.getAdminStockWord()));
             } else {
-                // This also sets sign lines to require refresh
-                // @TODO: Why do they require a refresh...? Maybe upon shop creation?
-                context.getShop().setSignLinesRequireRefresh(true);
                 return new TextComponent(String.valueOf(context.getShop().getStock()));
             }
         });
         registerPlaceholder("[stock color]", context -> {
-            // This also sets sign lines to require refresh
-            // @TODO: Why do they require a refresh...?
-            context.getShop().setSignLinesRequireRefresh(true);
-            TextComponent component = new TextComponent("");
-            component.setColor((context.getShop().getStock() > 0) ? ChatColor.GREEN : ChatColor.DARK_RED);
-            return component;
+            if (context.getShop().getStock() < 1) {
+                return format(getUnformattedMessage("signtext", "outofstockcolor"), context);
+            }
+            return format(getUnformattedMessage("signtext", "instockcolor"), context);
         });
 
         // Notify Placeholders
@@ -855,6 +862,8 @@ public class ShopMessage {
     }
 
     private void loadSignTextFromConfig() {
+        messageMap.put("signtext_instockcolor", signConfig.getString("stock_color.in_stock"));
+        messageMap.put("signtext_outofstockcolor", signConfig.getString("stock_color.out_of_stock"));
         Set<String> allTypes = signConfig.getConfigurationSection("sign_text").getKeys(false);
         for (String typeString : allTypes) {
 
