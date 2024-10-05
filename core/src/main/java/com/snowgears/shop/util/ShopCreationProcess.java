@@ -1,9 +1,11 @@
 package com.snowgears.shop.util;
 
 import com.snowgears.shop.Shop;
+import com.snowgears.shop.display.AbstractDisplay;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -12,10 +14,14 @@ import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.List;
 import java.util.UUID;
 
 public class ShopCreationProcess {
 
+    private ChatCreationStep step;
+
+    private Player player;
     private UUID processUUID;
     private UUID playerUUID;
     private Block clickedChest;
@@ -26,14 +32,27 @@ public class ShopCreationProcess {
     boolean isAdmin;
     private PricePair pricePair;
 
-    private ChatCreationStep step;
+    private AbstractDisplay display;
+    private PlaceholderContext placeholderContext;
 
     public ShopCreationProcess(Player player, Block clickedChest, BlockFace clickedFace){
+        this.player = player;
         this.processUUID = UUID.randomUUID();
         this.playerUUID = player.getUniqueId();
         this.clickedChest = clickedChest;
         this.clickedFace = clickedFace;
         this.step = ChatCreationStep.ITEM;
+
+        // Displays instructions on top of the chest
+        this.display = Shop.getPlugin().getShopHandler().createDisplay(clickedChest.getLocation());
+        // Setup placeholder context for ShopMessage
+        this.placeholderContext = new PlaceholderContext();
+        this.placeholderContext.setPlayer(player);
+        this.placeholderContext.setProcess(this);
+    }
+
+    public void cleanup() {
+        this.display.removeDisplayEntities(player, true);
     }
 
     public Block getClickedChest() {
@@ -181,6 +200,22 @@ public class ShopCreationProcess {
             pricePair = new PricePair(0, priceCombo);
         pricePair.setPriceCombo(priceCombo);
         this.step = ChatCreationStep.FINISHED;
+    }
+
+    public void displayFloatingText(String key, String subkey) {
+        // Remove any existing text
+        this.display.removeDisplayEntities(player, true);
+
+        // Display new text
+        String unformatted = ShopMessage.getUnformattedMessage(key, subkey);
+        String formatted = ShopMessage.format(unformatted, this.placeholderContext).toLegacyText();
+        Location loc = this.clickedChest.getLocation().add(0.5,1.25,0.5);
+        List<String> lines = UtilMethods.splitStringIntoLines(formatted, 45);
+        int i = 0;
+        for (String line : lines) {
+            i++;
+            this.display.createTagEntity(player, line, loc.add(0, (i * -0.124), 0));
+        }
     }
 
     public enum ChatCreationStep {

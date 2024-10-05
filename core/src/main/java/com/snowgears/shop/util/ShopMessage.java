@@ -762,6 +762,7 @@ public class ShopMessage {
                 count++;
             }
         }
+        messageMap.put("initialCreateInstruction", chatConfig.getString("interaction.initialCreateInstruction"));
         messageMap.put("createHitChest", chatConfig.getString("interaction.createHitChest"));
         messageMap.put("adminCreateHitChest", chatConfig.getString("interaction.adminCreateHitChest"));
 

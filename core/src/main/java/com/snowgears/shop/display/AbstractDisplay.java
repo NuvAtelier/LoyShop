@@ -237,12 +237,16 @@ public abstract class AbstractDisplay {
         }
     }
 
-    private void createTagEntity(Player player, String text, Location location){
+    public void createTagEntity(Player player, String text, Location location){
         ArmorStandData caseStandData = new ArmorStandData();
         caseStandData.setSmall(false);
         caseStandData.setLocation(location);
 
         spawnArmorStandPacket(player, caseStandData, text);
+    }
+
+    public void addRemoveDisplayTask(Player player) {
+        removeDisplayTagsDelayedTask(player);
     }
 
     public DisplayType getType(){

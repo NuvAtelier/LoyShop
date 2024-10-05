@@ -668,4 +668,29 @@ public class UtilMethods {
         dataInput.close();
         return item;
     }
+
+    public static List<String> splitStringIntoLines(String text, int maxLineLength) {
+        String[] words = text.split(" ");
+        StringBuilder currentLine = new StringBuilder();
+        List<String> result = new ArrayList<>();
+
+        for (String word : words) {
+            if (currentLine.length() + word.length() + 1 <= maxLineLength) {
+                if (currentLine.length() > 0) {
+                    currentLine.append(" ");
+                }
+                currentLine.append(word);
+            } else {
+                result.add(currentLine.toString());
+                currentLine = new StringBuilder(word);
+            }
+        }
+
+        // Append the last line if there's any content left
+        if (currentLine.length() > 0) {
+            result.add(currentLine.toString());
+        }
+
+        return result;
+    }
 }

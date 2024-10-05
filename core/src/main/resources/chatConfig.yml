@@ -129,6 +129,7 @@ transaction_issue:
       playerNoSpace: "&cYou do not have enough space in your inventory to gamble with this shop."
 
 interaction:
+   initialCreateInstruction: '&eTo set up your shop, please type your responses in chat when prompted.'
    SELL:
       initialize: "&6Now just hit the sign with the item you want to sell to other players!"
       create: "&eYou have created a shop that sells &6[item](s)&e."
