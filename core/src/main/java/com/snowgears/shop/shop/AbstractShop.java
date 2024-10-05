@@ -62,6 +62,8 @@ public abstract class AbstractShop {
         this.item = null;
         this.facing = facing;
 
+        this.signLinesRequireRefresh = true; // Reload signs on load in case config changed!
+
         display = Shop.getPlugin().getShopHandler().createDisplay(this.signLocation);
         fakeSign = false;
 
@@ -135,9 +137,10 @@ public abstract class AbstractShop {
                         return false;
                     }
                 }
-                this.setGuiIcon();
                 // Stock is recalculated in setGuiIcon
-//                this.updateSign();
+                this.setGuiIcon();
+                // Update the sign on load in case the SignConfig.yml changed since last boot
+                this.updateSign();
                 Shop.getPlugin().getLogger().trace("Loaded shop: " + this);
                 return true;
             } catch (ClassCastException cce) {
