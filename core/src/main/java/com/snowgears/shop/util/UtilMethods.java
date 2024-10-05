@@ -2,6 +2,7 @@ package com.snowgears.shop.util;
 
 import net.md_5.bungee.api.ChatColor;
 import com.snowgears.shop.Shop;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -20,15 +21,14 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.UUID;
+import java.util.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Base64;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.bukkit.util.io.BukkitObjectOutputStream;
 import org.bukkit.util.io.BukkitObjectInputStream;
 
@@ -670,25 +670,37 @@ public class UtilMethods {
     }
 
     public static List<String> splitStringIntoLines(String text, int maxLineLength) {
-        String[] words = text.split(" ");
+        final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORa-fk-or])";
+
+        Matcher matcher = Pattern.compile(COLOR_CODE_REGEX + "| |[^&§\\s]+").matcher(text);
+        List<String> words = new ArrayList<>();
+        while (matcher.find()) {
+            words.add(matcher.group());
+        }
+
         StringBuilder currentLine = new StringBuilder();
         List<String> result = new ArrayList<>();
 
+        String latestColor = "";
         for (String word : words) {
-            if (currentLine.length() + word.length() + 1 <= maxLineLength) {
-                if (currentLine.length() > 0) {
-                    currentLine.append(" ");
-                }
-                currentLine.append(word);
+            Shop.getPlugin().getLogger().debug(word);
+            if (word.matches(COLOR_CODE_REGEX)) {
+                if (latestColor.equals(word)) continue;
+                latestColor = word;
+            }
+            if (word.matches(" ") && ChatColor.stripColor(currentLine.toString()).length() + ChatColor.stripColor(word).length() + 1 > maxLineLength) {
+                Shop.getPlugin().getLogger().debug(currentLine.toString());
+                result.add(currentLine.toString().trim());
+                currentLine = new StringBuilder(latestColor);
             } else {
-                result.add(currentLine.toString());
-                currentLine = new StringBuilder(word);
+                currentLine.append(word);
             }
         }
 
         // Append the last line if there's any content left
         if (currentLine.length() > 0) {
-            result.add(currentLine.toString());
+            Shop.getPlugin().getLogger().debug(currentLine.toString());
+            result.add(currentLine.toString().trim());
         }
 
         return result;

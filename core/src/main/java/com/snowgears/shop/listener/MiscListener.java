@@ -289,7 +289,7 @@ public class MiscListener implements Listener {
                             return;
                         }
                         currentProcess.setBarterItemStack(event.getItem());
-                        ShopMessage.sendMessage(currentProcess.getShopType().toString(), "createHitChestBarterAmount", currentProcess, player);
+                        currentProcess.displayFloatingText(currentProcess.getShopType().toString(), "createHitChestBarterAmount");
                         event.setCancelled(true);
                         return;
                     }
@@ -331,6 +331,9 @@ public class MiscListener implements Listener {
                 //send player text prompts after they have clicked the chest with the item they want to create a shop with
                 ShopMessage.sendMessage("initialCreateInstruction", null, process, player);
                 process.displayFloatingText("createHitChest", null);
+                List<String> autocomplete = new ArrayList<>();
+                Arrays.asList(ShopType.values()).forEach((shopType -> autocomplete.add(shopType.toString().toLowerCase())));
+                player.setCustomChatCompletions(autocomplete);
                 if((!plugin.usePerms() && player.isOp()) || (plugin.usePerms() && player.hasPermission("shop.operator"))) {
                     ShopMessage.sendMessage("adminCreateHitChest", null, process, player);
                 }
@@ -398,7 +401,7 @@ public class MiscListener implements Listener {
                     event.setCancelled(true);
 
                     if(process.getShopType() == ShopType.BARTER){
-                        ShopMessage.sendMessage(process.getShopType().toString(), "createHitChest", process, player);
+                        process.displayFloatingText(process.getShopType().toString(), "createHitChest");
                         if (plugin.allowCreativeSelection()) {
                             // ToDo: Allow multiple floating displays, or combine this text, up to you
                             ShopMessage.sendMessage(process.getShopType().toString(), "initializeBarterAlt", player, null);

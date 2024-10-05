@@ -47,6 +47,9 @@ allowPartialSales: true
 #                         DISPLAY SETTINGS                            #
 # =================================================================== #
 
+# This will show shop creation instructions as floating text above shops #
+displayFloatingCreateText: true
+
 # This will change the type of display that shops will use by default above their chests #
 # The options are: NONE, ITEM, GLASS_CASE, LARGE_ITEM, ITEM_FRAME #
 displayType: ITEM

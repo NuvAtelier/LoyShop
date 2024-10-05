@@ -203,18 +203,23 @@ public class ShopCreationProcess {
     }
 
     public void displayFloatingText(String key, String subkey) {
+        // Check if feature is enabled or not.
+        if (!Shop.getPlugin().getConfig().getBoolean("displayFloatingCreateText")) {
+            ShopMessage.sendMessage(key, subkey, this, player);
+            return;
+        }
         // Remove any existing text
         this.display.removeDisplayEntities(player, true);
 
         // Display new text
         String unformatted = ShopMessage.getUnformattedMessage(key, subkey);
         String formatted = ShopMessage.format(unformatted, this.placeholderContext).toLegacyText();
-        Location loc = this.clickedChest.getLocation().add(0.5,1.25,0.5);
-        List<String> lines = UtilMethods.splitStringIntoLines(formatted, 45);
+        List<String> lines = UtilMethods.splitStringIntoLines(formatted, 35);
+        Location loc = this.clickedChest.getLocation().clone().add(0.5,0.625 + (0.248*lines.size()),0.5);
         int i = 0;
         for (String line : lines) {
+            this.display.createTagEntity(player, line, loc.clone().add(0, (i * -0.248), 0));
             i++;
-            this.display.createTagEntity(player, line, loc.add(0, (i * -0.124), 0));
         }
     }
 
