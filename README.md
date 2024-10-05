@@ -1,9 +1,27 @@
-# [Shop - the intuitive shop plugin by Snowgears](https://www.spigotmc.org/resources/shop-the-intuitive-shop-plugin.9628/)
+![520ef725efdc8caad836d0370a17d58ce8ee99b2](https://github.com/user-attachments/assets/075aaff3-2328-4672-89af-32bc86ec3fcd)
 
 ## Description
 Allows players to quickly create shops to buy, sell, barter, or gamble items seamlessly!
 
 By focusing on ease of use, players of any skill level can create in-game shops in a way that feels like a native feature.
+
+## Build a Release
+* Update version in `/pom.xml`
+* `./compile.sh`
+* Plugin is built to `/target/shop-{version}.jar`
+
+## Versioning
+`breaking.mcupdate.feature.bugfix`
+- `breaking`: Changes that are not backwards compatible, or complete overhaul of plugin
+- `mcupdate`: When a new major version of Minecraft comes out including new features that impact Shop
+- `feature`: Addition of new/reworked features, or significantly refactored code
+- `bugfix`: 
+
+Examples:
+- `v1.x.x.x` -> `v2.x.x.x`: Backwards incompatible changes
+- `v1.8.x.x` -> `v1.9.x.x`: Minecraft 1.21 released
+- `v1.9.1.x` -> `v1.9.2.x`: New feature added to Shop
+- `v1.9.1.0` -> `v1.9.1.1`: Bug was fixed
 
 ## Compiling Prerequisites
 Before you begin, ensure you have met the following requirements:

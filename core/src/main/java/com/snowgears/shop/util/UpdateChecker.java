@@ -1,7 +1,11 @@
 package com.snowgears.shop.util;
 
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.ClickEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -30,8 +34,8 @@ public class UpdateChecker {
     //Constants. Customize to your liking.
     private static final int ID = 9628; //The ID of your resource. Can be found in the resource URL.
     private static final String ERR_MSG = "&cShop update checker failed!";
-    private static final String UPDATE_MSG = "&fA new Shop update is available at:&b https://www.spigotmc.org/resources/" + ID + "/updates";
-    private static final String DEV_VERSION_MSG = "&l&e[Shop] &r&6Running development version &l&c{devVersion}&r&6. If you encounter bugs, please roll back to the latest stable version.";
+    private static final String UPDATE_MSG = "&fNew Shop update &av{latestReleasedVersion} &fis available &f(your running: &ev{runningVersion}&f)\n&bhttps://www.spigotmc.org/resources/shop-the-intuitive-shop-plugin.9628/updates";
+    private static final String DEV_VERSION_MSG = "&l&e[Shop] &r&6Running development version &l&c{runningVersion}&r&6. If you encounter bugs, please roll back to the latest stable version.";
     //PermissionDefault.FALSE == OPs need the permission to be notified.
     //PermissionDefault.TRUE == all OPs are notified regardless of having the permission.
     private static final Permission UPDATE_PERM = new Permission("shop.update", PermissionDefault.FALSE);
@@ -64,7 +68,7 @@ public class UpdateChecker {
                     if (compareVersions(localPluginVersion, spigotPluginVersion) == 0) return;
                     // Are we running an older verion?
                     if (compareVersions(localPluginVersion, spigotPluginVersion) < 0) {
-                        Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', UPDATE_MSG));
+                        Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', embedVersions(UPDATE_MSG, localPluginVersion, spigotPluginVersion)));
 
                         //Register the PlayerJoinEvent
                         Bukkit.getScheduler().runTask(javaPlugin, () -> Bukkit.getPluginManager().registerEvents(new Listener() {
@@ -72,13 +76,16 @@ public class UpdateChecker {
                             public void onPlayerJoin(final PlayerJoinEvent event) {
                                 final Player player = event.getPlayer();
                                 if (!player.isOp()) return;
-                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', UPDATE_MSG));
+                                TextComponent updateMsg = new TextComponent(ChatColor.translateAlternateColorCodes('&', embedVersions(UPDATE_MSG, localPluginVersion, spigotPluginVersion)));
+                                updateMsg.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Click to open Shop plugin page").create()));
+                                updateMsg.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, "https://www.spigotmc.org/resources/shop-the-intuitive-shop-plugin.9628/updates"));
+                                player.spigot().sendMessage(updateMsg);
                             }
                         }, javaPlugin));
                     }
                     /* RUNNING SHOP DEV VERSION */
                     if (compareVersions(localPluginVersion, spigotPluginVersion) > 0) {
-                        Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', combineVersionString(DEV_VERSION_MSG, localPluginVersion)));
+                        Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', embedVersions(DEV_VERSION_MSG, localPluginVersion, spigotPluginVersion)));
 
                         //Register the PlayerJoinEvent
                         Bukkit.getScheduler().runTask(javaPlugin, () -> Bukkit.getPluginManager().registerEvents(new Listener() {
@@ -86,7 +93,7 @@ public class UpdateChecker {
                             public void onPlayerJoin(final PlayerJoinEvent event) {
                                 final Player player = event.getPlayer();
                                 if (!player.isOp()) return;
-                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', combineVersionString(DEV_VERSION_MSG, localPluginVersion)));
+                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', embedVersions(DEV_VERSION_MSG, localPluginVersion, spigotPluginVersion)));
                             }
                         }, javaPlugin));
                     }
@@ -97,9 +104,8 @@ public class UpdateChecker {
         }.runTaskTimer(javaPlugin, 0, CHECK_INTERVAL);
     }
 
-    private String combineVersionString(String msg, String version) {
-        String message = msg.replace("{devVersion}", version);
-        return message;
+    private String embedVersions(String msg, String runningVersion, String latestReleasedVersion) {
+        return msg.replace("{runningVersion}", runningVersion).replace("{latestReleasedVersion}", latestReleasedVersion);
     }
 
     public int compareVersions(String localVersion, String latestVersion) {
