@@ -323,7 +323,7 @@ public class LogHandler {
                                     if (barterItem != null) {
                                         // Barter Item is the "currency" item being spent in the transaction
                                         ItemStack barterItemstack = UtilMethods.itemStackFromBase64(barterItem);
-                                        itemsBought.put(barterItemstack, itemsBought.getOrDefault(barterItemstack, 0) + amount);
+                                        itemsBought.put(barterItemstack, itemsBought.getOrDefault(barterItemstack, 0) + barterItemstack.getAmount());
                                     }
                                 }
                             }
