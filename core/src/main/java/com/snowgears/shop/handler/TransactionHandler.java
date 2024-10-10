@@ -190,7 +190,7 @@ public class TransactionHandler {
             guiIcon = plugin.getGuiHandler().getIconFromOption(owner, PlayerSettings.Option.NOTIFICATION_SALE_OWNER);
             if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_OWNER_ON) {
                 if(message != null && !message.isEmpty())
-                    ShopMessage.sendMessage(message, owner, shop);
+                    ShopMessage.sendMessage(message, owner, player, shop);
 //                    owner.sendMessage(message);
             }
         }
