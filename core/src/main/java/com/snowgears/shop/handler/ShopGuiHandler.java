@@ -314,14 +314,16 @@ public class ShopGuiHandler {
             }
 
             if(icon != null) {
-                ItemMeta iconMeta = icon.getItemMeta();
+                if (icon.getItemMeta() != null) {
+                    ItemMeta iconMeta = icon.getItemMeta();
 
-                if (name != null)
-                    iconMeta.setDisplayName(name);
-                if (lore != null && !lore.isEmpty())
-                    iconMeta.setLore(lore);
+                    if (name != null)
+                        iconMeta.setDisplayName(name);
+                    if (lore != null && !lore.isEmpty())
+                        iconMeta.setLore(lore);
 
-                icon.setItemMeta(iconMeta);
+                    icon.setItemMeta(iconMeta);
+                }
                 guiIcons.put(iconEnum, icon);
             }
         }
