@@ -11,17 +11,17 @@ By focusing on ease of use, players of any skill level can create in-game shops 
 * Plugin is built to `/target/shop-{version}.jar`
 
 ## Versioning
-`breaking.mcupdate.feature.bugfix`
+This project follows [semantic versioning](https://semver.org/)
+
+Format: `breaking.feature.bugfix`
 - `breaking`: Changes that are not backwards compatible, or complete overhaul of plugin
-- `mcupdate`: When a new major version of Minecraft comes out including new features that impact Shop
 - `feature`: Addition of new/reworked features, or significantly refactored code
-- `bugfix`: 
+- `bugfix`: Bug was fixed
 
 Examples:
-- `v1.x.x.x` -> `v2.x.x.x`: Backwards incompatible changes
-- `v1.8.x.x` -> `v1.9.x.x`: Minecraft 1.21 released
-- `v1.9.1.x` -> `v1.9.2.x`: New feature added to Shop
-- `v1.9.1.0` -> `v1.9.1.1`: Bug was fixed
+- `v1.x.x` -> `v2.x.x`: Backwards incompatible changes
+- `v1.1.x` -> `v1.2.x`: New Minecraft update or backwards compatible feature added to Shop
+- `v1.1.0` -> `v1.1.1`: Bug was fixed
 
 ## Compiling Prerequisites
 Before you begin, ensure you have met the following requirements:
