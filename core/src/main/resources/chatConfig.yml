@@ -1,5 +1,6 @@
 # THIS FILE IS USED TO CONFIGURE WHAT MESSAGES ARE DISPLAYED #
 # ================================================================== #
+# You can use any hex code (#FF00FF), or minecraft color code in this config!
 # &b : AQUA
 # &0 : BLACK
 # &9 : BLUE
@@ -23,14 +24,12 @@
 # &f : WHITE
 # &e : YELLOW
 
-# [item] : The name of the item in the transaction #
-# [[item]] : Hoverable text of the item in the transaction#
+# [item] : The name of the item in the transaction, supports hovering #
 # [item amount] : The amount of the item #
 # [item type] : The material type of the item in the transaction #
 # [item lore] : The lore (description) of the item in the transaction #
 # [item enchants] : The enchantments of the item in the transaction #
-# [barter item] : The name of the barter item in the transaction #
-# [[barter item]] : Hoverable text of the barter item in the transaction #
+# [barter item] : The name of the barter item in the transaction, supports hovering #
 # [barter item amount] : The amount of the barter item #
 # [barter item type] : The material type of the barter item in the transaction #
 # [barter item lore] : The lore (description) of the barter item in the transaction #
@@ -47,7 +46,7 @@
 # [server name] : The name of the server #
 # [shop type] : The type of the shop (sell, buy, barter) #
 # [shop types] : A list of available shop types a player can create #
-# [location] : The x,y,z coordinates of the shop sign #
+# [location] : The x,y,z coordinates of the shop sign, displays hover text showing info about the shop #
 # [world] : The name of the world the shop is in #
 # [plugin] : The main command of the plugin (default is 'shop') #
 # [total shops] : The total amount of shops registered on the server #
@@ -61,24 +60,22 @@
 # [offline transactions]: The number of transactions that took place at a players shop while a player was offline
 # [offline profit]: The amount of currency that was earned while a player was offline
 # [offline spent]: The amount of currency that was spent while a player was offline
-# [item name sold row]: Offline Purchase item sold name
-# [item amount sold row]: Offline Purchase item sold amount
-# [item name bought row]: Offline Purchase item bought name
-# [item amount bought row]: Offline Purchase item bought amount
-# [out of stock item]: (Offline Notification) Item that is out of stock for a particular shop
-# [out of stock location]: (Offline Notification) Location for the shop that is out of stock
+# [offline items sold]: Offline Purchase item sold row
+# [offline items bought]: Offline Purchase item bought row
+# [shops out of stock]: (Offline Notification) List rows of shops that are out of stock
+# [out of stock remaining]: (Offline Notification) Remaining number of rows not displayed
 # [tp time remaining]: The amount of seconds remaining on a players teleport to shop cooldown timer
 
 transaction:
    SELL:
       user: '&7You bought &f[item amount] [item](s) &7from [owner] for &a[price]&7.'
-      owner: '&7[user] bought &f[item amount] [item](s) &7from you for &a[price]&7.'
+      owner: '&7[user] bought &f[item amount] [item](s) &7from you for &a[price]&7 at &f[location]&7.'
    BUY:
       user: '&7You sold &f[item amount] [item](s) &7to [owner] for &a[price]&7.'
-      owner: '&7[user] sold &f[item amount] [item](s) &7to you for &a[price]&7.'
+      owner: '&7[user] sold &f[item amount] [item](s) &7to you for &a[price]&7 at &f[location]&7.'
    BARTER:
       user: '&7You bartered &f[barter item amount] &7of your &f[barter item](s) &7for &f[item amount] &7of [owner]s &f[item](s)&7.'
-      owner: '&7[user] bartered &f[barter item amount] &7of their &f[barter item](s) &7for &f[item amount] &7of your &f[item](s)&7.'
+      owner: '&7[user] bartered &f[barter item amount] &7of their &f[barter item](s) &7for &f[item amount] &7of your &f[item](s)&7 at &f[location]&7.'
    GAMBLE:
       user: '&7You gambled &a[price] &7and received &f[item]&7(x[item amount]).'
 
@@ -250,6 +247,14 @@ permission:
    create: "&cYou are not authorized to create [shop type] shops."
    destroy: "&cYou are not authorized to destroy shops."
    buildLimit: "&cYou have already reached your build limit of [build limit] shops."
+
+hover:
+   location:
+      - '[item] &7(x[item amount])'
+      - '&7Type: &b[shop type]'
+      - '&7Price: &a[price]'
+      - '[stock color][stock] in stock'
+      - '&7[owner]'
 
 creativeSelection:
    enter:

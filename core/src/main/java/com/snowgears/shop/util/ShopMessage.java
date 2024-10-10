@@ -253,6 +253,16 @@ public class ShopMessage {
     /**
      * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
      */
+    public static void sendMessage(String message, Player player, Player user, AbstractShop shop) {
+        PlaceholderContext context = new PlaceholderContext();
+        context.setPlayer(user);
+        context.setShop(shop);
+        sendMessage(message, player, context);
+    }
+
+    /**
+     * Swaps in placeholder values, sends fancy message with Click/Hover events to Player
+     */
     public static void sendMessage(String message, ShopCreationProcess process, Player player) {
         PlaceholderContext context = new PlaceholderContext();
         context.setPlayer(player);
@@ -311,7 +321,9 @@ public class ShopMessage {
             if (context.getProcess() != null) loc = context.getProcess().getClickedChest().getLocation();
             else if (context.getShop() != null) loc = context.getShop().getSignLocation();
             if (loc == null) return null;
-            return new TextComponent(UtilMethods.getCleanLocation(loc, false));
+            TextComponent text = new TextComponent(UtilMethods.getCleanLocation(loc, false));
+            text.setHoverEvent(getShopInfoHoverEvent(context));
+            return text;
         });
 
         // Currency Placeholders
@@ -426,6 +438,20 @@ public class ShopMessage {
         return msg;
     }
 
+    private static HoverEvent getShopInfoHoverEvent(PlaceholderContext context) {
+        try {
+            TextComponent hoverText = new TextComponent();
+            List<String> hoverLines = getUnformattedMessageList("hover", "location");
+            int i = 0;
+            for (String line : hoverLines) {
+                i++;
+                // Add new lines between text
+                hoverText.addExtra(format(line + (i == hoverLines.size() ? "" : "\n"), context));
+            }
+            return new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{hoverText});
+        } catch (Exception e) {}
+        return null;
+    }
 
     /**
      * Helper method to handle the [shop types] placeholder.
@@ -807,6 +833,11 @@ public class ShopMessage {
 
 
         int count = 1;
+        for(String s : chatConfig.getStringList("hover.location")){
+            messageMap.put("hover_location"+count, s);
+            count++;
+        }
+        count = 1;
         for(String s : chatConfig.getStringList("creativeSelection.enter")){
             messageMap.put("creativeSelection_enter"+count, s);
             count++;
