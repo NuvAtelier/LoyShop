@@ -247,6 +247,7 @@ public class MiscListener implements Listener {
                     if(plugin.allowCreativeSelection()) {
                         //TODO this section needs to check if the current step is to get the barter item
                         ShopCreationProcess currentProcess = playerChatCreationSteps.get(player.getUniqueId());
+                        plugin.getLogger().helpful("no item currentProcess: " + currentProcess);
                         if (currentProcess != null && currentProcess.getStep() == ShopCreationProcess.ChatCreationStep.BARTER_ITEM) {
                             plugin.getCreativeSelectionListener().putPlayerInCreativeSelection(player, clicked.getLocation(), false);
                             event.setCancelled(true);
@@ -283,6 +284,7 @@ public class MiscListener implements Listener {
                 }
                 else {
                     ShopCreationProcess currentProcess = playerChatCreationSteps.get(player.getUniqueId());
+                    plugin.getLogger().helpful("check parter currentProcess: " + currentProcess);
                     if (currentProcess != null && currentProcess.getStep() == ShopCreationProcess.ChatCreationStep.BARTER_ITEM) {
                         if (!plugin.getShopCreationUtil().itemsCanBeInitialized(player, currentProcess.getItemStack(), event.getItem())) {
                             event.setCancelled(true);
@@ -299,11 +301,18 @@ public class MiscListener implements Listener {
                     return;
 
                 Long lastCreatedProcess = lastChatCreation.get(player.getUniqueId());
-                //if the player has created a new process in the last 5 seconds, block them from creating another
-                if(lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < 5000) {
-                    ShopMessage.sendMessage("interactionIssue", "createCooldown", player, null);
-                    event.setCancelled(true);
-                    return;
+                if(lastCreatedProcess != null) {
+                    //if the player has created a new process in the last 5 seconds, block them from creating another
+                    if ((new Date().getTime() - lastCreatedProcess) < 5000) {
+                        ShopMessage.sendMessage("interactionIssue", "createCooldown", player, null);
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+                // Cleanup the last process if needed and assume the player wants to start a new process
+                ShopCreationProcess lastProcess = playerChatCreationSteps.get(player.getUniqueId());
+                if (lastProcess != null) {
+                    lastProcess.cleanup(); // removes floating displays
                 }
 
                 //dont let players create shops via chest on shops that already exist
