@@ -137,10 +137,7 @@ public abstract class AbstractShop {
                         return false;
                     }
                 }
-                // Stock is recalculated in setGuiIcon
-                this.setGuiIcon();
-                // Update the sign on load in case the SignConfig.yml changed since last boot
-                this.updateSign();
+                this.updateStock();
                 Shop.getPlugin().getLogger().trace("Loaded shop: " + this);
                 return true;
             } catch (ClassCastException cce) {
@@ -268,8 +265,14 @@ public abstract class AbstractShop {
     public String getOwnerName() {
         if(this.isAdmin())
             return "admin";
-        if (this.getOwner() != null)
-            return Bukkit.getOfflinePlayer(this.owner).getName();
+        if (this.getOwner() != null){
+            // If we can load the owner name, just use that
+            if (this.getOwner().getName() != null) return this.getOwner().getName();
+            // Return unknown player text
+            String shortId = this.getOwnerUUID().toString();
+            shortId = shortId.substring(0,3) + "..." + shortId.substring(shortId.length()-3);
+            return "Unknown Player (" + shortId + ")";
+        }
         return ChatColor.RED + "CLOSED";
     }
 
@@ -353,27 +356,20 @@ public abstract class AbstractShop {
     }
 
     public ItemStack getGuiIcon(){
+        // Load it when it is first called
+        if (guiIcon == null) { this.refreshGuiIcon(); }
         return guiIcon;
     }
 
     //setter methods
 
     public void setItemStack(ItemStack is) {
-        this.item = is.clone();
-
         // Remove "0 Damage" from item meta (old config bug)
-        this.item = this.removeZeroDamageMeta(this.item);
-
-        setGuiIcon();
+        this.item = this.removeZeroDamageMeta(is.clone());
     }
 
     public void setSecondaryItemStack(ItemStack is) {
-        this.secondaryItem = is.clone();
-
-        // Remove "0 Damage" from item meta (old config bug)
-        this.secondaryItem = this.removeZeroDamageMeta(this.secondaryItem);
-
-        setGuiIcon();
+        this.secondaryItem = this.removeZeroDamageMeta(is.clone());
     }
 
     public ItemStack removeZeroDamageMeta(ItemStack item) {
@@ -410,9 +406,7 @@ public abstract class AbstractShop {
         this.amount = amount;
     }
 
-    public void setGuiIcon(){
-        if (!this.isAdmin) this.updateStock();
-
+    public void refreshGuiIcon() {
         if(this.type != ShopType.GAMBLE) {
             if (this.getItemStack() == null)
                 return;
@@ -430,9 +424,10 @@ public abstract class AbstractShop {
         String name = ShopMessage.formatMessage(placeHolderIcon.getItemMeta().getDisplayName(), this, null, false);
         List<String> lore = new ArrayList<>();
         for(String loreLine : placeHolderIcon.getItemMeta().getLore()){
-            if(loreLine.contains("[barter item]") && this.getType() != ShopType.BARTER) {}
-            else {
-                lore.add(ShopMessage.formatMessage(loreLine, this, null, false));
+            if(loreLine.contains("[barter item]") && this.getType() == ShopType.BARTER) {
+                PlaceholderContext context = new PlaceholderContext();
+                context.setShop((BarterShop) this);
+                lore.add(ShopMessage.format(loreLine, context).toLegacyText());
             }
         }
 
@@ -476,6 +471,8 @@ public abstract class AbstractShop {
 
         Shop.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(Shop.getPlugin(), new Runnable() {
             public void run() {
+                // Update the GUI Icon since the sign needs an update.
+                refreshGuiIcon();
 
                 Sign signBlock;
                 try {

@@ -24,6 +24,11 @@ public class ListPlayerShopsWindow extends ShopGuiWindow {
         }
         else {
             this.title = Bukkit.getOfflinePlayer(playerToList).getName();
+            if (this.title == null){
+                String shortId = playerToList.toString();
+                shortId = shortId.substring(0,3) + "..." + shortId.substring(shortId.length()-3);
+                this.title = "Unknown Player (" + shortId + ")";
+            }
 
             //TODO in the future, might add total shops / allowed shops in title of own player
 //            if(Shop.getPlugin().usePerms() && player.equals(playerToList)){

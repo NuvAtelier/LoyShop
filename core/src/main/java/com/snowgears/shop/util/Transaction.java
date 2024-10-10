@@ -215,7 +215,7 @@ public class Transaction {
         if(shop.getChestLocation() != null && shop.getChestLocation().getBlock().getType() == Material.ENDER_CHEST){
             Shop.getPlugin().getEnderChestHandler().saveInventory(shop.getOwner());
         }
-        shop.setGuiIcon();
+        shop.updateStock();
 
         // Successful!
         return this.setError(TransactionError.NONE);

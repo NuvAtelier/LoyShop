@@ -102,9 +102,8 @@ public class ShopGuiHandler {
                 itemMeta = playerHead.getItemMeta();
 
                 //System.out.println("[Shop] player was not null. Adding owning player to icon skin");
-                if (offlinePlayer == null)
-                    return;
-                ((SkullMeta)itemMeta).setOwningPlayer(offlinePlayer);
+                if (offlinePlayer != null && offlinePlayer.getName() != null)
+                    ((SkullMeta)itemMeta).setOwningPlayer(offlinePlayer);
             }
 
         }
@@ -122,6 +121,11 @@ public class ShopGuiHandler {
         }
 
         String name = ShopMessage.formatMessage(placeHolderIcon.getItemMeta().getDisplayName(), shop);
+        if (name == null || name.isEmpty()) {
+            String shortId = playerUUID.toString();
+            shortId = shortId.substring(0,3) + "..." + shortId.substring(shortId.length()-3);
+            name = "Unknown Player (" + shortId + ")";
+        }
         List<String> lore = new ArrayList<>();
         for(String loreLine : placeHolderIcon.getItemMeta().getLore()){
             lore.add(ShopMessage.formatMessage(loreLine, shop));

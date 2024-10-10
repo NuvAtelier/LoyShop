@@ -98,7 +98,8 @@ public class ShopMessage {
                 }
             } catch (Exception e) {
                 // Log the exception
-                Bukkit.getLogger().warning("Error replacing placeholder [" + placeholder + "]: " + e.getMessage());
+                Bukkit.getLogger().warning("Error replacing placeholder " + placeholder + ": " + e.getMessage());
+                e.printStackTrace();
             }
         }
         // If placeholder not found, remove the placeholder and just return an empty string
@@ -334,7 +335,8 @@ public class ShopMessage {
 
         // Shop Barter Item Placeholders
         registerPlaceholder("[barter item amount]", context -> {
-            if (context.getProcess() != null) return new TextComponent(String.valueOf(context.getProcess().getBarterItemAmount()));
+            if (context.getItem() != null) return new TextComponent(String.valueOf(context.getItem().getAmount()));
+            else if (context.getProcess() != null) return new TextComponent(String.valueOf(context.getProcess().getBarterItemAmount()));
             return new TextComponent(String.valueOf(context.getShop().getSecondaryItemStack().getAmount()));
         });
         registerPlaceholder("[barter item]", ShopMessage::getBarterItemPlaceholder);
@@ -479,6 +481,7 @@ public class ShopMessage {
         if (item == null) { return null; }
 
         String itemName = plugin.getItemNameUtil().getName(item);
+
         if (context.isForSign()) {
             return new TextComponent(UtilMethods.trimForSign(itemName));
         }
@@ -701,7 +704,7 @@ public class ShopMessage {
             formattedLine = formatMessage(line, shop, null, false);
 //            formattedLine = ChatColor.translateAlternateColorCodes('&', formattedLine);
 
-            if(!ChatColor.stripColor(formattedLine).trim().isEmpty())
+            if(formattedLine != null && !formattedLine.isEmpty() && !ChatColor.stripColor(formattedLine).trim().isEmpty())
                 formattedLines.add(formattedLine);
         }
         return formattedLines;

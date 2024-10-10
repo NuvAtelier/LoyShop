@@ -1,7 +1,7 @@
 #!/bin/sh
 
 export MAVEN_OPTS="-Xms1g -Xmx3g"
-mvn clean compile package -o -T 2C
+mvn clean compile package -T 2C
 # Copy latest plugin in
 rm ../paper-test-1.20.6/plugins/Shop-*.jar 
 cp target/Shop-*.jar ../paper-test-1.20.6/plugins
@@ -21,7 +21,7 @@ cp target/Shop-*.jar ~/Downloads
 
 cd ../paper-test-1.21/
 # rm -r plugins/.paper-remapped
-java -jar paper-1.21*.jar --nogui
+java -jar paper-1.21.1*.jar --nogui
 
 # cd ../spigot-test-1.21/
 # java -jar spigot-1.21.jar --nogui

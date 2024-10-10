@@ -831,41 +831,47 @@ public class ShopHandler {
 
                 // load all the yml files from the data directory
                 for (File file : fileDirectory.listFiles()) {
-                    if (file.isFile()) {
-                        if (file.getName().endsWith(".yml")
-                                && !file.getName().contains("enderchests")
-                                && !file.getName().contains("itemCurrency")
-                                && !file.getName().contains("gambleDisplay")) {
-                            YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-                            boolean isLegacyConfig = false;
-                            UUID playerUUID = null;
-                            String fileNameNoExt = null;
-                            try {
-                                int dotIndex = file.getName().lastIndexOf('.');
-                                fileNameNoExt = file.getName().substring(0, dotIndex); //remove .yml
+                    Shop.getPlugin().getLogger().debug("Loading player shops from file: " + file.getName());
+                    try {
+                        if (file.isFile()) {
+                            if (file.getName().endsWith(".yml")
+                                    && !file.getName().contains("enderchests")
+                                    && !file.getName().contains("itemCurrency")
+                                    && !file.getName().contains("gambleDisplay")) {
+                                YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+                                boolean isLegacyConfig = false;
+                                UUID playerUUID = null;
+                                String fileNameNoExt = null;
+                                try {
+                                    int dotIndex = file.getName().lastIndexOf('.');
+                                    fileNameNoExt = file.getName().substring(0, dotIndex); //remove .yml
 
-                                //all files are saved as UUID.yml except for admin shops which are admin.yml
-                                if (!fileNameNoExt.equals("admin")) {
-                                    playerUUID = UUID.fromString(fileNameNoExt);
-                                    //file names are in UUID format. Load from new save files -> ownerUUID.yml
+                                    //all files are saved as UUID.yml except for admin shops which are admin.yml
+                                    if (!fileNameNoExt.equals("admin")) {
+                                        playerUUID = UUID.fromString(fileNameNoExt);
+                                        //file names are in UUID format. Load from new save files -> ownerUUID.yml
+                                    } else {
+                                        playerUUID = adminUUID;
+                                    }
+                                } catch (IllegalArgumentException iae) {
+                                    //file names are not in UUID format. Load from legacy save files -> ownerName + " (" + ownerUUID + ").yml
+                                    isLegacyConfig = true;
+                                    convertLegacySaves = true;
+                                    playerUUID = uidFromString(fileNameNoExt);
                                 }
-                                else{
-                                    playerUUID = adminUUID;
+                                numShopsLoaded += loadShopsFromConfig(config, isLegacyConfig);
+                                if (isLegacyConfig) {
+                                    //save new file
+                                    saveShops(playerUUID, true);
+                                    //delete old file
+                                    file.delete();
                                 }
-                            } catch (IllegalArgumentException iae) {
-                                //file names are not in UUID format. Load from legacy save files -> ownerName + " (" + ownerUUID + ").yml
-                                isLegacyConfig = true;
-                                convertLegacySaves = true;
-                                playerUUID = uidFromString(fileNameNoExt);
-                            }
-                            numShopsLoaded += loadShopsFromConfig(config, isLegacyConfig);
-                            if(isLegacyConfig){
-                                //save new file
-                                saveShops(playerUUID, true);
-                                //delete old file
-                                file.delete();
                             }
                         }
+                    }
+                    catch (Exception e) {
+                        Shop.getPlugin().getLogger().log(Level.SEVERE, "Error while loading Shop from player file (" + file.getName() + "), please report this error to the Shop developers: " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
                 if(convertLegacySaves)
@@ -949,7 +955,8 @@ public class ShopHandler {
 
                         int stock = config.getInt("shops." + shopOwner + "." + shopNumber + ".stock");
                         shop.setStockOnLoad(stock);
-
+                        // Load the GUI Icon so that it appears when players perform a search, even if the chunks haven't loaded yet.
+                        shop.refreshGuiIcon();
 
                         // We will need to save the file again if we are a legacy config
                         if (isLegacy) { shop.setNeedsSave(true); }
