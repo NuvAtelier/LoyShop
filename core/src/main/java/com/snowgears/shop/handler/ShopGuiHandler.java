@@ -268,6 +268,8 @@ public class ShopGuiHandler {
 
         //load all icons next
         for(GuiIcon iconEnum : GuiIcon.values()) {
+            // If creative selection is disabled then disable the search icon
+            if (!plugin.allowCreativeSelection() && iconEnum == GuiIcon.HOME_SEARCH) { continue; }
 
             boolean translateColors = true;
             if(iconEnum == GuiIcon.ALL_SHOP_ICON || iconEnum == GuiIcon.ALL_PLAYER_ICON)
@@ -314,6 +316,7 @@ public class ShopGuiHandler {
             }
 
             if(icon != null) {
+                // Check if are set to "AIR" and if we should be disabled.
                 if (icon.getItemMeta() != null) {
                     ItemMeta iconMeta = icon.getItemMeta();
 
@@ -323,8 +326,8 @@ public class ShopGuiHandler {
                         iconMeta.setLore(lore);
 
                     icon.setItemMeta(iconMeta);
+                    guiIcons.put(iconEnum, icon);
                 }
-                guiIcons.put(iconEnum, icon);
             }
         }
     }

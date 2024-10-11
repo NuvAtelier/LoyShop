@@ -117,7 +117,7 @@ public class ShopGUIListener implements Listener {
                             plugin.getGuiHandler().setWindow(player, playersWindow);
                             return;
                         }
-                        else if(clicked.getType() == searchIcon.getType()){
+                        else if(searchIcon != null && clicked.getType() == searchIcon.getType()){
                             plugin.getGuiHandler().closeWindow(player);
                             plugin.getCreativeSelectionListener().putPlayerInCreativeSelection(player, player.getLocation(), true);
 
@@ -285,7 +285,7 @@ public class ShopGUIListener implements Listener {
                             ItemStack searchIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SEARCH, null, null);
 
                             //if they click the search icon, close current window and give instruction for searching
-                            if(clicked.getType() == searchIcon.getType()){
+                            if(searchIcon != null && clicked.getType() == searchIcon.getType()){
                                 plugin.getGuiHandler().closeWindow(player);
                                 plugin.getCreativeSelectionListener().putPlayerInCreativeSelection(player, player.getLocation(), true);
 

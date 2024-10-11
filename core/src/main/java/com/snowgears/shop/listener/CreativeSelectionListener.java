@@ -278,6 +278,12 @@ public class CreativeSelectionListener implements Listener {
     }
 
     public void putPlayerInCreativeSelection(Player player, Location shopSignLocation, boolean guiSearch) {
+        // Sanity check, make sure players don't somehow go into creative mode when it's disabled!
+        if (!plugin.allowCreativeSelection()) {
+            ShopMessage.sendMessage(ShopMessage.getUnformattedMessage("creativeSelection", "disabled"), player);
+            return;
+        }
+        // Don't put them in creative if they are already in creative.
         if(playerDataMap.containsKey(player.getUniqueId())) {
             return;
         }
