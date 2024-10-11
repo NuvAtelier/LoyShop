@@ -43,6 +43,33 @@ public class ShopGUIListener implements Listener {
         }
     }
 
+    private ShopGuiHandler.GuiIcon getNextOptionIcon(ItemStack[] iconItems, ShopGuiHandler.GuiIcon[] icons, ShopGuiHandler.GuiIcon current) {
+        int currentIndex = -1;
+        // Find the current index of the icon
+        for (int i = 0; i < icons.length; i++) {
+            if (icons[i] == current) {
+                currentIndex = i;
+                break;
+            }
+        }
+
+        // If current icon is not found, return itself (sanity check)
+        if (currentIndex == -1) {
+            return current;
+        }
+
+        // Iterate through the list starting from the next element
+        for (int i = 1; i < icons.length; i++) {
+            int nextIndex = (currentIndex + i) % icons.length;
+            if (iconItems[nextIndex] != null) { // Check if the next icon is available
+                return icons[nextIndex];
+            }
+        }
+
+        // If no other option is available, return the current icon
+        return current;
+    }
+
     @EventHandler (ignoreCancelled = true)
     public void onInvClick(InventoryClickEvent event){
         if(event.getWhoClicked() instanceof Player){
@@ -209,21 +236,33 @@ public class ShopGUIListener implements Listener {
                             ItemStack sortPriceLow = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_LOW, null, null);
                             ItemStack sortPriceHigh = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_HIGH, null, null);
 
+                            ShopGuiHandler.GuiIcon[] sortOptions = new ShopGuiHandler.GuiIcon[]{
+                                ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW,
+                                ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_HIGH,
+                                ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_LOW,
+                                ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_HIGH,
+                            };
+                            ItemStack[] sortItems = new ItemStack[]{
+                                    sortNameLow,
+                                    sortNameHigh,
+                                    sortPriceLow,
+                                    sortPriceHigh
+                            };
                             boolean reloadPage = false;
                             if(clicked.isSimilar(sortNameLow)){
-                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_HIGH);
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, getNextOptionIcon(sortItems, sortOptions, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW));
                                 reloadPage = true;
                             }
                             else if(clicked.isSimilar(sortNameHigh)){
-                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_LOW);
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, getNextOptionIcon(sortItems, sortOptions, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_HIGH));
                                 reloadPage = true;
                             }
                             else if(clicked.isSimilar(sortPriceLow)){
-                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_HIGH);
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, getNextOptionIcon(sortItems, sortOptions, ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_LOW));
                                 reloadPage = true;
                             }
                             else if(clicked.isSimilar(sortPriceHigh)){
-                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW);
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, getNextOptionIcon(sortItems, sortOptions, ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_HIGH));
                                 reloadPage = true;
                             }
 
