@@ -87,7 +87,7 @@ transaction:
          - '&d+---------------------------------------------------+'
          - '&d| &bShop Sales &7(while offline):'
          - '&d|'
-         - '&d| &7Transactions: &b[offline transactions]'
+         - '&d| &7Transactions: &b[offline transactions] &7(hover for details)'
          - '&d| &7Profits: &a[offline profit]'
          - '&d| &7Spent: &6[offline spent]'
          - '&d|'

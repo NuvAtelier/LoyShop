@@ -3,14 +3,12 @@ package com.snowgears.shop.handler;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
-import com.snowgears.shop.util.ItemNameUtil;
-import com.snowgears.shop.util.OfflineTransactions;
-import com.snowgears.shop.util.ShopActionType;
-import com.snowgears.shop.util.UtilMethods;
+import com.snowgears.shop.util.*;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -20,10 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.*;
+import java.util.*;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -298,34 +294,56 @@ public class LogHandler {
                                 size++;
 
                                 // Extract transaction data
+                                String purchaserUUID = resultSet.getString("player_uuid");
                                 String tType = resultSet.getString("t_type");
                                 double price = resultSet.getDouble("price");
                                 int amount = resultSet.getInt("amount");
                                 String item = resultSet.getString("item");
                                 String barterItem = resultSet.getString("barter_item"); // May be null
 
+                                String shopWorld = resultSet.getString("shop_world");
+                                int shopX = resultSet.getInt("shop_x");
+                                int shopY = resultSet.getInt("shop_y");
+                                int shopZ = resultSet.getInt("shop_z");
+
+                                Location loc = new Location(Bukkit.getWorld(shopWorld), shopX, shopY, shopZ);
+
                                 ItemStack itemstack = UtilMethods.itemStackFromBase64(item);
+                                ItemStack barterItemstack = null;
+
+                                // Create item stack to use for the Maps (show all identical items as the same sold row)
+                                ItemStack itemCheckClone = itemstack.clone();
+                                itemCheckClone.setAmount(1);
 
                                 // Process transactions based on their type
                                 if (tType.equalsIgnoreCase("BUY")) {
                                     // User spent money to buy items
                                     totalSpent += price;
-                                    int itemsBoughtAmt = itemsBought.getOrDefault(itemstack, 0) + amount;
-                                    itemsBought.put(itemstack,itemsBoughtAmt);
+                                    int itemsBoughtAmt = itemsBought.getOrDefault(itemCheckClone, 0) + amount;
+                                    itemsBought.put(itemCheckClone,itemsBoughtAmt);
                                 } else if (tType.equalsIgnoreCase("SELL")) {
                                     // User earned money by selling items
                                     totalProfit += price;
-                                    int itemsSoldAmt = itemsSold.getOrDefault(itemstack, 0) + amount;
-                                    itemsSold.put(itemstack, itemsSoldAmt);
+                                    int itemsSoldAmt = itemsSold.getOrDefault(itemCheckClone, 0) + amount;
+                                    itemsSold.put(itemCheckClone, itemsSoldAmt);
                                 } else if (tType.equalsIgnoreCase("BARTER")) {
-                                    int itemsAmt = itemsSold.getOrDefault(itemstack, 0) + amount;
-                                    itemsSold.put(itemstack, itemsAmt);
+                                    int itemsAmt = itemsSold.getOrDefault(itemCheckClone, 0) + amount;
+                                    itemsSold.put(itemCheckClone, itemsAmt);
                                     if (barterItem != null) {
                                         // Barter Item is the "currency" item being spent in the transaction
-                                        ItemStack barterItemstack = UtilMethods.itemStackFromBase64(barterItem);
-                                        itemsBought.put(barterItemstack, itemsBought.getOrDefault(barterItemstack, 0) + barterItemstack.getAmount());
+                                        barterItemstack = UtilMethods.itemStackFromBase64(barterItem);
+                                        ItemStack barterItemCheckClone = barterItemstack.clone();
+                                        barterItemCheckClone.setAmount(1);
+                                        itemsBought.put(barterItemCheckClone, itemsBought.getOrDefault(barterItemCheckClone, 0) + (int) price);
                                     }
                                 }
+
+                                OfflinePlayer purchaser = null;
+                                if (purchaserUUID != null && !purchaserUUID.isEmpty()) {
+                                    purchaser = Bukkit.getServer().getOfflinePlayer(UUID.fromString(purchaserUUID));
+                                }
+
+                                offlineTransactions.addTx(loc, ShopType.valueOf(tType), price, purchaser, amount, itemstack, barterItemstack);
                             }
                         }
 

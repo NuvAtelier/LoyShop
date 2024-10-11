@@ -1,6 +1,7 @@
 package com.snowgears.shop.util;
 
 import com.snowgears.shop.shop.AbstractShop;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -12,8 +13,10 @@ public class PlaceholderContext {
     private Player player;
     private boolean forSign = false;
     private ItemStack item = null;
+    private ItemStack barterItem = null;
     private ShopCreationProcess process;
     private OfflineTransactions offlineTransactions;
+    private Location location;
 
     // Create empty Placeholder Context
     public PlaceholderContext() { }
@@ -42,6 +45,10 @@ public class PlaceholderContext {
         return item;
     }
 
+    public void setBarterItem(ItemStack barterItem) { this.barterItem = barterItem; }
+
+    public ItemStack getBarterItem() { return barterItem; }
+
     public void setProcess(ShopCreationProcess process) {
         this.process = process;
     }
@@ -57,6 +64,10 @@ public class PlaceholderContext {
     public OfflineTransactions getOfflineTransactions() {
         return offlineTransactions;
     }
+
+    public Location getLocation() { return location; }
+
+    public void setLocation(Location location) { this.location = location; }
 
     public void setForSign(boolean forSign) {
         this.forSign = forSign;

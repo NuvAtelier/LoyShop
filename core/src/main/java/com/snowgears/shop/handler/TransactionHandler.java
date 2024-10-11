@@ -9,6 +9,7 @@ import com.snowgears.shop.util.*;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
@@ -174,7 +175,7 @@ public class TransactionHandler {
     private void sendExchangeMessagesAndLog(AbstractShop shop, Player player, ShopType transactionType, Transaction transaction) {
 
         double price = transaction.getPrice();
-        String message = getMessageFromOrders(shop, player, transactionType, "user", price, transaction);
+        String message = ShopMessage.getMessageFromOrders(transactionType, "user", price, transaction.getAmount());
 
         ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_SALE_USER);
         if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_USER_ON) {
@@ -185,39 +186,18 @@ public class TransactionHandler {
 
         Player owner = Bukkit.getPlayer(shop.getOwnerUUID());
         if ((owner != null) && (!shop.isAdmin())) {
-            message = getMessageFromOrders(shop, player, transactionType, "owner", price, transaction);
+            message = ShopMessage.getMessageFromOrders(transactionType, "owner", price, transaction.getAmount());
 
             guiIcon = plugin.getGuiHandler().getIconFromOption(owner, PlayerSettings.Option.NOTIFICATION_SALE_OWNER);
             if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_OWNER_ON) {
                 if(message != null && !message.isEmpty())
                     ShopMessage.sendMessage(message, owner, player, shop);
-//                    owner.sendMessage(message);
             }
         }
 
         int amount = transaction.getAmount();
 
         plugin.getLogHandler().logTransaction(player, shop, transactionType, price, amount);
-    }
-
-    private String getMessageFromOrders(AbstractShop shop, Player player, ShopType transactionType, String subKey, double price, Transaction transaction){
-        String message = ShopMessage.getUnformattedMessage(transactionType.toString(), subKey);
-        String priceStr = Shop.getPlugin().getPriceString(price, false);
-        message = message.replace("[price]", ""+priceStr);
-
-        if(shop.getItemStack() != null) {
-            //int amount = shop.getItemStack().getAmount() * orders;
-            int amount = transaction.getAmount();
-            message = message.replace("[item amount]", "" + amount);
-        }
-        if(shop.getType() == ShopType.BARTER) {
-           // int amount = shop.getSecondaryItemStack().getAmount() * transactions.size();
-            int amount = (int) transaction.getPrice();
-            message = message.replace("[barter item amount]", "" + amount);
-        }
-        // We format the message when we send it to the player now using ShopMessage.sendMessage(message, player, shop)
-//        message = ShopMessage.formatMessage(message, shop, player, false);
-        return message;
     }
 
     public void sendEffects(boolean success, Player player, AbstractShop shop){

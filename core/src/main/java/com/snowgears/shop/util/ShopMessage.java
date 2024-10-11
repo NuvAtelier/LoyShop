@@ -318,10 +318,12 @@ public class ShopMessage {
         });
         registerPlaceholder("[location]", context -> {
             Location loc = null;
-            if (context.getProcess() != null) loc = context.getProcess().getClickedChest().getLocation();
+            if (context.getLocation() != null) loc = context.getLocation();
+            else if (context.getProcess() != null) loc = context.getProcess().getClickedChest().getLocation();
             else if (context.getShop() != null) loc = context.getShop().getSignLocation();
             if (loc == null) return null;
             TextComponent text = new TextComponent(UtilMethods.getCleanLocation(loc, false));
+            if (context.getProcess() == null && context.getShop() == null) return text;
             text.setHoverEvent(getShopInfoHoverEvent(context));
             return text;
         });
@@ -347,7 +349,8 @@ public class ShopMessage {
 
         // Shop Barter Item Placeholders
         registerPlaceholder("[barter item amount]", context -> {
-            if (context.getItem() != null) return new TextComponent(String.valueOf(context.getItem().getAmount()));
+            if (context.getBarterItem() != null) return new TextComponent(String.valueOf(context.getBarterItem().getAmount()));
+            else if (context.getItem() != null) return new TextComponent(String.valueOf(context.getItem().getAmount()));
             else if (context.getProcess() != null) return new TextComponent(String.valueOf(context.getProcess().getBarterItemAmount()));
             return new TextComponent(String.valueOf(context.getShop().getSecondaryItemStack().getAmount()));
         });
@@ -405,7 +408,11 @@ public class ShopMessage {
         });
 
         // Offline Transaction Updates
-        registerPlaceholder("[offline transactions]", context -> new TextComponent(String.valueOf(context.getOfflineTransactions().getNumTransactions())));
+        registerPlaceholder("[offline transactions]", context -> {
+            TextComponent numOfTransactions = new TextComponent(String.valueOf(context.getOfflineTransactions().getNumTransactions()));
+            numOfTransactions.setHoverEvent(getTransactionsHoverEvent(context));
+            return numOfTransactions;
+        });
         registerPlaceholder("[offline profit]", context -> {
             String boughtString = Shop.getPlugin().getPriceString(context.getOfflineTransactions().getTotalProfit(), false);
             if (boughtString.equals(freePriceWord)) { boughtString = "0"; }
@@ -436,6 +443,14 @@ public class ShopMessage {
         HoverEvent event = getItemHoverEvent(item);
         if (event != null) { msg.setHoverEvent(event); }
         return msg;
+    }
+
+    private static HoverEvent getTransactionsHoverEvent(PlaceholderContext context) {
+        try {
+            TextComponent hoverText = new TextComponent(context.getOfflineTransactions().getTransactionsLore());
+            return new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{hoverText});
+        } catch (Exception e) {}
+        return null;
     }
 
     private static HoverEvent getShopInfoHoverEvent(PlaceholderContext context) {
@@ -522,7 +537,10 @@ public class ShopMessage {
      */
     private static TextComponent getBarterItemPlaceholder(PlaceholderContext context) {
         ItemStack item = null;
-        if (context.getItem() != null) {
+        if (context.getBarterItem() != null) {
+            item = context.getBarterItem();
+        }
+        else if (context.getItem() != null) {
             item = context.getItem();
         }
         else if (context.getProcess() != null) {
@@ -658,6 +676,18 @@ public class ShopMessage {
         TextComponent formattedMessage = format(unformattedMessage, context);
         // Return the legacy version since we are requesting the legacy formatter!
         return ChatColor.translateAlternateColorCodes('§', formattedMessage.toLegacyText());
+    }
+
+    // Perform partial formatting to insert transaction purchase amounts since they might differ from shop amounts (partial sales)
+    public static String getMessageFromOrders(ShopType transactionType, String subKey, double price, int amount){
+        String message = ShopMessage.getUnformattedMessage(transactionType.toString(), subKey);
+        String priceStr = Shop.getPlugin().getPriceString(price, false);
+        message = message.replace("[price]", priceStr);
+        message = message.replace("[item amount]", "" + amount);
+        if(transactionType == ShopType.BARTER) {
+            message = message.replace("[barter item amount]", "" + (int) price);
+        }
+        return message;
     }
 
     //      # [amount] : The amount of items the shop is selling/buying/bartering #

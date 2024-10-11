@@ -1,8 +1,15 @@
 package com.snowgears.shop.util;
 
 import com.snowgears.shop.Shop;
+import com.snowgears.shop.shop.ShopType;
+import org.apache.commons.lang3.StringUtils;
+import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -17,10 +24,29 @@ public class OfflineTransactions {
     private Map<ItemStack, Integer> itemsBought;
     private Map<ItemStack, Integer> itemsSold;
 
+    private List<String> txStrings = new ArrayList<>();
+
     public OfflineTransactions(UUID playerUUID, long lastPlayed){
         this.playerUUID = playerUUID;
         this.lastPlayed = lastPlayed;
         calculate();
+    }
+
+    public void addTx(Location location, ShopType transactionType, double price, OfflinePlayer purchaser, int amount, ItemStack itemSold, ItemStack barterItem) {
+        // load message and perform initial formatting
+        String formattedMessage = ShopMessage.getMessageFromOrders(transactionType, "owner", price, amount);
+        // Add rest of the formatting
+        PlaceholderContext context = new PlaceholderContext();
+        context.setPlayer((Player) purchaser);
+        context.setItem(itemSold);
+        context.setBarterItem(barterItem);
+        context.setLocation(location);
+        formattedMessage = ShopMessage.format("• " + formattedMessage, context).toLegacyText();
+        txStrings.add(formattedMessage);
+    }
+
+    public String getTransactionsLore(){
+        return StringUtils.join(txStrings, "\n");
     }
 
     private void calculate(){

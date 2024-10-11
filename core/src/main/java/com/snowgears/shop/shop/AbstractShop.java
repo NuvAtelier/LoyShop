@@ -138,16 +138,16 @@ public abstract class AbstractShop {
                     }
                 }
                 this.updateStock();
-                Shop.getPlugin().getLogger().trace("Loaded shop: " + this);
+                Shop.getPlugin().getLogger().debug("Loaded shop: " + this);
                 return true;
             } catch (ClassCastException cce) {
                 //this shop has no sign on it. return false
-                Shop.getPlugin().getLogger().trace("Failed to load shop, no sign for chest: " + this);
+                Shop.getPlugin().getLogger().warning("Failed to load shop, no sign for chest: " + this);
                 return false;
             }
         } else {
             //this shop has no sign location defined
-            Shop.getPlugin().getLogger().trace("Failed to load shop, no signLocation: " + this);
+            Shop.getPlugin().getLogger().warning("Failed to load shop, no signLocation: " + this);
             return false;
         }
     }
