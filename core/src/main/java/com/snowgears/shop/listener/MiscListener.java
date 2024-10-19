@@ -511,10 +511,15 @@ public class MiscListener implements Listener {
             AbstractShop shop = plugin.getShopHandler().getShop(b.getLocation());
             if (shop == null)
                 return;
-            else if (!shop.isInitialized()) {
+            // Disable dropping sign if its fake
+            if(shop.isFakeSign()){
+                event.setDropItems(false);
+            }
+            if (!shop.isInitialized()) {
                 event.setCancelled(true);
                 return;
             }
+
             if(plugin.getDestroyShopRequiresSneak()){
                 if(!player.isSneaking()){
                     event.setCancelled(true);
