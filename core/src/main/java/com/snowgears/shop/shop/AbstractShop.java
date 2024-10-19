@@ -424,11 +424,12 @@ public abstract class AbstractShop {
         String name = ShopMessage.formatMessage(placeHolderIcon.getItemMeta().getDisplayName(), this, null, false);
         List<String> lore = new ArrayList<>();
         for(String loreLine : placeHolderIcon.getItemMeta().getLore()){
-            if(loreLine.contains("[barter item]") && this.getType() == ShopType.BARTER) {
-                PlaceholderContext context = new PlaceholderContext();
-                context.setShop((BarterShop) this);
-                lore.add(ShopMessage.format(loreLine, context).toLegacyText());
-            }
+            // Don't add barter line to non barter shops
+            if(loreLine.contains("[barter item]") && this.getType() != ShopType.BARTER) continue;
+            // Add all lore lines
+            PlaceholderContext context = new PlaceholderContext();
+            context.setShop(this);
+            lore.add(ShopMessage.format(loreLine, context).toLegacyText());
         }
 
         ItemMeta iconMeta = guiIcon.getItemMeta();
