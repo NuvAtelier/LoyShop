@@ -4,16 +4,15 @@ package com.snowgears.shop.util;
 import com.snowgears.shop.Shop;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.block.ShulkerBox;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.Repairable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 
 public class InventoryUtils {
 
@@ -164,6 +163,9 @@ public class InventoryUtils {
             itemStack2.setItemMeta(item2Cost);
         }
 
+        ItemMeta i1Meta = itemStack1.getItemMeta();
+        ItemMeta i2Meta = itemStack2.getItemMeta();
+
         //special case to check for beehives
         //TODO might have to implement some other case checks for potions and other unique items
 
@@ -173,9 +175,35 @@ public class InventoryUtils {
 //                return true;
 //        }
 
+        // Check if shulker box contents are identical
+        if(itemStack1.getType().toString().toLowerCase().contains("shulker")){
+            if (!itemStack2.getType().toString().toLowerCase().contains("shulker")) return false;
 
-        ItemMeta i1Meta = itemStack1.getItemMeta();
-        ItemMeta i2Meta = itemStack2.getItemMeta();
+            // Note: You must reference i1 and i2 here, if you do not then both inventories are identical for some reason... Do not reference the cloned item stacks here...
+            BlockStateMeta bsm1 = (BlockStateMeta) i1.getItemMeta();
+            BlockStateMeta bsm2 = (BlockStateMeta) i2.getItemMeta();
+            Inventory inv1 = ((ShulkerBox) bsm1.getBlockState()).getInventory();
+            Inventory inv2 = ((ShulkerBox) bsm2.getBlockState()).getInventory();
+
+            ItemStack[] inv1Contents = inv1.getContents();
+            ItemStack[] inv2Contents = inv2.getContents();
+
+            for (int i = 0; i < inv1Contents.length; i++) {
+                ItemStack inv1Item = inv1Contents[i];
+                ItemStack inv2Item = inv2Contents[i];
+
+                Shop.getPlugin().getLogger().info("slot:" + i + " | inv1Item: " + inv1Item + " | inv2Item: " + inv2Item);
+
+                if (inv1Item == null && inv2Item == null) continue;
+                if (inv1Item == null && inv2Item != null) return false;
+                if (inv1Item != null && inv2Item == null) return false;
+                if (!itemstacksAreSimilar(inv1Item, inv2Item)) return false;
+            }
+
+            Shop.getPlugin().getLogger().info("Is Shulker Similar: true");
+        }
+
+
         //fix NBT attributes for cached older items to be compatible with Spigot serializer updates
         if (i1Meta != null && i2Meta != null && i1Meta.hasAttributeModifiers() && i2Meta.hasAttributeModifiers()) {
             i1Meta.setAttributeModifiers(i1Meta.getAttributeModifiers());

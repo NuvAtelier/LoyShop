@@ -1,7 +1,8 @@
 #!/bin/sh
 
 export MAVEN_OPTS="-Xms1g -Xmx3g"
-mvn clean compile package -T 2C
+mvn clean compile package -o -T 2C
+
 # Copy latest plugin in
 rm ../paper-test-1.20.6/plugins/Shop-*.jar 
 cp target/Shop-*.jar ../paper-test-1.20.6/plugins
