@@ -288,10 +288,15 @@ public class ShopMessage {
         registerPlaceholder("[plugin]", context -> new TextComponent(plugin.getCommandAlias()));
         registerPlaceholder("[server name]", context -> new TextComponent(ShopMessage.getServerDisplayName()));
         registerPlaceholder("[player]", context -> { Player player = context.getPlayer(); return new TextComponent((player != null) ? player.getName() : ""); });
-        registerPlaceholder("[user]", context -> new TextComponent(context.getPlayer().getName()));
+        registerPlaceholder("[user]", context -> {
+            if (context.getPlayer() != null) return new TextComponent(context.getPlayer().getName());
+            if (context.getOfflinePlayer() != null) return new TextComponent(context.getOfflinePlayer().getName());
+            return new TextComponent("Unknown Player");
+        });
         registerPlaceholder("[shop type]", context -> {
             if (context.getProcess() != null && context.getProcess().getShopType() != null) return new TextComponent(context.getProcess().getShopType().toString());
-            return new TextComponent(ShopMessage.getCreationWord(context.getShop().getType().toString().toUpperCase()));
+            if (context.getShop() != null) return new TextComponent(ShopMessage.getCreationWord(context.getShop().getType().toString().toUpperCase()));
+            return null;
         });
         registerPlaceholder("[shop types]", ShopMessage::getShopTypesPlaceholder);
         registerPlaceholder("[total shops]", context -> new TextComponent(String.valueOf(plugin.getShopHandler().getNumberOfShops())));

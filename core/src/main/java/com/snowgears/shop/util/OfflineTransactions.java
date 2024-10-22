@@ -37,7 +37,7 @@ public class OfflineTransactions {
         String formattedMessage = ShopMessage.getMessageFromOrders(transactionType, "owner", price, amount);
         // Add rest of the formatting
         PlaceholderContext context = new PlaceholderContext();
-        context.setPlayer((Player) purchaser);
+        context.setOfflinePlayer(purchaser);
         context.setItem(itemSold);
         context.setBarterItem(barterItem);
         context.setLocation(location);
