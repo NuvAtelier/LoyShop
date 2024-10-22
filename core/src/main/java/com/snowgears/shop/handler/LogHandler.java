@@ -160,8 +160,15 @@ public class LogHandler {
             } catch (SQLException e){
                 plugin.getLogger().log(Level.WARNING, "SQL error occurred while trying to log player action.");
                 e.printStackTrace();
-                conn.close();
                 return false;
+            } finally {
+                if (conn != null) {
+                    try {
+                        conn.close();
+                    } catch (SQLException e) {
+                        plugin.getLogger().log(Level.WARNING, "Failed to close the Database connection!");
+                    }
+                }
             }
         } catch (SQLException e) {
             plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log player action.");
@@ -232,16 +239,22 @@ public class LogHandler {
                         stmt.setInt(9, shop.getSignLocation().getBlockY());
                         stmt.setInt(10, shop.getSignLocation().getBlockZ());
                         stmt.execute();
-                        conn.close();
                     } catch (SQLException e) {
                         plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction.");
                         e.printStackTrace();
-                        conn.close();
                         return;
                     } catch (IOException e) {
                         plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction.");
                         e.printStackTrace();
                         return;
+                    } finally {
+                        if (conn != null) {
+                            try {
+                                conn.close();
+                            } catch (SQLException e) {
+                                plugin.getLogger().log(Level.WARNING, "Failed to close the Database connection!");
+                            }
+                        }
                     }
                 } catch(SQLException e){
                     plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction.");
