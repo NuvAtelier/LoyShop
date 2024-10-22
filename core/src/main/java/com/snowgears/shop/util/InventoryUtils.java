@@ -192,15 +192,11 @@ public class InventoryUtils {
                 ItemStack inv1Item = inv1Contents[i];
                 ItemStack inv2Item = inv2Contents[i];
 
-                Shop.getPlugin().getLogger().info("slot:" + i + " | inv1Item: " + inv1Item + " | inv2Item: " + inv2Item);
-
                 if (inv1Item == null && inv2Item == null) continue;
                 if (inv1Item == null && inv2Item != null) return false;
                 if (inv1Item != null && inv2Item == null) return false;
                 if (!itemstacksAreSimilar(inv1Item, inv2Item)) return false;
             }
-
-            Shop.getPlugin().getLogger().info("Is Shulker Similar: true");
         }
 
 
