@@ -217,19 +217,20 @@ public class LogHandler {
                         int transactionID = keys.getInt(1);
                         stmt.close();
 
-                        stmt = conn.prepareStatement("INSERT INTO shop_action(ts, player_uuid, owner_uuid, player_action, transaction_id, shop_world, shop_x, shop_y, shop_z) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
+                        stmt = conn.prepareStatement("INSERT INTO shop_action(ts, player_uuid, owner_uuid, shop_uuid, player_action, transaction_id, shop_world, shop_x, shop_y, shop_z) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
                         stmt.setTimestamp(1, new Timestamp(new Date().getTime()));
                         stmt.setString(2, player.getUniqueId().toString());
                         if(shop.getOwnerUUID().equals(plugin.getShopHandler().getAdminUUID()))
                             stmt.setString(3, "admin");
                         else
                             stmt.setString(3, shop.getOwnerUUID().toString());
-                        stmt.setString(4, ShopActionType.TRANSACT.toString());
-                        stmt.setInt(5, transactionID);
-                        stmt.setString(6, shop.getSignLocation().getWorld().getName());
-                        stmt.setInt(7, shop.getSignLocation().getBlockX());
-                        stmt.setInt(8, shop.getSignLocation().getBlockY());
-                        stmt.setInt(9, shop.getSignLocation().getBlockZ());
+                        stmt.setString(4, shop.getId().toString());
+                        stmt.setString(5, ShopActionType.TRANSACT.toString());
+                        stmt.setInt(6, transactionID);
+                        stmt.setString(7, shop.getSignLocation().getWorld().getName());
+                        stmt.setInt(8, shop.getSignLocation().getBlockX());
+                        stmt.setInt(9, shop.getSignLocation().getBlockY());
+                        stmt.setInt(10, shop.getSignLocation().getBlockZ());
                         stmt.execute();
                         conn.close();
                     } catch (SQLException e) {

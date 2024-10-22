@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS shop_action
     ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     player_uuid     CHAR(36)  NOT NULL,
     owner_uuid     CHAR(36)  NOT NULL,
+    shop_uuid     CHAR(36)  NOT NULL,
     shop_world   CHAR(128)  NOT NULL,
     shop_x   INTEGER  NOT NULL,
     shop_y   INTEGER  NOT NULL,

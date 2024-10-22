@@ -723,6 +723,7 @@ public class ShopHandler {
 
                 //don't save shops that are not initialized with items
                 if (shop.isInitialized()) {
+                    config.set("shops." + owner + "." + shopNumber + ".id", shop.getId().toString());
                     config.set("shops." + owner + "." + shopNumber + ".location", locationToString(shop.getSignLocation()));
                     if(shop.getFacing() != null)
                         config.set("shops." + owner + "." + shopNumber + ".facing", shop.getFacing().toString());
@@ -908,6 +909,13 @@ public class ShopHandler {
                 Location signLoc = locationFromString(config.getString("shops." + shopOwner + "." + shopNumber + ".location"));
                 if(signLoc != null) {
                     try {
+                        // Track each shop using a uuid so that we can log purchases better
+                        String idString = config.getString("shops." + shopOwner + "." + shopNumber + ".id");
+                        UUID id = null;
+                        if (idString != null && !idString.isEmpty()){
+                            id = UUID.fromString(idString);
+                        }
+
                         if (shopOwner.equals("admin"))
                             owner = this.getAdminUUID();
                         else if(isLegacy)
@@ -939,6 +947,7 @@ public class ShopHandler {
 
                         //this inits a new shop but wont calculate anything yet
                         AbstractShop shop = AbstractShop.create(signLoc, owner, price, priceSell, amount, isAdmin, shopType, facing);
+                        if (id != null) shop.setId(id);
                         shop.setItemStack(itemStack);
                         if (shop.getType() == ShopType.BARTER) {
                             ItemStack barterItemStack = config.getItemStack("shops." + shopOwner + "." + shopNumber + ".itemBarter");
@@ -960,6 +969,8 @@ public class ShopHandler {
 
                         // We will need to save the file again if we are a legacy config
                         if (isLegacy) { shop.setNeedsSave(true); }
+                        // If we just added an ID to a shop for the first time, then it will need to be saved/updated as well
+                        if (idString == null || idString.isEmpty()) { shop.setNeedsSave(true); }
 
                         //if chunk its in is already loaded, calculate it here
                         if(shop.getDisplay().isChunkLoaded()) {

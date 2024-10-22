@@ -266,6 +266,7 @@ logging:
    properties:
       - "useSSL=false"
 
+# Logging must be enabled for purchase notifications to appear!
 offlinePurchaseNotifications:
    # Should offline purchases be shown to the user
    enabled: true

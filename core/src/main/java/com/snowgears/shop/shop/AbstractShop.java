@@ -33,6 +33,7 @@ import static com.snowgears.shop.util.UtilMethods.isMCVersion17Plus;
 
 public abstract class AbstractShop {
 
+    protected UUID id = UUID.randomUUID();
     protected boolean needsSave = false;
     protected Location signLocation;
     protected Location chestLocation;
@@ -121,6 +122,14 @@ public abstract class AbstractShop {
                 return new ComboShop(signLoc, player, pri, priCombo, amt, admin, facing);
         }
         return null;
+    }
+
+    public void setId(UUID newId) {
+        this.id = newId;
+    }
+
+    public UUID getId() {
+        return id;
     }
 
     //this calls BlockData which loads the chunk the shop is in by doing so
