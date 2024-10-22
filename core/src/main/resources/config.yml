@@ -213,7 +213,8 @@ destroyShopRequiresSneak: false
 #                    INTEGRATION HOOK SETTINGS                        #
 # =================================================================== #
 
-# Setting this to true will force all Shops to be created in WorldGuard regions with a shop flag (flag=allow-shop) #
+# If WorldGuard is installed Shop will by default ALWAYS respect the WG flags 'passthrough', 'build', 'chest-access'. #
+# If you would like to ADDITIONALLY require Shops to be created in WorldGuard regions with a Shop flag set (flag=allow-shop), set `hookWorldGuard` to `true` #
 # WorldGuard plugin must be installed for this feature to work #
 hookWorldGuard: false
 
