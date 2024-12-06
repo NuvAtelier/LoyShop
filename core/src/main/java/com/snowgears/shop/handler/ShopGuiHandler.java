@@ -312,12 +312,15 @@ public class ShopGuiHandler {
             if(icon != null) {
                 ItemMeta iconMeta = icon.getItemMeta();
 
-                if (name != null)
-                    iconMeta.setDisplayName(name);
-                if (lore != null && !lore.isEmpty())
-                    iconMeta.setLore(lore);
+                // iconMeta will be null if the icon is "Air", only update iconMeta if it actually exists
+                if (iconMeta != null) {
+                    if (name != null)
+                        iconMeta.setDisplayName(name);
+                    if (lore != null && !lore.isEmpty())
+                        iconMeta.setLore(lore);
+                    icon.setItemMeta(iconMeta);
+                }
 
-                icon.setItemMeta(iconMeta);
                 guiIcons.put(iconEnum, icon);
             }
         }
