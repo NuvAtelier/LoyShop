@@ -176,8 +176,8 @@ public class InventoryUtils {
 //        }
 
         // Check if shulker box contents are identical
-        if(itemStack1.getType().toString().toLowerCase().contains("shulker")){
-            if (!itemStack2.getType().toString().toLowerCase().contains("shulker")) return false;
+        if(itemStack1.getType().toString().toLowerCase().contains("shulker_box")){
+            if (!itemStack2.getType().toString().toLowerCase().contains("shulker_box")) return false;
 
             // Note: You must reference i1 and i2 here, if you do not then both inventories are identical for some reason... Do not reference the cloned item stacks here...
             BlockStateMeta bsm1 = (BlockStateMeta) i1.getItemMeta();
