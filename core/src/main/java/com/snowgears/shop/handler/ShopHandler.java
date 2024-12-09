@@ -945,6 +945,11 @@ public class ShopHandler {
                             itemStack = plugin.getGambleDisplayItem();
                         }
 
+                        if (itemStack == null) {
+                            Shop.getPlugin().getLogger().log(Level.WARNING, "Unable to load Shop #" + shopNumber + " for owner '" + shopOwner + "'! Skipping!");
+                            continue;
+                        }
+
                         //this inits a new shop but wont calculate anything yet
                         AbstractShop shop = AbstractShop.create(signLoc, owner, price, priceSell, amount, isAdmin, shopType, facing);
                         if (id != null) shop.setId(id);

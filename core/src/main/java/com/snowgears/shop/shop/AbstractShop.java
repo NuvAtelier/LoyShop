@@ -373,6 +373,9 @@ public abstract class AbstractShop {
     //setter methods
 
     public void setItemStack(ItemStack is) {
+        // If the item stack passed is null, go ahead and just skip it.
+        if (is == null) return;
+
         // Remove "0 Damage" from item meta (old config bug)
         this.item = this.removeZeroDamageMeta(is.clone());
     }
