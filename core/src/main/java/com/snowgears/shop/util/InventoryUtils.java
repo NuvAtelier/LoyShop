@@ -159,7 +159,7 @@ public class InventoryUtils {
             Repairable item2Cost = (Repairable) itemStack2.getItemMeta();
             item2Cost.setRepairCost(0);
 
-            itemStack1.setItemMeta(item2Cost);
+            itemStack1.setItemMeta(item1Cost); // @TODO: I believe this should be item1Cost
             itemStack2.setItemMeta(item2Cost);
         }
 
