@@ -4,12 +4,20 @@ export MAVEN_OPTS="-Xms1g -Xmx3g"
 mvn clean compile package -o -T 2C
 
 # Copy latest plugin in
-rm ../paper-test-1.20.6/plugins/Shop-*.jar 
-cp target/Shop-*.jar ../paper-test-1.20.6/plugins
-rm ../paper-test-1.21/plugins/Shop-*.jar 
-cp target/Shop-*.jar ../paper-test-1.21/plugins
 rm ../spigot-test-1.21/plugins/Shop-*.jar 
 cp target/Shop-*.jar ../spigot-test-1.21/plugins
+
+rm ../paper-test-1.20.6/plugins/Shop-*.jar 
+cp target/Shop-*.jar ../paper-test-1.20.6/plugins
+
+rm ../paper-test-1.21/plugins/Shop-*.jar 
+cp target/Shop-*.jar ../paper-test-1.21/plugins
+
+rm ../paper-test-1.21.3/plugins/Shop-*.jar 
+cp target/Shop-*.jar ../paper-test-1.21.3/plugins
+
+rm ../paper-test-1.21.4/plugins/Shop-*.jar 
+cp target/Shop-*.jar ../paper-test-1.21.4/plugins
 
 rm ~/Downloads/Shop-*.jar # Remove any pre-existing jars
 # rm -r ~/Downloads/Shop-* # Remove unzipped files
@@ -20,9 +28,9 @@ cp target/Shop-*.jar ~/Downloads
 # rm -r plugins/.paper-remapped
 # java -jar paper-1.20.6-148.jar --nogui
 
-cd ../paper-test-1.21/
+cd ../paper-test-1.21.3/
 # rm -r plugins/.paper-remapped
-java -jar paper-1.21.1*.jar --nogui
+java -jar paper-1.21.3*.jar --nogui
 
 # cd ../spigot-test-1.21/
 # java -jar spigot-1.21.jar --nogui
