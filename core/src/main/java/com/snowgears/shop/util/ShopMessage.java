@@ -439,8 +439,9 @@ public class ShopMessage {
             hoverItem.setAmount(1);
             BaseComponent[] component = new BaseComponent[]{new TextComponent(NBT.itemStackToNBT(hoverItem).toString())};
             return new HoverEvent(HoverEvent.Action.SHOW_ITEM, component);
-        } catch (Exception e) {}
-        return null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static TextComponent embedItem(String message, ItemStack item) {
