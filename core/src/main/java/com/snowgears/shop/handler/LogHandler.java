@@ -33,6 +33,7 @@ public class LogHandler {
 
     public LogHandler(Shop plugin, YamlConfiguration shopConfig){
         this.plugin = plugin;
+        // Setup database connection and check if we should enable database logging
         defineDataSource(shopConfig);
 
         if(!enabled)
@@ -83,9 +84,9 @@ public class LogHandler {
             return;
         }
 
-        plugin.getLogger().debug("Starting Database (" + type + ") to track purchases and Shop actions!");
+        plugin.getLogger().debug("Starting Database (" + type + ") connection to track purchases and Shop actions!");
 
-        if(type.equalsIgnoreCase("MYSQL")){
+        if (type.equalsIgnoreCase("MYSQL")) {
             dataSource = new HikariDataSource();
 
             String jdbcURL = "jdbc:mysql://"+serverName+":"+port+"/"+databaseName;
@@ -100,7 +101,7 @@ public class LogHandler {
             dataSource.setMaximumPoolSize(10);
             dataSource.setMaxLifetime(600000);
         }
-        else if(type.equalsIgnoreCase("MARIADB")){
+        else if (type.equalsIgnoreCase("MARIADB")) {
             HikariConfig config = new HikariConfig();
             config.setDataSourceClassName("org.mariadb.jdbc.MariaDbDataSource");
             config.addDataSourceProperty("serverName", serverName);
@@ -114,7 +115,7 @@ public class LogHandler {
 
             dataSource = new HikariDataSource(config);
         }
-        else if(type.equalsIgnoreCase("FILE")){
+        else if (type.equalsIgnoreCase("FILE")) {
             HikariConfig config = new HikariConfig();
             config.setDriverClassName("org.h2.Driver");
             String jdbcURL = "jdbc:h2:" + plugin.getDataFolder().getAbsolutePath() + "/data/" + databaseName + ";MODE=MySQL";
@@ -127,7 +128,7 @@ public class LogHandler {
 
             dataSource = new HikariDataSource(config);
         }
-        else{
+        else {
             plugin.getLogger().log(Level.WARNING, "Unsupported database type! Please check your `config.yml` file! type: " + type);
             this.enabled = false;
             return;
@@ -136,140 +137,121 @@ public class LogHandler {
         this.enabled = true;
     }
 
-    public boolean logAction(Player player, AbstractShop shop, ShopActionType actionType){
-        if(!enabled)
-            return false;
-
-        Connection conn;
-        try {
-            conn = dataSource.getConnection();
-            try {
-                PreparedStatement stmt = conn.prepareStatement("INSERT INTO shop_action(ts, player_uuid, owner_uuid, player_action, shop_world, shop_x, shop_y, shop_z) VALUES(?, ?, ?, ?, ?, ?, ?, ?);");
-                stmt.setTimestamp(1, new Timestamp(new Date().getTime()));
-                stmt.setString(2, player.getUniqueId().toString());
-                if(shop.getOwnerUUID().equals(plugin.getShopHandler().getAdminUUID()))
-                    stmt.setString(3, "admin");
-                else
-                    stmt.setString(3, shop.getOwnerUUID().toString());
-                stmt.setString(4, actionType.toString());
-                stmt.setString(5, shop.getSignLocation().getWorld().getName());
-                stmt.setInt(6, shop.getSignLocation().getBlockX());
-                stmt.setInt(7, shop.getSignLocation().getBlockY());
-                stmt.setInt(8, shop.getSignLocation().getBlockZ());
-                execute(stmt);
-            } catch (SQLException e){
-                plugin.getLogger().log(Level.WARNING, "SQL error occurred while trying to log player action.");
-                e.printStackTrace();
-                return false;
-            } finally {
-                if (conn != null) {
-                    try {
-                        conn.close();
-                    } catch (SQLException e) {
-                        plugin.getLogger().log(Level.WARNING, "Failed to close the Database connection!");
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log player action.");
-            e.printStackTrace();
-            return false;
-        }
-
+    public void logAction(Player player, AbstractShop shop, ShopActionType actionType) {
         if (actionType == ShopActionType.INIT) {
             plugin.getLogger().notice(
-                player.getName() + " created a " + shop.getType().name().toUpperCase() + " shop at ("
-                + "x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ()
-                + ") item: " + new ItemNameUtil().getName(shop.getItemStack())
-                + (shop.getSecondaryItemStack() != null ? " barterItem: " + new ItemNameUtil().getName(shop.getSecondaryItemStack()) : "")
+                    player.getName() + " created a " + shop.getType().name().toUpperCase() + " shop at ("
+                            + "x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ()
+                            + ") item: " + new ItemNameUtil().getName(shop.getItemStack())
+                            + (shop.getSecondaryItemStack() != null ? " barterItem: " + new ItemNameUtil().getName(shop.getSecondaryItemStack()) : "")
             );
         }
         if (actionType == ShopActionType.DESTROY) {
             plugin.getLogger().notice(
                     player.getName() + " destroyed a " + shop.getType().name().toUpperCase() + " shop at ("
-                    + "x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ()
-                    + ") item: " + new ItemNameUtil().getName(shop.getItemStack())
-                    + (shop.getSecondaryItemStack() != null ? " barterItem: " + new ItemNameUtil().getName(shop.getSecondaryItemStack()) : "")
+                            + "x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ()
+                            + ") item: " + new ItemNameUtil().getName(shop.getItemStack())
+                            + (shop.getSecondaryItemStack() != null ? " barterItem: " + new ItemNameUtil().getName(shop.getSecondaryItemStack()) : "")
             );
         }
 
-        return true;
-    }
-
-    public void logTransaction(Player player, AbstractShop shop, ShopType transactionType, double price, int amount){
-        if(!enabled)
-            return;
-
+        if (!this.enabled) return;
         Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
             @Override
             public void run() {
-                Connection conn;
-                try {
-                    conn = dataSource.getConnection();
-                    try {
-                        PreparedStatement stmt = conn.prepareStatement("INSERT INTO shop_transaction (t_type, price, amount, item, barter_item) VALUES(?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
-                        stmt.setString(1, transactionType.toString().toUpperCase());
-                        stmt.setDouble(2, price);
-                        stmt.setInt(3, amount);
-                        stmt.setString(4, UtilMethods.itemStackToBase64(shop.getItemStack()));
-                        if (shop.getSecondaryItemStack() != null)
-                            stmt.setString(5, UtilMethods.itemStackToBase64(shop.getSecondaryItemStack()));
-                        else
-                            stmt.setNull(5, Types.VARCHAR);
-
-                        stmt.execute();
-
-                        ResultSet keys = stmt.getGeneratedKeys();
-                        keys.next();
-                        int transactionID = keys.getInt(1);
-                        stmt.close();
-
-                        stmt = conn.prepareStatement("INSERT INTO shop_action(ts, player_uuid, owner_uuid, shop_uuid, player_action, transaction_id, shop_world, shop_x, shop_y, shop_z) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
-                        stmt.setTimestamp(1, new Timestamp(new Date().getTime()));
-                        stmt.setString(2, player.getUniqueId().toString());
-                        if(shop.getOwnerUUID().equals(plugin.getShopHandler().getAdminUUID()))
-                            stmt.setString(3, "admin");
-                        else
-                            stmt.setString(3, shop.getOwnerUUID().toString());
-                        stmt.setString(4, shop.getId().toString());
-                        stmt.setString(5, ShopActionType.TRANSACT.toString());
-                        stmt.setInt(6, transactionID);
-                        stmt.setString(7, shop.getSignLocation().getWorld().getName());
-                        stmt.setInt(8, shop.getSignLocation().getBlockX());
-                        stmt.setInt(9, shop.getSignLocation().getBlockY());
-                        stmt.setInt(10, shop.getSignLocation().getBlockZ());
-                        stmt.execute();
-                    } catch (SQLException e) {
-                        plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction.");
-                        e.printStackTrace();
-                        return;
-                    } catch (IOException e) {
-                        plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction.");
-                        e.printStackTrace();
-                        return;
-                    } finally {
-                        if (conn != null) {
-                            try {
-                                conn.close();
-                            } catch (SQLException e) {
-                                plugin.getLogger().log(Level.WARNING, "Failed to close the Database connection!");
-                            }
-                        }
-                    }
-                } catch(SQLException e){
-                    plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction.");
+                // Connect to datasource & create statement in "try" to handle automatically closing the connection!
+                try (Connection conn = dataSource.getConnection();
+                    PreparedStatement stmt = conn.prepareStatement("INSERT INTO shop_action(ts, player_uuid, owner_uuid, shop_uuid, player_action, shop_world, shop_x, shop_y, shop_z) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);");
+                ){
+                    stmt.setTimestamp(1, new Timestamp(new Date().getTime()));
+                    stmt.setString(2, player.getUniqueId().toString());
+                    if (shop.getOwnerUUID().equals(plugin.getShopHandler().getAdminUUID()))
+                        stmt.setString(3, "admin");
+                    else
+                        stmt.setString(3, shop.getOwnerUUID().toString());
+                    String shop_uuid = "";
+                    if (shop.getId() != null && shop.getId().toString() != null) shop_uuid = shop.getId().toString();
+                    stmt.setString(4, shop_uuid);
+                    stmt.setString(5, actionType.toString());
+                    stmt.setString(6, shop.getSignLocation().getWorld().getName());
+                    stmt.setInt(7, shop.getSignLocation().getBlockX());
+                    stmt.setInt(8, shop.getSignLocation().getBlockY());
+                    stmt.setInt(9, shop.getSignLocation().getBlockZ());
+                    stmt.execute();
+                } catch (SQLException e) {
+                    plugin.getLogger().log(Level.WARNING, "SQL error occurred while trying to log player action.");
                     e.printStackTrace();
-                    return;
+                }
+            }
+        });
+    }
+
+    public void logTransaction(Player player, AbstractShop shop, ShopType transactionType, double price, int amount){
+        plugin.getLogger().helpful(
+            "Shop " + shop.getType().name().toUpperCase() + " from/to " + player.getName() + ": "
+                + new ItemNameUtil().getName(shop.getItemStack()) + "(x" + amount + ")" + " for " + plugin.getPriceString(price, true)
+                + " | Shop owned by " + plugin.getServer().getOfflinePlayer(shop.getOwnerUUID()).getName() + " at (x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ() + ")"
+        );
+
+        if(!enabled) return;
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+            @Override
+            public void run() {
+                // Log the Transaction that occured
+                int transactionID = 0;
+                // Connect to datasource & create statement in "try" to handle automatically closing the connection!
+                try (
+                    Connection conn = dataSource.getConnection();
+                    PreparedStatement logTxStmt = conn.prepareStatement("INSERT INTO shop_transaction (t_type, price, amount, item, barter_item) VALUES(?, ?, ?, ?, ?);", Statement.RETURN_GENERATED_KEYS);
+                ) {
+                    logTxStmt.setString(1, transactionType.toString().toUpperCase());
+                    logTxStmt.setDouble(2, price);
+                    logTxStmt.setInt(3, amount);
+                    logTxStmt.setString(4, UtilMethods.itemStackToBase64(shop.getItemStack()));
+                    if (shop.getSecondaryItemStack() != null)
+                        logTxStmt.setString(5, UtilMethods.itemStackToBase64(shop.getSecondaryItemStack()));
+                    else
+                        logTxStmt.setNull(5, Types.VARCHAR);
+
+                    logTxStmt.execute();
+                    ResultSet txRS = logTxStmt.getGeneratedKeys();
+                    txRS.next();
+                    transactionID = txRS.getInt(1);
+                } catch (SQLException e) {
+                    plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction/shop action.");
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction/shop action. Issue with converting itemstack to base64!");
+                    e.printStackTrace();
                 }
 
-//                String purchaseType = shop.getType().name().toUpperCase();
-//                if (shop.getType() == ShopType.SELL) { purchaseType = "bought"; }
-//                if (shop.getType() == ShopType.BUY) { purchaseType = "sold"; }
-                plugin.getLogger().helpful(
-                    "Shop " + shop.getType().name().toUpperCase() + " from/to " + player.getName() + ": "
-                    + new ItemNameUtil().getName(shop.getItemStack()) + "(x" + amount + ")" + " for " + plugin.getPriceString(price, true)
-                    + " | Shop owned by " + plugin.getServer().getOfflinePlayer(shop.getOwnerUUID()).getName() + " at (x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ() + ")"
-                );
+                // Log the action that occured
+                if (transactionID == 0) return; // Last query failed, so skip this one!
+                // Connect to datasource & create statement in "try" to handle automatically closing the connection!
+                try (
+                    Connection conn = dataSource.getConnection();
+                    PreparedStatement actionStmt = conn.prepareStatement("INSERT INTO shop_action(ts, player_uuid, owner_uuid, shop_uuid, player_action, transaction_id, shop_world, shop_x, shop_y, shop_z) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+                ) {
+                    actionStmt.setTimestamp(1, new Timestamp(new Date().getTime()));
+                    actionStmt.setString(2, player.getUniqueId().toString());
+                    if(shop.getOwnerUUID().equals(plugin.getShopHandler().getAdminUUID()))
+                        actionStmt.setString(3, "admin");
+                    else
+                        actionStmt.setString(3, shop.getOwnerUUID().toString());
+                    String shop_uuid = "";
+                    if (shop.getId() != null && shop.getId().toString() != null) shop_uuid = shop.getId().toString();
+                    actionStmt.setString(4, shop_uuid);
+                    actionStmt.setString(5, ShopActionType.TRANSACT.toString());
+                    actionStmt.setInt(6, transactionID);
+                    actionStmt.setString(7, shop.getSignLocation().getWorld().getName());
+                    actionStmt.setInt(8, shop.getSignLocation().getBlockX());
+                    actionStmt.setInt(9, shop.getSignLocation().getBlockY());
+                    actionStmt.setInt(10, shop.getSignLocation().getBlockZ());
+                    actionStmt.execute();
+                } catch (SQLException e) {
+                    plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to log transaction/shop action.");
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -285,127 +267,111 @@ public class LogHandler {
             @Override
             public void run() {
                 String query = "SELECT * from shop_action RIGHT JOIN shop_transaction on shop_action.transaction_id = shop_transaction.id where owner_uuid=? and ts > ?;";
+                // Connect to datasource & create statement in "try" to handle automatically closing the connection!
+                try (
+                    Connection conn = dataSource.getConnection();
+                    PreparedStatement stmt = conn.prepareStatement(query);
+                ) {
+                    // Initialize variables to accumulate totals
+                    double totalProfit = 0.0;
+                    double totalSpent = 0.0;
+                    Map<ItemStack, Integer> itemsBought = new HashMap<>();
+                    Map<ItemStack, Integer> itemsSold = new HashMap<>();
 
-                Connection conn;
-                try {
-                    conn = dataSource.getConnection();
-                    try {
-                        // Initialize variables to accumulate totals
-                        double totalProfit = 0.0;
-                        double totalSpent = 0.0;
-                        Map<ItemStack, Integer> itemsBought = new HashMap<>();
-                        Map<ItemStack, Integer> itemsSold = new HashMap<>();
+                    // Prepare and execute the statement
 
-                        // Prepare and execute the statement
-                        PreparedStatement stmt = conn.prepareStatement(query);
-                        stmt.setString(1, offlineTransactions.getPlayerUUID().toString());
-                        stmt.setTimestamp(2, new Timestamp(offlineTransactions.getLastPlayed()));
-                        ResultSet resultSet = stmt.executeQuery();
+                    stmt.setString(1, offlineTransactions.getPlayerUUID().toString());
+                    stmt.setTimestamp(2, new Timestamp(offlineTransactions.getLastPlayed()));
+                    ResultSet resultSet = stmt.executeQuery();
 
-                        int size = 0;
-                        if (resultSet != null) {
-                            while (resultSet.next()) {
-                                size++;
+                    int size = 0;
+                    if (resultSet != null) {
+                        while (resultSet.next()) {
+                            size++;
 
-                                // Extract transaction data
-                                String purchaserUUID = resultSet.getString("player_uuid");
-                                String tType = resultSet.getString("t_type");
-                                double price = resultSet.getDouble("price");
-                                int amount = resultSet.getInt("amount");
-                                String item = resultSet.getString("item");
-                                String barterItem = resultSet.getString("barter_item"); // May be null
+                            // Extract transaction data
+                            String purchaserUUID = resultSet.getString("player_uuid");
+                            String tType = resultSet.getString("t_type");
+                            double price = resultSet.getDouble("price");
+                            int amount = resultSet.getInt("amount");
+                            String item = resultSet.getString("item");
+                            String barterItem = resultSet.getString("barter_item"); // May be null
 
-                                String shopWorld = resultSet.getString("shop_world");
-                                int shopX = resultSet.getInt("shop_x");
-                                int shopY = resultSet.getInt("shop_y");
-                                int shopZ = resultSet.getInt("shop_z");
+                            String shopWorld = resultSet.getString("shop_world");
+                            int shopX = resultSet.getInt("shop_x");
+                            int shopY = resultSet.getInt("shop_y");
+                            int shopZ = resultSet.getInt("shop_z");
 
-                                Location loc = new Location(Bukkit.getWorld(shopWorld), shopX, shopY, shopZ);
+                            Location loc = new Location(Bukkit.getWorld(shopWorld), shopX, shopY, shopZ);
 
-                                ItemStack itemstack = UtilMethods.itemStackFromBase64(item);
-                                ItemStack barterItemstack = null;
+                            ItemStack itemstack = UtilMethods.itemStackFromBase64(item);
+                            ItemStack barterItemstack = null;
 
-                                // Create item stack to use for the Maps (show all identical items as the same sold row)
-                                ItemStack itemCheckClone = itemstack.clone();
-                                itemCheckClone.setAmount(1);
+                            // Create item stack to use for the Maps (show all identical items as the same sold row)
+                            ItemStack itemCheckClone = itemstack.clone();
+                            itemCheckClone.setAmount(1);
 
-                                // Process transactions based on their type
-                                if (tType.equalsIgnoreCase("BUY")) {
-                                    // User spent money to buy items
-                                    totalSpent += price;
-                                    int itemsBoughtAmt = itemsBought.getOrDefault(itemCheckClone, 0) + amount;
-                                    itemsBought.put(itemCheckClone,itemsBoughtAmt);
-                                } else if (tType.equalsIgnoreCase("SELL")) {
-                                    // User earned money by selling items
-                                    totalProfit += price;
-                                    int itemsSoldAmt = itemsSold.getOrDefault(itemCheckClone, 0) + amount;
-                                    itemsSold.put(itemCheckClone, itemsSoldAmt);
-                                } else if (tType.equalsIgnoreCase("BARTER")) {
-                                    int itemsAmt = itemsSold.getOrDefault(itemCheckClone, 0) + amount;
-                                    itemsSold.put(itemCheckClone, itemsAmt);
-                                    if (barterItem != null) {
-                                        // Barter Item is the "currency" item being spent in the transaction
-                                        barterItemstack = UtilMethods.itemStackFromBase64(barterItem);
-                                        ItemStack barterItemCheckClone = barterItemstack.clone();
-                                        barterItemCheckClone.setAmount(1);
-                                        itemsBought.put(barterItemCheckClone, itemsBought.getOrDefault(barterItemCheckClone, 0) + (int) price);
-                                    }
+                            // Process transactions based on their type
+                            if (tType.equalsIgnoreCase("BUY")) {
+                                // User spent money to buy items
+                                totalSpent += price;
+                                int itemsBoughtAmt = itemsBought.getOrDefault(itemCheckClone, 0) + amount;
+                                itemsBought.put(itemCheckClone,itemsBoughtAmt);
+                            } else if (tType.equalsIgnoreCase("SELL")) {
+                                // User earned money by selling items
+                                totalProfit += price;
+                                int itemsSoldAmt = itemsSold.getOrDefault(itemCheckClone, 0) + amount;
+                                itemsSold.put(itemCheckClone, itemsSoldAmt);
+                            } else if (tType.equalsIgnoreCase("BARTER")) {
+                                int itemsAmt = itemsSold.getOrDefault(itemCheckClone, 0) + amount;
+                                itemsSold.put(itemCheckClone, itemsAmt);
+                                if (barterItem != null) {
+                                    // Barter Item is the "currency" item being spent in the transaction
+                                    barterItemstack = UtilMethods.itemStackFromBase64(barterItem);
+                                    ItemStack barterItemCheckClone = barterItemstack.clone();
+                                    barterItemCheckClone.setAmount(1);
+                                    itemsBought.put(barterItemCheckClone, itemsBought.getOrDefault(barterItemCheckClone, 0) + (int) price);
                                 }
-
-                                OfflinePlayer purchaser = null;
-                                if (purchaserUUID != null && !purchaserUUID.isEmpty()) {
-                                    purchaser = Bukkit.getServer().getOfflinePlayer(UUID.fromString(purchaserUUID));
-                                }
-
-                                offlineTransactions.addTx(loc, ShopType.valueOf(tType), price, purchaser, amount, itemstack, barterItemstack);
                             }
+
+                            OfflinePlayer purchaser = null;
+                            if (purchaserUUID != null && !purchaserUUID.isEmpty()) {
+                                purchaser = Bukkit.getServer().getOfflinePlayer(UUID.fromString(purchaserUUID));
+                            }
+
+                            offlineTransactions.addTx(loc, ShopType.valueOf(tType), price, purchaser, amount, itemstack, barterItemstack);
                         }
-
-                        // Close resources
-                        resultSet.close();
-                        stmt.close();
-                        conn.close();
-
-                        // Update offlineTransactions object with the calculated data
-                        offlineTransactions.setNumTransactions(size);
-                        offlineTransactions.setTotalProfit(totalProfit);
-                        offlineTransactions.setTotalSpent(totalSpent);
-                        offlineTransactions.setItemsBought(itemsBought);
-                        offlineTransactions.setItemsSold(itemsSold);
-                        offlineTransactions.setIsCalculating(false);
-                        return;
-                    } catch (SQLException e){
-                        plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to get offline transactions.");
-                        e.printStackTrace();
-                        conn.close();
-                        offlineTransactions.setIsCalculating(false);
-                        return;
-                    } catch (IOException e) {
-                        plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to get offline transactions.");
-                        e.printStackTrace();
-                        conn.close();
-                        offlineTransactions.setIsCalculating(false);
-                    } catch (ClassNotFoundException e) {
-                        plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to get offline transactions.");
-                        e.printStackTrace();
-                        conn.close();
-                        offlineTransactions.setIsCalculating(false);
                     }
-                } catch (SQLException e) {
+
+                    // Update offlineTransactions object with the calculated data
+                    offlineTransactions.setNumTransactions(size);
+                    offlineTransactions.setTotalProfit(totalProfit);
+                    offlineTransactions.setTotalSpent(totalSpent);
+                    offlineTransactions.setItemsBought(itemsBought);
+                    offlineTransactions.setItemsSold(itemsSold);
+                    offlineTransactions.setIsCalculating(false);
+                } catch (SQLException e){
                     plugin.getLogger().log(Level.WARNING,"SQL error occurred while trying to get offline transactions.");
                     e.printStackTrace();
                     offlineTransactions.setIsCalculating(false);
-                    return;
+                } catch (IOException e) {
+                    plugin.getLogger().log(Level.WARNING,"IOException occurred while trying to get offline transactions. Unable to parse itemstack from base64!");
+                    e.printStackTrace();
+                    offlineTransactions.setIsCalculating(false);
+                } catch (ClassNotFoundException e) {
+                    plugin.getLogger().log(Level.WARNING,"ClassNotFoundException occurred while trying to get offline transactions. Unable to parse itemstack from base64!");
+                    e.printStackTrace();
+                    offlineTransactions.setIsCalculating(false);
                 }
             }
         });
     }
 
     private void testDataSource() throws SQLException {
+        // Connect to datasource & create statement in "try" to handle automatically closing the connection!
         try (Connection conn = dataSource.getConnection()) {
             if (!conn.isValid(1000)) {
                 enabled = false;
-                conn.close();
                 plugin.getLogger().log(Level.WARNING, "Could not establish database connection!");
                 plugin.getLogger().log(Level.WARNING, "Purchase Database Logging and Offline Purchase notifications are disabled!");
                 throw new SQLException("Could not establish database connection.");
@@ -413,7 +379,6 @@ public class LogHandler {
             else{
                 enabled = true;
                 plugin.getLogger().debug("Established connection to database.");
-                conn.close();
             }
         }
     }
@@ -434,34 +399,20 @@ public class LogHandler {
         // Mariadb can only handle a single query per statement. We need to split at ;.
         String[] queries = setup.split(";");
 
-        Connection conn = dataSource.getConnection();
         // execute each query to the database.
         for (String query : queries) {
             // If you use the legacy way you have to check for empty queries here.
             //if (query.isBlank())) continue;
             if (query.isEmpty()) continue;
-
-            PreparedStatement stmt = conn.prepareStatement(query);
-            stmt.execute();
-            stmt.close();
-        }
-        conn.close();
-        plugin.getLogger().debug("Successfully initialized database.");
-    }
-
-    public void execute(final PreparedStatement preparedStatement) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    preparedStatement.execute();
-
-                    preparedStatement.getConnection().close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+            // Connect to datasource & create statement in "try" to handle automatically closing the connection!
+            try (
+                Connection conn = dataSource.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query);
+            ) {
+                stmt.execute();
             }
-        });
+        }
+        plugin.getLogger().debug("Successfully initialized database.");
     }
 
     public boolean isEnabled() {
