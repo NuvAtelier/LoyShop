@@ -217,7 +217,7 @@ public class ShopCreationUtil {
             }
 
             plugin.getShopHandler().addShop(shop);
-            Shop.getPlugin().getLogger().debug("[ShopCreationUtil.createShop] updateSign");
+            Shop.getPlugin().getLogger().trace("[ShopCreationUtil.createShop] updateSign");
             shop.updateSign();
         }
         return shop;
@@ -225,7 +225,7 @@ public class ShopCreationUtil {
 
     public void sendCreationSuccess(Player player, AbstractShop shop){
         shop.getDisplay().spawn(player);
-        Shop.getPlugin().getLogger().debug("[ShopCreationUtil.sendCreationSuccess] updateSign");
+        Shop.getPlugin().getLogger().trace("[ShopCreationUtil.sendCreationSuccess] updateSign");
         shop.updateSign();
         shop.setNeedsSave(true);
         ShopMessage.sendMessage(shop.getType().toString(), "create", player, shop);

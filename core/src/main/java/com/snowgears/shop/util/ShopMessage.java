@@ -126,7 +126,7 @@ public class ShopMessage {
      * @return The formatted message with all placeholders replaced
      */
     public static TextComponent format(String message, PlaceholderContext context) {
-        plugin.getLogger().debug("[ShopMessage] pre-format: " + ChatColor.translateAlternateColorCodes('&', message), true);
+        plugin.getLogger().spam("[ShopMessage] pre-format: " + ChatColor.translateAlternateColorCodes('&', message), true);
         TextComponent formattedMessage = new TextComponent("");
 
         // Define the regex pattern
@@ -151,21 +151,21 @@ public class ShopMessage {
                     if (newColor != null) {
                         latestColor = newColor;
                     }
-                    plugin.getLogger().spam("[ShopMessage.format]     matched COLOR_CODE_REGEX: " + part);
-                    plugin.getLogger().spam("[ShopMessage.format]     newColor: " + newColor.toString());
-                    plugin.getLogger().spam("[ShopMessage.format] *** skipping to next part: " + newColor.getName().toUpperCase());
+                    plugin.getLogger().hyper("[ShopMessage.format]     matched COLOR_CODE_REGEX: " + part);
+                    plugin.getLogger().hyper("[ShopMessage.format]     newColor: " + newColor.toString());
+                    plugin.getLogger().hyper("[ShopMessage.format] *** skipping to next part: " + newColor.getName().toUpperCase());
                     continue; // Don't add this text to the message, just go to the next part
                 } catch (Exception e) {
-                    plugin.getLogger().spam("[ShopMessage.format] XXX unknown color code! Going to add this as a normal string! " + part);
+                    plugin.getLogger().hyper("[ShopMessage.format] XXX unknown color code! Going to add this as a normal string! " + part);
                 }
             }
 
             // If we match to a placeholder, then we want to use it's TextComponent instead of the "normal" one
             if (part.matches(PLACEHOLDER_REGEX)) {
                 plugin.getLogger().hyper("[ShopMessage.format]     matched PLACEHOLDER_REGEX: " + part);
-                plugin.getLogger().spam("[ShopMessage.format]     is part placeholder? " + (placeholders.get(part) != null));
+                plugin.getLogger().hyper("[ShopMessage.format]     is part placeholder? " + (placeholders.get(part) != null));
                 if (placeholders.get(part) != null) {
-                    plugin.getLogger().spam("[ShopMessage.format]     replacing placeholder... " + part);
+                    plugin.getLogger().hyper("[ShopMessage.format]     replacing placeholder... " + part);
                     partComponent = replacePlaceholder(part, context);
                     // Check if we set a color inside our part (for example [stock color])
                     if (partComponent.getColor() != latestColor && partComponent.getColor() != null && partComponent.getColor() != ChatColor.WHITE) { latestColor = partComponent.getColor(); }
@@ -174,19 +174,19 @@ public class ShopMessage {
 
             // Set the color
             if (latestColor != null) {
-                plugin.getLogger().spam("[ShopMessage.format]     setting part color to: " + latestColor.getName().toUpperCase());
+                plugin.getLogger().hyper("[ShopMessage.format]     setting part color to: " + latestColor.getName().toUpperCase());
                 partComponent.setColor(latestColor);
             }
             // Add the part of the string to the
             formattedMessage.addExtra(partComponent);
             addedText = true;
-            plugin.getLogger().spam("[ShopMessage.format] *** add part TextComponent to main message: " + partComponent);
+            plugin.getLogger().hyper("[ShopMessage.format] *** add part TextComponent to main message: " + partComponent);
         }
 
         // Handle if we are just a color code with an empty string
         if (!addedText && latestColor != null) formattedMessage.setColor(latestColor);
 
-        plugin.getLogger().debug("[ShopMessage] postFormat: " + formattedMessage.toLegacyText(), true);
+        plugin.getLogger().spam("[ShopMessage] postFormat: " + formattedMessage.toLegacyText(), true);
         return formattedMessage;
     }
 

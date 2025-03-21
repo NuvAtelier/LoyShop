@@ -233,7 +233,7 @@ public class MiscListener implements Listener {
                     }
                 }
                 event.setCancelled(true); //cancel event regardless
-                Shop.getPlugin().getLogger().debug("[MiscListener.onPreShopSignClick] updateSign");
+                Shop.getPlugin().getLogger().trace("[MiscListener.onPreShopSignClick] updateSign");
                 shop.updateSign();
             }
             else if(plugin.getShopHandler().isChest(clicked)){
@@ -523,7 +523,7 @@ public class MiscListener implements Listener {
             if(plugin.getDestroyShopRequiresSneak()){
                 if(!player.isSneaking()){
                     event.setCancelled(true);
-                    Shop.getPlugin().getLogger().debug("[MiscListener.shopDestroy : getDestroyShopRequiresSneak] updateSign");
+                    Shop.getPlugin().getLogger().trace("[MiscListener.shopDestroy : getDestroyShopRequiresSneak] updateSign");
                     shop.updateSign();
                     return;
                 }

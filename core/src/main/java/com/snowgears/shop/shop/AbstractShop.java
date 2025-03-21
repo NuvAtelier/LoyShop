@@ -207,7 +207,7 @@ public abstract class AbstractShop {
         // Update sign if needed
         if(stock != oldStock){
             signLinesRequireRefresh = true;
-            Shop.getPlugin().getLogger().debug("[AbstractShop.updateStock] updateSign, new stock != oldStock! newStock: " + stock + " old stock: " + oldStock + "\n" + this);
+            Shop.getPlugin().getLogger().trace("[AbstractShop.updateStock] updateSign, new stock != oldStock! newStock: " + stock + " old stock: " + oldStock + "\n" + this);
             this.updateSign();
 
             //also set marker in here if using a marker integration

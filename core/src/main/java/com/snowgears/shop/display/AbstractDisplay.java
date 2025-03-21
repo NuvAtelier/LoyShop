@@ -222,7 +222,7 @@ public abstract class AbstractDisplay {
                 }
 
                 asTagLocation = asTagLocation.add(0, verticalAddition, 0);
-                Shop.getPlugin().getLogger().debug("[Display] Adding tag line: " + tagLine, true);
+                Shop.getPlugin().getLogger().spam("[Display] Adding tag line: " + tagLine, true);
                 createTagEntity(player, tagLine, asTagLocation);
                 verticalAddition += 0.3;
             }
@@ -357,7 +357,7 @@ public abstract class AbstractDisplay {
         this.setType(cycle[index], true);
         this.spawn(player);
         Shop.getPlugin().getShopHandler().addActiveShopDisplay(player, this.shopSignLocation);
-        Shop.getPlugin().getLogger().debug("[AbstractDisplay.cycleType] updateSign");
+        Shop.getPlugin().getLogger().trace("[AbstractDisplay.cycleType] updateSign");
 
 //        getShop().updateSign();
         getShop().setNeedsSave(true);

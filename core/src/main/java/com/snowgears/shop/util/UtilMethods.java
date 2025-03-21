@@ -683,13 +683,13 @@ public class UtilMethods {
 
         String latestColor = "";
         for (String word : words) {
-            Shop.getPlugin().getLogger().debug(word);
+            Shop.getPlugin().getLogger().hyper(word);
             if (word.matches(COLOR_CODE_REGEX)) {
                 if (latestColor.equals(word)) continue;
                 latestColor = word;
             }
             if (word.matches(" ") && ChatColor.stripColor(currentLine.toString()).length() + ChatColor.stripColor(word).length() + 1 > maxLineLength) {
-                Shop.getPlugin().getLogger().debug(currentLine.toString());
+                Shop.getPlugin().getLogger().hyper(currentLine.toString());
                 result.add(currentLine.toString().trim());
                 currentLine = new StringBuilder(latestColor);
             } else {
@@ -699,7 +699,7 @@ public class UtilMethods {
 
         // Append the last line if there's any content left
         if (currentLine.length() > 0) {
-            Shop.getPlugin().getLogger().debug(currentLine.toString());
+            Shop.getPlugin().getLogger().hyper(currentLine.toString());
             result.add(currentLine.toString().trim());
         }
 
