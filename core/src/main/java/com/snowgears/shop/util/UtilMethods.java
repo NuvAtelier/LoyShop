@@ -679,18 +679,25 @@ public class UtilMethods {
         }
 
         StringBuilder currentLine = new StringBuilder();
-        List<String> result = new ArrayList<>();
+        List<String> linesByColor = new ArrayList<>();
 
         String latestColor = "";
         for (String word : words) {
             Shop.getPlugin().getLogger().hyper(word);
             if (word.matches(COLOR_CODE_REGEX)) {
-                if (latestColor.equals(word)) continue;
-                latestColor = word;
+                if (!latestColor.equals(word)) {
+                    latestColor = word;
+                    // New color, add the line and start a new line
+                    linesByColor.add(currentLine.toString().trim());
+                    currentLine = new StringBuilder(latestColor);
+                }
+                continue;
             }
+
+            // Also split if the single color line is too long!
             if (word.matches(" ") && ChatColor.stripColor(currentLine.toString()).length() + ChatColor.stripColor(word).length() + 1 > maxLineLength) {
                 Shop.getPlugin().getLogger().hyper(currentLine.toString());
-                result.add(currentLine.toString().trim());
+                linesByColor.add(currentLine.toString().trim());
                 currentLine = new StringBuilder(latestColor);
             } else {
                 currentLine.append(word);
@@ -700,9 +707,23 @@ public class UtilMethods {
         // Append the last line if there's any content left
         if (currentLine.length() > 0) {
             Shop.getPlugin().getLogger().hyper(currentLine.toString());
-            result.add(currentLine.toString().trim());
+            linesByColor.add(currentLine.toString().trim());
         }
 
+        // Now we need to start taking the "blocks" of text and combining them into lines, limited by maxLineLength
+        List<String> result = new ArrayList<>();
+        currentLine = new StringBuilder();
+        for (String line : linesByColor) {
+            if (currentLine.length() + line.length() <= maxLineLength) {
+                currentLine.append(" " + line);
+            } else {
+                result.add(currentLine.toString().trim());
+                currentLine = new StringBuilder(line);
+            }
+        }
+        if (currentLine.length() > 0) {
+            result.add(currentLine.toString().trim());
+        }
         return result;
     }
 }

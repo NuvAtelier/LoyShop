@@ -170,7 +170,7 @@ interaction:
       create: "&eYou have created a gambling shop."
       opDestroy: "&7You have destroyed a gambling shop owned by [server name]."
       createHitChestPrice: '&eEnter in chat the price to gamble with this shop.'
-   createHitChest: '&eEnter in chat what to do with &a[item](s) &e. &7([shop types])'
+   createHitChest: '&eEnter in chat what to do with &a[item](s) &7([shop types])'
    adminCreateHitChest: '&7(Adding &eadmin &7will make the shop unlimited stock.)'
 
 interaction_issue:
@@ -258,11 +258,8 @@ hover:
 
 creativeSelection:
    enter:
-      - "_____________________________________________________"
-      - "&7You are now in locked creative mode so you can choose the item you want to receive."
-      - "&fTo select the item, pick it up and drop it outside of the inventory window."
       - "&6Open your inventory and select the item you want to receive."
-      - "_____________________________________________________"
+      - "&eTo select the item, pick it up and drop it outside of the inventory window."
    prompt:
       - "&cYou cannot move in locked creative mode."
       - "&6Open your inventory and select the item you want to receive."
@@ -270,11 +267,8 @@ creativeSelection:
 
 guiSearchSelection:
    enter:
-      - "_____________________________________________________"
-      - "&7You are now in locked creative mode so you can choose an item to search for."
-      - "&fTo select the item, pick it up and drop it outside of the inventory window."
       - "&6Open your inventory and select the item you want to search for."
-      - "_____________________________________________________"
+      - "&eTo select the item, pick it up and drop it outside of the inventory window."
    prompt:
       - "&cYou cannot move in locked creative mode."
       - "&6Open your inventory and select the item you want to search for."
