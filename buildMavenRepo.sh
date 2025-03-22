@@ -16,7 +16,7 @@ docker rm ${CONTAINER_NAME} 2>/dev/null || true
 # Determine whether to use local build or Docker Hub
 if [ "$1" == "local" ]; then
     # Build the Docker image locally
-    docker build --cache-from ${DOCKERHUB_IMAGE} -t ${IMAGE_NAME} . # --progress=plain
+    docker build --cache-from ${DOCKERHUB_IMAGE} -t ${IMAGE_NAME} -f buildMavenRepo.Dockerfile . # --progress=plain
 else
     # Pull the Docker image from Docker Hub
     docker pull ${DOCKERHUB_IMAGE}
