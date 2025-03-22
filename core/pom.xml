@@ -151,7 +151,7 @@
         <dependency>
             <groupId>de.tr7zw</groupId>
             <artifactId>item-nbt-api</artifactId>
-            <version>2.14.1-20241207.132017-3</version> <!-- @ToDo: switch to 2.14.1 when it is released -->
+            <version>2.14.1</version> <!-- @ToDo: switch to 2.14.1 when it is released -->
         </dependency>
         <dependency>
             <groupId>org.spigotmc</groupId>
