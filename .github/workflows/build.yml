@@ -21,6 +21,16 @@ jobs:
         distribution: 'temurin'
         cache: maven
         
+    - name: Cache SpigotBuildTools
+      uses: actions/cache@v3
+      with:
+        path: |
+          ./SpigotBuildTools
+          ./m2repo
+        key: ${{ runner.os }}-spigot-${{ hashFiles('buildMavenRepo.sh', 'buildMavenRepo.Dockerfile') }}
+        restore-keys: |
+          ${{ runner.os }}-spigot-
+        
     - name: Build Maven Repository
       run: |
         chmod +x ./buildMavenRepo.sh
