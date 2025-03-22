@@ -14,6 +14,7 @@ import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,7 +33,7 @@ public class ShopCreationProcess {
     boolean isAdmin;
     private PricePair pricePair;
 
-    private AbstractDisplay display;
+    public AbstractDisplay display;
     private PlaceholderContext placeholderContext;
 
     public ShopCreationProcess(Player player, Block clickedChest, BlockFace clickedFace){
@@ -208,13 +209,39 @@ public class ShopCreationProcess {
             ShopMessage.sendMessage(key, subkey, this, player);
             return;
         }
-        // Remove any existing text
-        this.display.removeDisplayEntities(player, true);
-
-        // Display new text
+        // Build the lines
         String unformatted = ShopMessage.getUnformattedMessage(key, subkey);
         String formatted = ShopMessage.format(unformatted, this.placeholderContext).toLegacyText();
         List<String> lines = UtilMethods.splitStringIntoLines(formatted, 35);
+        // Display the lines
+        displayFloatingLines(lines);
+    }
+
+    public void displayFloatingTextList(String key, String subkey) {
+        // Check if feature is enabled or not.
+        if (!Shop.getPlugin().getConfig().getBoolean("displayFloatingCreateText")) {
+            for (String message : ShopMessage.getUnformattedMessageList(key, subkey)) {
+                if (message != null && !message.isEmpty())
+                    ShopMessage.sendMessage(message, player);
+            }
+            return;
+        }
+        List<String> lines = new ArrayList<>();
+        // Build the lines
+        for (String unformatted : ShopMessage.getUnformattedMessageList(key, subkey)) {
+            if (unformatted != null && !unformatted.isEmpty()){
+                String formatted = ShopMessage.format(unformatted, this.placeholderContext).toLegacyText();
+                lines.addAll(UtilMethods.splitStringIntoLines(formatted, 35));
+            }
+        }
+        // Display the lines
+        displayFloatingLines(lines);
+    }
+
+    public void displayFloatingLines(List<String> lines) {
+        // Remove any existing text
+        this.display.removeDisplayEntities(player, true);
+
         Location loc = this.clickedChest.getLocation().clone().add(0.5,0.625 + (0.248*lines.size()),0.5);
         int i = 0;
         for (String line : lines) {

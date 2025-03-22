@@ -71,7 +71,7 @@ public class CreativeSelectionListener implements Listener {
                 if (!player.getUniqueId().equals(shop.getOwnerUUID())) {
                     if((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
                         ShopMessage.sendMessage("interactionIssue", "initialize", player, shop);
-                        plugin.getTransactionHelper().sendEffects(false, player, shop);
+                        shop.sendEffects(false, player);
                         event.setCancelled(true);
                         return;
                     }
@@ -249,13 +249,13 @@ public class CreativeSelectionListener implements Listener {
                         if(currentProcess.getStep() == ITEM){
                             currentProcess.setItemStack(event.getCursor());
                             currentProcess.setShopType(ShopType.BUY);
-                            ShopMessage.sendMessage(currentProcess.getShopType().toString(), "createHitChestAmount", currentProcess, player);
+                            currentProcess.displayFloatingText(ShopType.BUY.toString(), "createHitChestAmount");
                             removePlayerFromCreativeSelection(player);
                         }
                         //they just hit a chest with an open hand when creating a barter shop and need choose a barter item from creative selection
                         else if(currentProcess.getStep() == ShopCreationProcess.ChatCreationStep.BARTER_ITEM){
                             currentProcess.setBarterItemStack(event.getCursor());
-                            ShopMessage.sendMessage(currentProcess.getShopType().toString(), "createHitChestBarterAmount", currentProcess, player);
+                            currentProcess.displayFloatingText(ShopType.BARTER.toString(), "createHitChestBarterAmount");
                             removePlayerFromCreativeSelection(player);
                         }
                     }
@@ -332,16 +332,19 @@ public class CreativeSelectionListener implements Listener {
     }
 
     private void sendPlayerLockedMessages(Player player, PlayerData playerData){
-        if(playerData.isGuiSearch()){
-            for (String message : ShopMessage.getUnformattedMessageList("guiSearchSelection", "enter")) {
-                if (message != null && !message.isEmpty())
-                    ShopMessage.sendMessage(message, player);
+        // check when we sent them the last "locked in place" message, if it is within the past 2 seconds, don't send another message
+        long lastMessageTime = playerData.getLastMessageTime();
+        if(System.currentTimeMillis() - lastMessageTime < 2000){ return; }
+        playerData.setLastMessageTime(System.currentTimeMillis());
+
+        // display the floating text for the shop type, get the process
+        ShopCreationProcess process = plugin.getMiscListener().getShopCreationProcess(player);
+        if(process != null){
+            if(playerData.isGuiSearch()){
+                process.displayFloatingTextList("guiSearchSelection", "enter");
             }
-        }
-        else {
-            for (String message : ShopMessage.getUnformattedMessageList("creativeSelection", "enter")) {
-                if (message != null && !message.isEmpty())
-                    ShopMessage.sendMessage(message, player);
+            else {
+                process.displayFloatingTextList("creativeSelection", "enter");
             }
         }
     }

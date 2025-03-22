@@ -371,15 +371,17 @@ public class ShopMessage {
         registerPlaceholder("[price sell per item]", context -> { if (context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceSellPerItemString()); } return null; });
         registerPlaceholder("[price combo]", context -> { if (context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceComboString()); } return null; });
         registerPlaceholder("[price per item]", context -> new TextComponent(context.getShop().getPricePerItemString()));
-        registerPlaceholder("[price]", context -> new TextComponent(context.getShop().getPriceString()));
+        registerPlaceholder("[price]", context -> { if (context.getShop() != null) { return new TextComponent(context.getShop().getPriceString()); } return null; });
         registerPlaceholder("[stock]", context -> {
-            if (context.getShop().isAdmin()) {
+            if (context.getShop() == null) { return null; }
+            else if (context.getShop().isAdmin()) {
                 return new TextComponent(String.valueOf(ShopMessage.getAdminStockWord()));
             } else {
                 return new TextComponent(String.valueOf(context.getShop().getStock()));
             }
         });
         registerPlaceholder("[stock color]", context -> {
+            if (context.getShop() == null) { return null; }
             if (context.getShop().getStock() < 1) {
                 return format(getUnformattedMessage("signtext", "outofstockcolor"), context);
             }

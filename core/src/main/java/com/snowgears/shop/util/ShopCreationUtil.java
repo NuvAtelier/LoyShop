@@ -229,7 +229,7 @@ public class ShopCreationUtil {
         shop.updateSign();
         shop.setNeedsSave(true);
         ShopMessage.sendMessage(shop.getType().toString(), "create", player, shop);
-        Shop.getPlugin().getTransactionHelper().sendEffects(true, player, shop);
+        shop.sendEffects(true, player);
         // Save the shop to disk
         Shop.getPlugin().getShopHandler().saveShops(shop.getOwnerUUID(), true);
     }
@@ -243,7 +243,7 @@ public class ShopCreationUtil {
             boolean passesItemList = plugin.getShopHandler().passesItemListCheck(itemStack);
             if (!passesItemList) {
                 ShopMessage.sendMessage("interactionIssue", "itemListDeny", player, null);
-                //plugin.getTransactionListener().sendEffects(false, player, shop);
+                //shop.sendEffects(false, player);
                 return false;
             }
         }
@@ -252,7 +252,7 @@ public class ShopCreationUtil {
         // Always perform this check, even if admin!
         if (InventoryUtils.itemstacksAreSimilar(itemStack, barterItemStack)) {
             ShopMessage.sendMessage("interactionIssue", "sameItem", player, null);
-            //plugin.getTransactionListener().sendEffects(false, player, shop);
+            //shop.sendEffects(false, player);
             return false;
         }
         return true;
@@ -263,7 +263,7 @@ public class ShopCreationUtil {
             //do not allow non operators to initialize other player's shops
             if((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
                 ShopMessage.sendMessage("interactionIssue", "initialize", player, shop);
-                plugin.getTransactionHelper().sendEffects(false, player, shop);
+                shop.sendEffects(false, player);
                 return false;
             }
         }
@@ -283,7 +283,7 @@ public class ShopCreationUtil {
                 }
                 else {
                     ShopMessage.sendMessage("interactionIssue", "displayRoom", player, shop);
-                    plugin.getTransactionHelper().sendEffects(false, player, shop);
+                    shop.sendEffects(false, player);
                     return false;
                 }
             }
@@ -295,7 +295,7 @@ public class ShopCreationUtil {
             boolean removed = EconomyUtils.removeFunds(player, player.getInventory(), cost);
             if(!removed){
                 ShopMessage.sendMessage("interactionIssue", "createInsufficientFunds", player, shop);
-                plugin.getTransactionHelper().sendEffects(false, player, shop);
+                shop.sendEffects(false, player);
                 return false;
             }
         }
@@ -310,7 +310,7 @@ public class ShopCreationUtil {
         } catch (NoSuchFieldError e) {}
 
         if(!itemsCanBeInitialized(player, item, barterItem)){
-            plugin.getTransactionHelper().sendEffects(false, player, shop);
+            shop.sendEffects(false, player);
             return false;
         }
 

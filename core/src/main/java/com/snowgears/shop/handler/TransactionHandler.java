@@ -90,7 +90,7 @@ public class TransactionHandler {
             }
         } else {
             ShopMessage.sendMessage("interactionIssue", "useOwnShop", player, shop);
-            sendEffects(false, player, shop);
+            shop.sendEffects(false, player);
         }
         event.setCancelled(true);
     }
@@ -119,7 +119,7 @@ public class TransactionHandler {
 
         //the transaction has finished and the exchange event has not been cancelled
         sendExchangeMessagesAndLog(shop, player, actionType, transaction);
-        sendEffects(true, player, shop);
+        shop.sendEffects(true, player);
         //make sure to update the shop sign, but only if the sign lines use a variable that requires a refresh (like stock that is dynamically updated)
         if(shop.getSignLinesRequireRefresh()){
             plugin.getLogger().trace("[TransactionHandler.executeTransactionSequence] updateSign");
@@ -169,7 +169,7 @@ public class TransactionHandler {
         // Since there was an error during the transaction, send the message, then exit the transaction early.
         if (message != null && !message.isEmpty())
             ShopMessage.sendMessage(message, player, shop);
-        sendEffects(false, player, shop);
+        shop.sendEffects(false, player);
     }
 
     private void sendExchangeMessagesAndLog(AbstractShop shop, Player player, ShopType transactionType, Transaction transaction) {
@@ -198,26 +198,6 @@ public class TransactionHandler {
         int amount = transaction.getAmount();
 
         plugin.getLogHandler().logTransaction(player, shop, transactionType, price, amount);
-    }
-
-    public void sendEffects(boolean success, Player player, AbstractShop shop){
-        try {
-            if (success) {
-                if (plugin.playSounds()) {
-                    try {
-                        player.playSound(shop.getSignLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
-                    } catch (NoSuchFieldError e) {}
-                }
-                if (plugin.playEffects())
-                    player.getWorld().playEffect(shop.getChestLocation(), Effect.STEP_SOUND, Material.EMERALD_BLOCK);
-            } else {
-                if (plugin.playSounds())
-                    player.playSound(shop.getSignLocation(), Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
-                if (plugin.playEffects())
-                    player.getWorld().playEffect(shop.getChestLocation(), Effect.STEP_SOUND, Material.REDSTONE_BLOCK);
-            }
-        } catch (Error e){
-        } catch (Exception e) {}
     }
 
     private boolean notifyOwner(final AbstractShop shop){
