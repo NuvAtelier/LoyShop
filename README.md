@@ -1,11 +1,12 @@
-![520ef725efdc8caad836d0370a17d58ce8ee99b2](https://github.com/user-attachments/assets/075aaff3-2328-4672-89af-32bc86ec3fcd)
+[![Build and Package](https://github.com/snowgears/Shop/actions/workflows/build.yml/badge.svg)](https://github.com/snowgears/Shop/actions/workflows/build.yml)
+[![520ef725efdc8caad836d0370a17d58ce8ee99b2](https://github.com/user-attachments/assets/075aaff3-2328-4672-89af-32bc86ec3fcd)](https://www.spigotmc.org/resources/shop-the-intuitive-shop-plugin.9628/)
 
 ## Description
 Allows players to quickly create shops to buy, sell, barter, or gamble items seamlessly!
 
 By focusing on ease of use, players of any skill level can create in-game shops in a way that feels like a native feature.
 
-## Build a Release
+## Build Locally
 * Update version in `/pom.xml`
 * `./compile.sh`
 * Plugin is built to `/target/shop-{version}.jar`
