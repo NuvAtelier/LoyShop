@@ -281,11 +281,12 @@ bluemap-marker:
 # Available Log Levels:
 # * INFO   : Standard logging, only logs on startup, warnings, and errors
 # * NOTICE : Logs significant events like shop creation/deletion
-# * HELPFUL: Logs important in-game events such as transactions
+# * HELPFUL: Logs important in-game events such as transactions (RECOMMENDED)
 # * DEBUG  : Logs detailed information useful for debugging features
 # * TRACE  : Logs step-by-step execution details
 # * SPAM   : Logs extremely verbose information for deep diagnostics
-logLevel: DEBUG
+# * HYPER  : Logs at hyper speed, the deepest level of diagnostics
+logLevel: HELPFUL
 enableLogColor: false
 
 debug:
