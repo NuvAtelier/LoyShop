@@ -207,7 +207,8 @@ public abstract class AbstractShop {
         this.calculateStock();
 
         // Update sign if needed
-        if(stock != oldStock){
+        boolean hasStockChange = stock != oldStock;
+        if(hasStockChange){
             signLinesRequireRefresh = true;
             Shop.getPlugin().getLogger().trace("[AbstractShop.updateStock] updateSign, new stock != oldStock! newStock: " + stock + " old stock: " + oldStock + "\n" + this);
             this.updateSign();
@@ -218,6 +219,13 @@ public abstract class AbstractShop {
             }
 
             needsSave = true;
+            return;
+        }
+
+        // If there is not a stock change but we need to refresh the signs, then update the sign.
+        // This is triggered upon a server restart to make sure that the signs are updated.
+        if (!hasStockChange && signLinesRequireRefresh) {
+            this.updateSign();
         }
     }
 
