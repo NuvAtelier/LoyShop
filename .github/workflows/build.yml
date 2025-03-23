@@ -13,6 +13,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history for all branches and tags
       
     - name: Set up JDK
       uses: actions/setup-java@v3
@@ -31,6 +33,23 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spigot-
         
+    - name: Update version with commit hash
+      run: |
+        # Get the short commit hash
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+        
+        # Read the current version from pom.xml
+        CURRENT_VERSION=$(grep -m 1 "<version>" pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+        
+        # Create new version with commit hash
+        NEW_VERSION="${CURRENT_VERSION}-${COMMIT_HASH}"
+        
+        # Update the version in pom.xml
+        sed -i "s/<version>$CURRENT_VERSION<\/version>/<version>$NEW_VERSION<\/version>/" pom.xml
+        
+        echo "Updated version from $CURRENT_VERSION to $NEW_VERSION"
+        echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        
     - name: Build Maven Repository
       run: |
         chmod +x ./buildMavenRepo.sh
@@ -40,13 +59,34 @@ jobs:
       run: mvn -B clean compile package
       
     - name: Upload Artifact
+      id: upload-artifact
       uses: actions/upload-artifact@v4
       with:
         name: shop-plugin
-        path: target/*.jar
+        path: target/Shop-*.jar
+        exclude: target/original-Shop-*.jar
+        
+    - name: Find JAR filename
+      id: find-jar
+      run: |
+        JAR_FILE=$(find target -name "Shop-*.jar" -not -name "original-Shop-*.jar" | head -n 1)
+        JAR_FILENAME=$(basename "$JAR_FILE")
+        echo "JAR_FILENAME=$JAR_FILENAME" >> $GITHUB_ENV
+        
+    - name: Create workflow summary
+      run: |
+        echo "# Build Completed Successfully! 🎉" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Download" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Direct Download Link" >> $GITHUB_STEP_SUMMARY
+        echo "⬇️ [Download ${{ env.JAR_FILENAME }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "To download, click the link above, then click on the 'Artifacts' dropdown and select 'shop-plugin'." >> $GITHUB_STEP_SUMMARY
         
     - name: Create Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: target/*.jar 
+        files: target/Shop-*.jar 
