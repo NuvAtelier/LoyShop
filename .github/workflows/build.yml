@@ -36,7 +36,7 @@ jobs:
     - name: Update version with commit hash
       run: |
         # Get the short commit hash
-        COMMIT_HASH=${GITHUB_SHA::7}
+        COMMIT_HASH=${github.event.pull_request.head.sha}
         
         # Read the current version from pom.xml
         CURRENT_VERSION=$(grep -m 1 "<revision>" pom.xml | sed 's/.*<revision>\(.*\)<\/revision>.*/\1/')
