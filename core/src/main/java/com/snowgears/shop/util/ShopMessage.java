@@ -32,9 +32,15 @@ public class ShopMessage {
     private static final Map<String, Function<PlaceholderContext, TextComponent>> placeholders = new HashMap<>();
     // Regex pattern to identify placeholders within square brackets, e.g., [owner]
     private static final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORa-fk-or])";
-    private static final String HEX_CODE_REGEX = "#[0-9a-fA-F]{6}";
-    private static final String PLACEHOLDER_REGEX = "(\\[[^\\[\\]]+\\])|([^&\\[]+)";
-    private static final String MESSAGE_PARTS_REGEX = COLOR_CODE_REGEX + "|" + HEX_CODE_REGEX + "|" + PLACEHOLDER_REGEX + "|.";
+    private static final String HEX_CODE_REGEX = "(#[0-9a-fA-F]{6})";
+    private static final String PLACEHOLDER_REGEX = "(\\[[^\\[\\]]+\\])";
+    private static final String TEXT_SEGMENT_REGEX = "([^&§\\[#]+)";
+    private static final String MESSAGE_PARTS_REGEX = 
+        COLOR_CODE_REGEX + "|" + 
+        HEX_CODE_REGEX + "|" + 
+        PLACEHOLDER_REGEX + "|" + 
+        TEXT_SEGMENT_REGEX + "|" +  // Match text segments
+        "(.{1})";          // Match any single character as fallback
 
     private static HashMap<String, String> messageMap = new HashMap<String, String>();
     private static HashMap<String, String[]> shopSignTextMap = new HashMap<String, String[]>();
@@ -130,7 +136,6 @@ public class ShopMessage {
         TextComponent formattedMessage = new TextComponent("");
 
         // Define the regex pattern
-//        MESSAGE_PARTS_REGEX
         Matcher matcher = Pattern.compile(MESSAGE_PARTS_REGEX).matcher(message);
         List<String> parts = new ArrayList<>();
         while (matcher.find()) {
