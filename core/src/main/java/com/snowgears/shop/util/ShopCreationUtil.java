@@ -291,7 +291,9 @@ public class ShopCreationUtil {
 
         //if players must pay to create shops, remove money first
         double cost = plugin.getCreationCost();
-        if(cost > 0 && !shop.isAdmin()){
+        // Check if the shop is not an admin shop and if the shop is not a barter shop or the barter item is not null
+        // When creating a barter shop with a sign, initializeShop is called twice, we only want to charge them once both items are selected
+        if(cost > 0 && !shop.isAdmin() && !(shop.getType() == ShopType.BARTER && barterItem == null)){
             boolean removed = EconomyUtils.removeFunds(player, player.getInventory(), cost);
             if(!removed){
                 ShopMessage.sendMessage("interactionIssue", "createInsufficientFunds", player, shop);
