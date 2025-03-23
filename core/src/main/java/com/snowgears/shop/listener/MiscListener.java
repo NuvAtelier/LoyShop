@@ -104,6 +104,7 @@ public class MiscListener implements Listener {
             if (event.getLine(0).toLowerCase().contains(ShopMessage.getCreationWord("SHOP").toLowerCase())) {
 
                 if(!plugin.getShopCreationUtil().shopCanBeCreated(player, chest)){
+                    cancelShopCreationProcess(player);
                     event.setCancelled(true);
                     return;
                 }
@@ -114,11 +115,15 @@ public class MiscListener implements Listener {
                     if (amount < 1) {
                         ShopMessage.sendMessage("interactionIssue", "line2", player, null);
                         ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
+                        cancelShopCreationProcess(player);
+                        event.setCancelled(true);
                         return;
                     }
                 } catch (NumberFormatException e) {
                     ShopMessage.sendMessage("interactionIssue", "line2", player, null);
                     ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
+                    cancelShopCreationProcess(player);
+                    event.setCancelled(true);
                     return;
                 }
 
@@ -151,7 +156,11 @@ public class MiscListener implements Listener {
                     return;
                 }
 
-                ShopMessage.sendMessage(type.toString(), "initialize", player, shop);
+                ShopCreationProcess process = new ShopCreationProcess(player, chest, signDirection);
+                process.setStep(ShopCreationProcess.ChatCreationStep.SIGN_ITEM);
+                playerChatCreationSteps.put(player.getUniqueId(), process);
+
+                process.displayFloatingText(type.toString(), "initialize");
                 if (plugin.allowCreativeSelection() && (type == ShopType.BUY || type == ShopType.COMBO)) {
                     ShopMessage.sendMessage(type.toString(), "initializeAlt", player, shop);
                 }
@@ -170,7 +179,7 @@ public class MiscListener implements Listener {
                                 sign.setLine(2, lines[2]);
                                 sign.setLine(3, lines[3]);
                                 sign.update(true);
-                                plugin.getCreativeSelectionListener().removePlayerFromCreativeSelection(player);
+                                cancelShopCreationProcess(player);
                             }
                         }
                     }
@@ -181,6 +190,10 @@ public class MiscListener implements Listener {
 
     public ShopCreationProcess getShopCreationProcess(Player player){
         return playerChatCreationSteps.get(player.getUniqueId());
+    }
+
+    public void removeShopCreationProcess(Player player){
+        playerChatCreationSteps.remove(player.getUniqueId());
     }
 
     public void cancelShopCreationProcess(Player player){

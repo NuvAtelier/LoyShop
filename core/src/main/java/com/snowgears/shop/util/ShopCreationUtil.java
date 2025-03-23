@@ -223,12 +223,21 @@ public class ShopCreationUtil {
         return shop;
     }
 
+    public void cleanupShopCreationProcess(Player player){
+        ShopCreationProcess process = plugin.getMiscListener().getShopCreationProcess(player);
+        if (process != null) {
+            process.cleanup();
+            plugin.getMiscListener().removeShopCreationProcess(player);
+        }
+    }
+
     public void sendCreationSuccess(Player player, AbstractShop shop){
         shop.getDisplay().spawn(player);
         Shop.getPlugin().getLogger().trace("[ShopCreationUtil.sendCreationSuccess] updateSign");
         shop.updateSign();
         shop.setNeedsSave(true);
         ShopMessage.sendMessage(shop.getType().toString(), "create", player, shop);
+        cleanupShopCreationProcess(player);
         shop.sendEffects(true, player);
         // Save the shop to disk
         Shop.getPlugin().getShopHandler().saveShops(shop.getOwnerUUID(), true);
@@ -326,9 +335,12 @@ public class ShopCreationUtil {
 
             shop.setItemStack(item);
 
+            ShopCreationProcess process = plugin.getMiscListener().getShopCreationProcess(player);
             if (shop.getType() == ShopType.BARTER && barterItem == null) {
                 ShopMessage.sendMessage(shop.getType().toString(), "initializeInfo", player, shop);
-                ShopMessage.sendMessage(shop.getType().toString(), "initializeBarter", player, shop);
+                process.setStep(ShopCreationProcess.ChatCreationStep.SIGN_BARTER_ITEM);
+                process.displayFloatingText(shop.getType().toString(), "initializeBarter");
+                // ShopMessage.sendMessage(shop.getType().toString(), "initializeBarter", player, shop);
                 if(plugin.allowCreativeSelection()) {
                     ShopMessage.sendMessage("BUY", "initializeAlt", player, shop);
                 }

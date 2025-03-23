@@ -132,8 +132,9 @@ public class ShopMessage {
      * @return The formatted message with all placeholders replaced
      */
     public static TextComponent format(String message, PlaceholderContext context) {
-        plugin.getLogger().spam("[ShopMessage] pre-format: " + ChatColor.translateAlternateColorCodes('&', message), true);
         TextComponent formattedMessage = new TextComponent("");
+        if (message == null) { return formattedMessage; }
+        plugin.getLogger().spam("[ShopMessage] pre-format: " + ChatColor.translateAlternateColorCodes('&', message), true);
 
         // Define the regex pattern
         Matcher matcher = Pattern.compile(MESSAGE_PARTS_REGEX).matcher(message);

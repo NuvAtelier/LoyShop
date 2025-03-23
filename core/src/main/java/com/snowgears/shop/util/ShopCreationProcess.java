@@ -117,9 +117,8 @@ public class ShopCreationProcess {
         return pricePair;
     }
 
-    public ChatCreationStep getStep() {
-        return step;
-    }
+    public ChatCreationStep getStep() { return step; }
+    public void setStep(ChatCreationStep step) { this.step = step; }
 
     public void setPricePair(PricePair pricePair){
         this.pricePair = pricePair;
@@ -251,7 +250,12 @@ public class ShopCreationProcess {
     }
 
     public enum ChatCreationStep {
+        // Sign creation steps
+        SIGN_CREATION,
+        SIGN_ITEM,
+        SIGN_BARTER_ITEM,
 
+        // Chat creation steps
         ITEM,
 
         SHOP_TYPE,
