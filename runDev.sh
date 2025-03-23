@@ -3,8 +3,9 @@
 COMMIT_HASH=$(git rev-parse --short HEAD)
 # Read the current version from pom.xml
 CURRENT_VERSION=$(grep -m 1 "<revision>" pom.xml | sed 's/.*<revision>\(.*\)<\/revision>.*/\1/')
-# Create new version with commit hash
-NEW_VERSION="${CURRENT_VERSION}-${COMMIT_HASH}-dev"
+# Create new version with commit hash and human readable timestamp
+TIMESTAMP=$(date +"%b-%d-%Y_%H-%M")
+NEW_VERSION="${CURRENT_VERSION}-${COMMIT_HASH}-${TIMESTAMP}-dev"
 # Move this into a function
 function updateVersion() {
     # Update the version in pom.xml
