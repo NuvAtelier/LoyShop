@@ -347,7 +347,8 @@ public class ShopMessage {
         registerPlaceholder("[item amount]", context -> {
             if (context.getItem() != null) return new TextComponent(String.valueOf(context.getItem().getAmount()));
             else if (context.getProcess() != null) return new TextComponent(String.valueOf(context.getProcess().getItemAmount()));
-            return new TextComponent(String.valueOf(context.getShop().getItemStack().getAmount()));
+            else if (context.getShop().getItemStack() != null) return new TextComponent(String.valueOf(context.getShop().getItemStack().getAmount()));
+            return null;
         });
         registerPlaceholder("[item enchants]", context -> embedItem(UtilMethods.getEnchantmentsString(context.getShop().getItemStack()), context.getShop().getItemStack()));
 
@@ -441,6 +442,7 @@ public class ShopMessage {
     }
 
     private static HoverEvent getItemHoverEvent(ItemStack item) {
+        if (item == null) { return null; }
         try {
             ItemStack hoverItem = item.clone();
             hoverItem.setAmount(1);
@@ -452,6 +454,7 @@ public class ShopMessage {
     }
 
     private static TextComponent embedItem(String message, ItemStack item) {
+        if (item == null) { return null; }
         TextComponent msg = new TextComponent(message);
         HoverEvent event = getItemHoverEvent(item);
         if (event != null) { msg.setHoverEvent(event); }
