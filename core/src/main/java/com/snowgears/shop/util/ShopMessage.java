@@ -323,14 +323,14 @@ public class ShopMessage {
 
         // Location Placeholders
         registerPlaceholder("[world]", context -> {
-            if (context.getProcess() != null) return new TextComponent(context.getProcess().getClickedChest().getWorld().getName());
-            else if (context.getShop() != null) new TextComponent(context.getShop().getSignLocation().getWorld().getName());
+            if (context.getProcess() != null && context.getProcess().getClickedChest() != null) return new TextComponent(context.getProcess().getClickedChest().getWorld().getName());
+            else if (context.getShop() != null) return new TextComponent(context.getShop().getSignLocation().getWorld().getName());
             return null;
         });
         registerPlaceholder("[location]", context -> {
             Location loc = null;
             if (context.getLocation() != null) loc = context.getLocation();
-            else if (context.getProcess() != null) loc = context.getProcess().getClickedChest().getLocation();
+            else if (context.getProcess() != null && context.getProcess().getClickedChest() != null) loc = context.getProcess().getClickedChest().getLocation();
             else if (context.getShop() != null) loc = context.getShop().getSignLocation();
             if (loc == null) return null;
             TextComponent text = new TextComponent(UtilMethods.getCleanLocation(loc, false));
@@ -351,13 +351,13 @@ public class ShopMessage {
             else if (context.getShop().getItemStack() != null) return new TextComponent(String.valueOf(context.getShop().getItemStack().getAmount()));
             return null;
         });
-        registerPlaceholder("[item enchants]", context -> embedItem(UtilMethods.getEnchantmentsString(context.getShop().getItemStack()), context.getShop().getItemStack()));
+        registerPlaceholder("[item enchants]", context -> { if (context.getShop() != null) { return embedItem(UtilMethods.getEnchantmentsString(context.getShop().getItemStack()), context.getShop().getItemStack()); } return null; });
 
-        registerPlaceholder("[item lore]", context -> embedItem(UtilMethods.getLoreString(context.getShop().getItemStack()), context.getShop().getItemStack()));
-        registerPlaceholder("[item durability]", context -> new TextComponent(String.valueOf(context.getShop().getItemDurabilityPercent())));
-        registerPlaceholder("[item type]", context -> { if (context.getShop().getType() == ShopType.GAMBLE) { return new TextComponent("???"); } else { return new TextComponent(Shop.getPlugin().getItemNameUtil().getName(context.getShop().getItemStack().getType())); } });
-        registerPlaceholder("[gamble item amount]", context -> { if (context.getShop().getType() == ShopType.GAMBLE) { return new TextComponent(String.valueOf(context.getShop().getAmount())); } return null; });
-        registerPlaceholder("[gamble item]", context -> { if (context.getShop().getType() == ShopType.GAMBLE) { return embedItem(plugin.getItemNameUtil().getName(plugin.getGambleDisplayItem()), plugin.getGambleDisplayItem()); } return null; });
+        registerPlaceholder("[item lore]", context -> { if (context.getShop() != null) { return embedItem(UtilMethods.getLoreString(context.getShop().getItemStack()), context.getShop().getItemStack()); } return null; });
+        registerPlaceholder("[item durability]", context -> { if (context.getShop() != null) { return new TextComponent(String.valueOf(context.getShop().getItemDurabilityPercent())); } return null; });
+        registerPlaceholder("[item type]", context -> { if (context.getShop() != null && context.getShop().getType() == ShopType.GAMBLE) { return new TextComponent("???"); } else { return new TextComponent(Shop.getPlugin().getItemNameUtil().getName(context.getShop().getItemStack().getType())); } });
+        registerPlaceholder("[gamble item amount]", context -> { if (context.getShop() != null && context.getShop().getType() == ShopType.GAMBLE) { return new TextComponent(String.valueOf(context.getShop().getAmount())); } return null; });
+        registerPlaceholder("[gamble item]", context -> { if (context.getShop() != null && context.getShop().getType() == ShopType.GAMBLE) { return embedItem(plugin.getItemNameUtil().getName(plugin.getGambleDisplayItem()), plugin.getGambleDisplayItem()); } return null; });
 
         // Shop Barter Item Placeholders
         registerPlaceholder("[barter item amount]", context -> {
@@ -367,17 +367,17 @@ public class ShopMessage {
             return new TextComponent(String.valueOf(context.getShop().getSecondaryItemStack().getAmount()));
         });
         registerPlaceholder("[barter item]", ShopMessage::getBarterItemPlaceholder);
-        registerPlaceholder("[barter item durability]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(String.valueOf(context.getShop().getSecondaryItemDurabilityPercent())); } return null; });
-        registerPlaceholder("[barter item type]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(Shop.getPlugin().getItemNameUtil().getName(context.getShop().getSecondaryItemStack().getType())); } return null; });
-        registerPlaceholder("[barter item enchants]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return embedItem(UtilMethods.getEnchantmentsString(context.getShop().getSecondaryItemStack()), context.getShop().getSecondaryItemStack()); } return null; });
-        registerPlaceholder("[barter item lore]", context -> { if (context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return embedItem(UtilMethods.getLoreString(context.getShop().getSecondaryItemStack()), context.getShop().getSecondaryItemStack()); } return null; });
+        registerPlaceholder("[barter item durability]", context -> { if (context.getShop() != null && context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(String.valueOf(context.getShop().getSecondaryItemDurabilityPercent())); } return null; });
+        registerPlaceholder("[barter item type]", context -> { if (context.getShop() != null && context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return new TextComponent(Shop.getPlugin().getItemNameUtil().getName(context.getShop().getSecondaryItemStack().getType())); } return null; });
+        registerPlaceholder("[barter item enchants]", context -> { if (context.getShop() != null && context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return embedItem(UtilMethods.getEnchantmentsString(context.getShop().getSecondaryItemStack()), context.getShop().getSecondaryItemStack()); } return null; });
+        registerPlaceholder("[barter item lore]", context -> { if (context.getShop() != null && context.getShop().getType() == ShopType.BARTER && context.getShop().getSecondaryItemStack() != null) { return embedItem(UtilMethods.getLoreString(context.getShop().getSecondaryItemStack()), context.getShop().getSecondaryItemStack()); } return null; });
 
         // Shop Pricing Placeholders
-        registerPlaceholder("[amount]", context -> new TextComponent(String.valueOf(context.getShop().getAmount())));
-        registerPlaceholder("[price sell]", context -> { if (context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceSellString()); } return null; });
-        registerPlaceholder("[price sell per item]", context -> { if (context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceSellPerItemString()); } return null; });
-        registerPlaceholder("[price combo]", context -> { if (context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceComboString()); } return null; });
-        registerPlaceholder("[price per item]", context -> new TextComponent(context.getShop().getPricePerItemString()));
+        registerPlaceholder("[amount]", context -> { if (context.getShop() != null) { return new TextComponent(String.valueOf(context.getShop().getAmount())); } return null; });
+        registerPlaceholder("[price sell]", context -> { if (context.getShop() != null && context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceSellString()); } return null; });
+        registerPlaceholder("[price sell per item]", context -> { if (context.getShop() != null && context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceSellPerItemString()); } return null; });
+        registerPlaceholder("[price combo]", context -> { if (context.getShop() != null && context.getShop().getType() == ShopType.COMBO) { return new TextComponent(((ComboShop) context.getShop()).getPriceComboString()); } return null; });
+        registerPlaceholder("[price per item]", context -> { if (context.getShop() != null) { return new TextComponent(context.getShop().getPricePerItemString()); } return null; });
         registerPlaceholder("[price]", context -> { if (context.getShop() != null) { return new TextComponent(context.getShop().getPriceString()); } return null; });
         registerPlaceholder("[stock]", context -> {
             if (context.getShop() == null) { return null; }
