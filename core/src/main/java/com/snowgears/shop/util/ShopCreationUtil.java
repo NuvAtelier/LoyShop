@@ -234,13 +234,15 @@ public class ShopCreationUtil {
     public void sendCreationSuccess(Player player, AbstractShop shop){
         shop.getDisplay().spawn(player);
         Shop.getPlugin().getLogger().trace("[ShopCreationUtil.sendCreationSuccess] updateSign");
+        shop.setSignLinesRequireRefresh(true);
         shop.updateSign();
         shop.setNeedsSave(true);
         ShopMessage.sendMessage(shop.getType().toString(), "create", player, shop);
-        cleanupShopCreationProcess(player);
         shop.sendEffects(true, player);
         // Save the shop to disk
         Shop.getPlugin().getShopHandler().saveShops(shop.getOwnerUUID(), true);
+        // Cleanup the shop creation process
+        cleanupShopCreationProcess(player);
     }
 
     public boolean itemsCanBeInitialized(Player player, ItemStack itemStack, ItemStack barterItemStack){
