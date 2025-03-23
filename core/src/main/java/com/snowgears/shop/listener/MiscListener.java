@@ -273,7 +273,7 @@ public class MiscListener implements Listener {
                         else if (currentProcess == null && player.isSneaking()){
                             // Long lastCreatedProcess = lastChatCreation.get(player.getUniqueId());
                             //if the player has created a new process in the last 5 seconds, block them from creating another
-                            if(lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < 5000) {
+                            if(lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < plugin.getDebug_shopCreateCooldown()) {
                                 ShopMessage.sendMessage("interactionIssue", "createCooldown", player, null);
                                 event.setCancelled(true);
                                 return;
@@ -321,7 +321,7 @@ public class MiscListener implements Listener {
                 if(lastCreatedProcess != null) {
                     //if the player has created a new process in the last 5 seconds, block them from creating another
                     long diff = (new Date().getTime() - lastCreatedProcess);
-                    if (diff < 5000) {
+                    if (diff < plugin.getDebug_shopCreateCooldown()) {
                         ShopMessage.sendMessage("interactionIssue", "createCooldown", player, null);
                         event.setCancelled(true);
                         return;

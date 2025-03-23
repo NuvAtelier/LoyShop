@@ -383,6 +383,75 @@ public class LogHandler {
         }
     }
 
+    // Get the number of transactions during the last 30 minutes
+    public int getRecentTransactionCount() {
+        if (!enabled) return 0;
+        
+        int count = 0;
+        Timestamp thirtyMinutesAgo = new Timestamp(System.currentTimeMillis() - (30 * 60 * 1000));
+        
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) FROM shop_action WHERE transaction_id IS NOT NULL AND ts > ?")) {
+            
+            stmt.setTimestamp(1, thirtyMinutesAgo);
+            ResultSet resultSet = stmt.executeQuery();
+            
+            if (resultSet.next()) {
+                count = resultSet.getInt(1);
+            }
+            
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "SQL error occurred while trying to get recent transaction count.");
+            e.printStackTrace();
+        }
+        
+        return count;
+    }
+
+    // Get the number of items bought and sold during the last 30 minutes
+    public int getRecentItemVolume() {
+        if (!enabled) return 0;
+        
+        int volume = 0;
+
+        Timestamp thirtyMinutesAgo = new Timestamp(System.currentTimeMillis() - (30 * 60 * 1000));
+        
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT transaction_id FROM shop_action WHERE transaction_id IS NOT NULL AND ts > ?")) {
+            
+            stmt.setTimestamp(1, thirtyMinutesAgo);
+            ResultSet resultSet = stmt.executeQuery();
+            
+            if (resultSet.next()) {
+                // Get the `price` and `amount` from the `shop_transaction` table
+                PreparedStatement stmt2 = conn.prepareStatement("SELECT t_type, price, amount FROM shop_transaction WHERE id = ?");
+                stmt2.setInt(1, resultSet.getInt("transaction_id"));
+                ResultSet resultSet2 = stmt2.executeQuery();
+                
+                if (resultSet2.next()) {
+                    String tType = resultSet2.getString("t_type");
+                    double price = resultSet2.getDouble("price");
+                    int amount = resultSet2.getInt("amount");
+                    // Add the amount of items transacted to the volume
+                    volume += amount;
+
+                    // Check if the economy type is set to ITEM, if so, add it to the volume
+                    // Otherwise if it is set to VAULT, only add the price to the volume if it is a barter transaction
+                    // since barter transactions are item-to-item transactions
+                    if (plugin.getCurrencyType() == CurrencyType.ITEM || tType.equalsIgnoreCase(ShopType.BARTER.toString())) {
+                        volume += price;
+                    }
+                }   
+            }
+            
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "SQL error occurred while trying to get recent item volume.");
+            e.printStackTrace();
+        }
+        
+        return volume;
+    }
+
     private void initDb() throws SQLException {
         // first lets read our setup file.
         // This file contains statements to create our inital tables.

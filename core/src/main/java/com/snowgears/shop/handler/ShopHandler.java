@@ -574,6 +574,14 @@ public class ShopHandler {
         return getShopLocations(playerUUID).size();
     }
 
+    public int getNumberOfShops(ShopType shopType) {
+        int shopsWithType = 0;
+        for (AbstractShop shop : allShops.values()) {
+            if (shop.getType() == shopType) { shopsWithType++; }
+        }
+        return shopsWithType;
+    }
+
     private ArrayList<AbstractShop> orderedShopList() {
         ArrayList<AbstractShop> list = new ArrayList<AbstractShop>(allShops.values());
         Collections.sort(list, new Comparator<AbstractShop>() {

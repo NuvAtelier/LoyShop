@@ -9,7 +9,11 @@ import com.snowgears.shop.listener.CreativeSelectionListener;
 import com.snowgears.shop.listener.DisplayListener;
 import com.snowgears.shop.listener.MiscListener;
 import com.snowgears.shop.listener.ShopListener;
+import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.*;
+import com.snowgears.shop.util.Metrics;
+import com.snowgears.shop.util.Metrics.*;
+import java.util.concurrent.Callable;
 import de.bluecolored.bluemap.api.BlueMapAPI;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -65,7 +69,6 @@ public class Shop extends JavaPlugin {
 
     private boolean usePerms;
     private boolean checkUpdates;
-    //private boolean enableMetrics;
     private boolean enableGUI;
     private boolean hookWorldGuard;
     private boolean hookTowny;
@@ -116,7 +119,7 @@ public class Shop extends JavaPlugin {
 
     private boolean debug_allowUseOwnShop;
     private boolean debug_transactionDebugLogs;
-
+    private int debug_shopCreateCooldown;
     public static Shop getPlugin() {
         return plugin;
     }
@@ -309,7 +312,6 @@ public class Shop extends JavaPlugin {
             this.getLogger().info("Permissions disabled, everyone will be able to create/use shops by default");
         }
         checkUpdates = config.getBoolean("checkUpdates");
-        //enableMetrics = config.getBoolean("enableMetrics");
         enableGUI = config.getBoolean("enableGUI");
         hookWorldGuard = config.getBoolean("hookWorldGuard");
         hookTowny = config.getBoolean("hookTowny");
@@ -364,17 +366,6 @@ public class Shop extends JavaPlugin {
 //
 //        itemCurrency = new ItemStack(itemCurrencyId);
 //        itemCurrency.setData(new MaterialData(itemCurrencyId, (byte) itemCurrencyData));
-
-        //TODO may put this back at some point in the future via shaded pom.xml mcstat metrics but as of now i dont particularly care
-//        if(enableMetrics) {
-//            try {
-//                Metrics metrics = new Metrics(this);
-//                metrics.start();
-//            } catch (IOException e) {
-//                // Failed to submit the stats
-//            }
-//        }
-
 
 
         //Loading the itemCurrency from a file makes it easier to allow servers to use detailed itemstacks as the server's economy item
@@ -547,8 +538,71 @@ public class Shop extends JavaPlugin {
             this.getLogger().notice("AdvancedRegionMarket is installed, creating AdvancedRegionMarket listener");
         }
 
+        int bstatsPluginId = 25211;
+        Metrics metrics = new Metrics(plugin, bstatsPluginId);
+        // transactions would be cool
+        // It would also be cool to see the number of items transacted (bought/sold & item currency)
+        // I don't think showing vault currency is worth it, since people have vastly different economy scaling
+        // It would be worth it to show a pie chart of what economy type is being used!
+        metrics.addCustomChart(new SingleLineChart("transactions", () -> logHandler.getRecentTransactionCount()));
+        metrics.addCustomChart(new SingleLineChart("item_volume", () -> logHandler.getRecentItemVolume()));
+        metrics.addCustomChart(new SingleLineChart("shops", () -> shopHandler.getNumberOfShops()));
+        metrics.addCustomChart(new AdvancedPie("shop_types", () -> {
+            Map<String, Integer> valueMap = new HashMap<>();
+            valueMap.put("Buy", shopHandler.getNumberOfShops(ShopType.BUY));
+            valueMap.put("Sell", shopHandler.getNumberOfShops(ShopType.SELL));
+            valueMap.put("Barter", shopHandler.getNumberOfShops(ShopType.BARTER));
+            valueMap.put("Combo", shopHandler.getNumberOfShops(ShopType.COMBO));
+            valueMap.put("Gamble", shopHandler.getNumberOfShops(ShopType.GAMBLE));
+            return valueMap;
+        }));
+        metrics.addCustomChart(new SimplePie("economy_type", () -> { return currencyType.toString(); }));
+        
+        // Add metrics for more configuration options
+        metrics.addCustomChart(new SimplePie("use_permissions", () -> String.valueOf(usePerms)));
+        metrics.addCustomChart(new SimplePie("allow_partial_sales", () -> String.valueOf(allowPartialSales)));
+
+        // Group these into an advanced pie
+        metrics.addCustomChart(new AdvancedPie("shop_creation_methods", () -> {
+            Map<String, Integer> valueMap = new HashMap<>();
+            valueMap.put("Sign Creation", allowCreateMethodSign ? 1 : 0);
+            valueMap.put("Chest Creation", allowCreateMethodChest ? 1 : 0);
+            valueMap.put("Command Creation", allowCreateMethodCommand ? 1 : 0);
+            valueMap.put("Signs Disabled", allowCreateMethodSign ? 0 : 1);
+            valueMap.put("Chests Disabled", allowCreateMethodChest ? 0 : 1);
+            valueMap.put("Commands Disabled", allowCreateMethodCommand ? 0 : 1);
+            return valueMap;
+        }));
+
+        metrics.addCustomChart(new SimplePie("offline_purchase_notifications", () -> String.valueOf(offlinePurchaseNotificationsEnabled)));
+        metrics.addCustomChart(new SimplePie("shop_gui_enabled", () -> { return String.valueOf(enableGUI); }));
+        metrics.addCustomChart(new SimplePie("allow_searching_items", () -> String.valueOf(allowCreativeSelection)));
+        metrics.addCustomChart(new SimplePie("check_item_durability", () -> String.valueOf(checkItemDurability)));
+        metrics.addCustomChart(new SimplePie("ignore_item_repair_cost", () -> String.valueOf(ignoreItemRepairCost)));
+        metrics.addCustomChart(new AdvancedPie("sounds_and_effects", () -> {
+            Map<String, Integer> valueMap = new HashMap<>();
+            valueMap.put("Sounds Enabled", playSounds ? 1 : 0);
+            valueMap.put("Effects Enabled", playEffects ? 1 : 0);
+            valueMap.put("Sounds Disabled", playSounds ? 0 : 1);
+            valueMap.put("Effects Disabled", playEffects ? 0 : 1);
+            return valueMap;
+        }));
+        
+        metrics.addCustomChart(new SimplePie("worldguard_enabled", () -> { return String.valueOf(hookWorldGuard); }));
+        metrics.addCustomChart(new SimplePie("towny_enabled", () -> { return String.valueOf(hookTowny); }));
+        metrics.addCustomChart(new SimplePie("bluemap_enabled", () -> String.valueOf(bluemapEnabled)));
+        metrics.addCustomChart(new SimplePie("database_type", () -> String.valueOf(config.getString("logging.type"))));
+        
+        // Track display type preferences
+        metrics.addCustomChart(new SimplePie("item_hover_display_type", () -> displayType.toString()));
+        metrics.addCustomChart(new SimplePie("hover_text_activation_type", () -> displayTagOption.toString()));
+        
+        // Track if shop auto-deletion is enabled
+        metrics.addCustomChart(new SimplePie("auto_cleanup_dead_shops", () -> String.valueOf(hoursOfflineToRemoveShops > 0)));
+
         debug_allowUseOwnShop = config.getBoolean("debug.allowUseOwnShop");
         debug_transactionDebugLogs = config.getBoolean("debug.transactionDebugLogs");
+        debug_shopCreateCooldown = config.getInt("debug.shopCreateCooldown");
 
         displayListener.startRepeatingDisplayViewTask();
 
@@ -757,6 +811,7 @@ public class Shop extends JavaPlugin {
 
     public boolean getDebug_allowUseOwnShop() { return debug_allowUseOwnShop; }
     public boolean getDebug_transactionDebugLogs() { return debug_transactionDebugLogs; }
+    public int getDebug_shopCreateCooldown() { return debug_shopCreateCooldown; }
 
     public void setItemCurrency(ItemStack itemCurrency){
         this.itemCurrency = itemCurrency;

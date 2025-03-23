@@ -294,4 +294,6 @@ debug:
    allowUseOwnShop: false
    # (default: false) Show price calculation debug logs when purchases are made
    transactionDebugLogs: false
+   # (default: 5000) The cooldown in milliseconds for how long a player must wait between creating new shop creation processes
+   shopCreateCooldown: 5000
 
