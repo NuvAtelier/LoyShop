@@ -422,7 +422,10 @@ public class LogHandler {
             stmt.setTimestamp(1, thirtyMinutesAgo);
             ResultSet resultSet = stmt.executeQuery();
             
-            if (resultSet.next()) {
+            // Loop through the results
+            while (resultSet.next()) {
+                // Log
+                plugin.getLogger().debug("Found transaction id: " + resultSet.getInt("transaction_id"));
                 // Get the `price` and `amount` from the `shop_transaction` table
                 PreparedStatement stmt2 = conn.prepareStatement("SELECT t_type, price, amount FROM shop_transaction WHERE id = ?");
                 stmt2.setInt(1, resultSet.getInt("transaction_id"));
@@ -434,7 +437,6 @@ public class LogHandler {
                     int amount = resultSet2.getInt("amount");
                     // Add the amount of items transacted to the volume
                     volume += amount;
-
                     // Check if the economy type is set to ITEM, if so, add it to the volume
                     // Otherwise if it is set to VAULT, only add the price to the volume if it is a barter transaction
                     // since barter transactions are item-to-item transactions

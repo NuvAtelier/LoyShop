@@ -30,7 +30,7 @@ resetVersion
 
 # Copy latest plugin in
 rm ../paper-test-1.21.4/plugins/Shop-*.jar 
-rm -r ../paper-test-1.21.4/plugins/.paper-remapped
+# rm -r ../paper-test-1.21.4/plugins/.paper-remapped
 cp target/Shop-*.jar ../paper-test-1.21.4/plugins
 
 cd ../paper-test-1.21.4/
