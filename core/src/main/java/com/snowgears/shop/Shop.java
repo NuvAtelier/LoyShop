@@ -351,6 +351,12 @@ public class Shop extends JavaPlugin {
 
         offlinePurchaseNotificationsEnabled = config.getBoolean("offlinePurchaseNotifications.enabled");
 
+        if (offlinePurchaseNotificationsEnabled && config.getString("logging.type").toUpperCase().equals("OFF")) {
+            this.getLogger().warning("Offline purchase notifications are enabled in `config.yml` but DB logging is set to `OFF`. Offline purchase notifications will be disabled.");
+            this.getLogger().warning("Please set `logging.type` to `FILE` or setup a database in `config.yml` to enable offline purchase notifications.");
+            offlinePurchaseNotificationsEnabled = false;
+        }
+
         //TODO
 //        taxPercent = config.getDouble("taxPercent");
 
