@@ -424,8 +424,6 @@ public class LogHandler {
             
             // Loop through the results
             while (resultSet.next()) {
-                // Log
-                plugin.getLogger().debug("Found transaction id: " + resultSet.getInt("transaction_id"));
                 // Get the `price` and `amount` from the `shop_transaction` table
                 PreparedStatement stmt2 = conn.prepareStatement("SELECT t_type, price, amount FROM shop_transaction WHERE id = ?");
                 stmt2.setInt(1, resultSet.getInt("transaction_id"));
