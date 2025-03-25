@@ -46,7 +46,7 @@ public abstract class AbstractDisplay {
     }
 
     public boolean isChunkLoaded(){
-        return shopSignLocation.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
+        return shopSignLocation.getWorld() != null && shopSignLocation.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
     }
 
     //spawns a floating item packet for a specific player

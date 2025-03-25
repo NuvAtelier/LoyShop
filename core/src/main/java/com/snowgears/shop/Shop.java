@@ -120,6 +120,7 @@ public class Shop extends JavaPlugin {
     private boolean debug_allowUseOwnShop;
     private boolean debug_transactionDebugLogs;
     private int debug_shopCreateCooldown;
+    private boolean debug_forceResaveAll;
     public static Shop getPlugin() {
         return plugin;
     }
@@ -609,6 +610,7 @@ public class Shop extends JavaPlugin {
         debug_allowUseOwnShop = config.getBoolean("debug.allowUseOwnShop");
         debug_transactionDebugLogs = config.getBoolean("debug.transactionDebugLogs");
         debug_shopCreateCooldown = config.getInt("debug.shopCreateCooldown");
+        debug_forceResaveAll = config.getBoolean("debug.forceResaveAll");
 
         displayListener.startRepeatingDisplayViewTask();
 
@@ -818,6 +820,7 @@ public class Shop extends JavaPlugin {
     public boolean getDebug_allowUseOwnShop() { return debug_allowUseOwnShop; }
     public boolean getDebug_transactionDebugLogs() { return debug_transactionDebugLogs; }
     public int getDebug_shopCreateCooldown() { return debug_shopCreateCooldown; }
+    public boolean getDebug_forceResaveAll() { return debug_forceResaveAll; }
 
     public void setItemCurrency(ItemStack itemCurrency){
         this.itemCurrency = itemCurrency;

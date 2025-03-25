@@ -607,7 +607,8 @@ public class ShopHandler {
     private String getChunkKey(Location location){
         int chunkX = UtilMethods.floor(location.getBlockX()) >> 4;
         int chunkZ = UtilMethods.floor(location.getBlockZ()) >> 4;
-        return location.getWorld().getName()+"_"+chunkX+"_"+chunkZ;
+        String worldName = location.getWorld() != null ? location.getWorld().getName() : "unknown_world";
+        return worldName+"_"+chunkX+"_"+chunkZ;
     }
 
     private String getChunkKey(Chunk chunk){
@@ -875,6 +876,9 @@ public class ShopHandler {
                                     //delete old file
                                     file.delete();
                                 }
+                                if (plugin.getDebug_forceResaveAll()) {
+                                    saveShops(playerUUID, true);
+                                }
                             }
                         }
                     }
@@ -1022,7 +1026,8 @@ public class ShopHandler {
 
 
     private String locationToString(Location loc) {
-        return loc.getWorld().getName() + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
+        String worldName = loc.getWorld() == null ? "unknown_world" : loc.getWorld().getName();
+        return worldName + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
     }
 
     private Location locationFromString(String locString) {

@@ -165,7 +165,9 @@ public class UtilMethods {
 
     public static String getCleanLocation(Location loc, boolean includeWorld){
         String text = "";
-        if(includeWorld)
+        if (loc == null) { return text; }
+        
+        if(includeWorld && loc.getWorld() != null)
             text = loc.getWorld().getName() + " - ";
         text = text + "("+ loc.getBlockX() + ", "+loc.getBlockY() + ", "+loc.getBlockZ() + ")";
         return text;
