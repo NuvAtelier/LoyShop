@@ -387,7 +387,11 @@ public abstract class AbstractDisplay {
             return null;
 
         //calculate which x,z to drop items at depending on direction of the shop sign
-        double dropY = 0.9;
+        double dropY = 1.0;
+        Material blockType = shop.getChestLocation().getBlock().getType();
+        if (blockType == Material.CHEST || blockType == Material.TRAPPED_CHEST || blockType == Material.ENDER_CHEST) {
+            dropY = 0.9;
+        }
         double dropX = 0.5;
         double dropZ = 0.5;
         if (shop.getType() == ShopType.BARTER) {
