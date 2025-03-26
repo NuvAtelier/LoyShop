@@ -142,16 +142,16 @@ public class LogHandler {
             plugin.getLogger().notice(
                     player.getName() + " created a " + shop.getType().name().toUpperCase() + " shop at ("
                             + "x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ()
-                            + ") item: " + new ItemNameUtil().getName(shop.getItemStack())
-                            + (shop.getSecondaryItemStack() != null ? " barterItem: " + new ItemNameUtil().getName(shop.getSecondaryItemStack()) : "")
+                            + ") item: " + new ItemNameUtil().getName(shop.getItemStack()).toPlainText()
+                            + (shop.getSecondaryItemStack() != null ? " barterItem: " + new ItemNameUtil().getName(shop.getSecondaryItemStack()).toPlainText() : "")
             );
         }
         if (actionType == ShopActionType.DESTROY) {
             plugin.getLogger().notice(
                     player.getName() + " destroyed a " + shop.getType().name().toUpperCase() + " shop at ("
                             + "x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ()
-                            + ") item: " + new ItemNameUtil().getName(shop.getItemStack())
-                            + (shop.getSecondaryItemStack() != null ? " barterItem: " + new ItemNameUtil().getName(shop.getSecondaryItemStack()) : "")
+                            + ") item: " + new ItemNameUtil().getName(shop.getItemStack()).toPlainText()
+                            + (shop.getSecondaryItemStack() != null ? " barterItem: " + new ItemNameUtil().getName(shop.getSecondaryItemStack()).toPlainText() : "")
             );
         }
 
@@ -189,7 +189,7 @@ public class LogHandler {
     public void logTransaction(Player player, AbstractShop shop, ShopType transactionType, double price, int amount){
         plugin.getLogger().helpful(
             "Shop " + shop.getType().name().toUpperCase() + " from/to " + player.getName() + ": "
-                + new ItemNameUtil().getName(shop.getItemStack()) + "(x" + amount + ")" + " for " + plugin.getPriceString(price, true)
+                + new ItemNameUtil().getName(shop.getItemStack()).toPlainText() + "(x" + amount + ")" + " for " + plugin.getPriceString(price, true)
                 + " | Shop owned by " + plugin.getServer().getOfflinePlayer(shop.getOwnerUUID()).getName() + " at (x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ() + ")"
         );
 

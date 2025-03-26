@@ -341,7 +341,7 @@ public abstract class AbstractShop {
 
     public String getPriceString() {
         if(this.type == ShopType.BARTER && this.isInitialized()){
-            return (int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack());
+            return (int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack()).toPlainText();
         }
         return Shop.getPlugin().getPriceString(this.price, false);
     }

@@ -452,7 +452,7 @@ public class Shop extends JavaPlugin {
                 this.getLogger().severe("Plugin Disabled: Invalid value for `itemCurrencyID` in `config.yml`");
                 getServer().getPluginManager().disablePlugin(plugin);
             }
-            this.getLogger().info("Shops will use " + itemNameUtil.getName(itemCurrency) + "(s) as the currency on the server.");
+            this.getLogger().info("Shops will use " + itemNameUtil.getName(itemCurrency).toPlainText() + "(s) as the currency on the server.");
         }
 
         commandHandler = new CommandHandler(this, null, commandAlias, "Base command for the Shop plugin", "/shop", new ArrayList(Arrays.asList(commandAlias)));

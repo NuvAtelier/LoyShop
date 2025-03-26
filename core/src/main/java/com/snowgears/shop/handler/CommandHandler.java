@@ -154,7 +154,7 @@ public class CommandHandler extends BukkitCommand {
                         return true;
                     }
                 } else {
-                    sender.sendMessage("The server is using "+plugin.getItemNameUtil().getName(plugin.getItemCurrency())+" as currency.");
+                    sender.sendMessage("The server is using "+plugin.getItemNameUtil().getName(plugin.getItemCurrency()).toPlainText()+" as currency.");
                 }
             }
             else if(args[0].equalsIgnoreCase("setgamble")){
