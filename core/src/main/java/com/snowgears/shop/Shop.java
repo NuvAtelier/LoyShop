@@ -192,6 +192,17 @@ public class Shop extends JavaPlugin {
         }
 
         try {
+            // Check if we need to update any legacy config values
+            // Check if offlinePurchaseNotifications.enabled is a new value
+            YamlConfiguration oldConfig = YamlConfiguration.loadConfiguration(configFile);
+            // One time update if the Offline Purchase Notifications feature is being started up for the very first time
+            // Previous default OFF, new default FILE
+            if (oldConfig.get("offlinePurchaseNotifications") == null && oldConfig.getString("logging.type").equals("OFF")) {
+                logger.info("Config default update: v1.10.0(+) is being run for the first time, setting logging type to FILE from old default OFF");
+                oldConfig.set("logging.type", "FILE");
+                oldConfig.save(configFile);
+            }
+
             ConfigUpdater.update(plugin, "config.yml", configFile, new ArrayList<>());
         } catch (IOException e) {
             e.printStackTrace();
