@@ -11,6 +11,7 @@ import de.bluecolored.bluemap.api.BlueMapMap;
 import de.bluecolored.bluemap.api.BlueMapWorld;
 import de.bluecolored.bluemap.api.markers.MarkerSet;
 import de.bluecolored.bluemap.api.markers.POIMarker;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -52,8 +53,11 @@ public class BluemapHookListener implements Listener {
             return;
 
         BlueMapAPI.getInstance().ifPresent(api -> {
-            final String shopDetails = ShopMessage.formatMessage(markerLabel, shop, null, false);
+            String shopDetails = ChatColor.stripColor(ShopMessage.formatMessage(markerLabel, shop, null, false));
+            // Remove any newline characters, or the literal string \n from the shop details
+            shopDetails = shopDetails.replaceAll("\\n", "").replaceAll("\\\\n", "");
 
+            // Remove any color codes from the shop details
             MarkerSet markerSet = getMarkerSet(api, shop);
             if(markerSet != null){
                 String markerID = UtilMethods.getCleanLocation(shop.getSignLocation(), true);
@@ -76,7 +80,7 @@ public class BluemapHookListener implements Listener {
                         break;
                 }
 
-                POIMarker marker = POIMarker.toBuilder()
+                POIMarker marker = POIMarker.builder()
                         .label(shopDetails)
                         .icon(markerIcon, 0, 0)
                         .position(x, shop.getSignLocation().getBlockY()+1, z)
