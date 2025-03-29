@@ -53,6 +53,7 @@ public class Shop extends JavaPlugin {
     private DynmapHookListener dynmapHookListener;
     private BluemapHookListener bluemapHookListener;
     private boolean bluemapEnabled;
+    private boolean dynmapEnabled;
     private BentoBoxHookListener bentoBoxHookListener;
     private ARMHookListener armHookListener;
 
@@ -91,7 +92,6 @@ public class Shop extends JavaPlugin {
     private boolean playEffects;
     private boolean allowCreateMethodSign;
     private boolean allowCreateMethodChest;
-    private boolean allowCreateMethodCommand;
     private ItemStack gambleDisplayItem;
     private ItemStack itemCurrency = null;
     private CurrencyType currencyType;
@@ -315,7 +315,6 @@ public class Shop extends JavaPlugin {
 
         allowCreateMethodSign = config.getBoolean("creationMethod.placeSign");
         allowCreateMethodChest = config.getBoolean("creationMethod.hitChest");
-        allowCreateMethodCommand = config.getBoolean("creationMethod.runCommand");
 
         usePerms = config.getBoolean("usePermissions");
         if (usePerms) {
@@ -328,6 +327,7 @@ public class Shop extends JavaPlugin {
         hookWorldGuard = config.getBoolean("hookWorldGuard");
         hookTowny = config.getBoolean("hookTowny");
         bluemapEnabled = config.getBoolean("bluemap-marker.enabled");
+        dynmapEnabled = config.getBoolean("dynmap-marker.enabled");
         commandAlias = config.getString("commandAlias");
         checkItemDurability = config.getBoolean("checkItemDurability");
         ignoreItemRepairCost = config.getBoolean("ignoreItemRepairCost");
@@ -519,7 +519,7 @@ public class Shop extends JavaPlugin {
             this.getLogger().notice("LWC is installed, creating LWC listener");
         }
 
-        if(getServer().getPluginManager().getPlugin("dynmap") != null){
+        if(getServer().getPluginManager().getPlugin("dynmap") != null && dynmapEnabled){
             dynmapHookListener = new DynmapHookListener(this);
             getServer().getPluginManager().registerEvents(dynmapHookListener, this);
             this.getLogger().notice("Dynmap is installed, creating Dynmap listener");
@@ -574,6 +574,16 @@ public class Shop extends JavaPlugin {
             valueMap.put("Gamble", shopHandler.getNumberOfShops(ShopType.GAMBLE));
             return valueMap;
         }));
+        metrics.addCustomChart(new AdvancedPie("shop_display_types", () -> {
+            Map<String, Integer> valueMap = new HashMap<>();
+            valueMap.put("Floating Item", shopHandler.getNumberOfShopDisplayTypes(DisplayType.ITEM));
+            valueMap.put("Large Item", shopHandler.getNumberOfShopDisplayTypes(DisplayType.LARGE_ITEM));
+            valueMap.put("Item Frame", shopHandler.getNumberOfShopDisplayTypes(DisplayType.ITEM_FRAME));
+            valueMap.put("Glass Case", shopHandler.getNumberOfShopDisplayTypes(DisplayType.GLASS_CASE));
+            valueMap.put("None", shopHandler.getNumberOfShopDisplayTypes(DisplayType.NONE));
+            return valueMap;
+        }));
+        metrics.addCustomChart(new AdvancedPie("shop_containers", () -> shopHandler.getShopContainerCounts()));
         metrics.addCustomChart(new SimplePie("economy_type", () -> { return currencyType.toString(); }));
         
         // Add metrics for more configuration options
@@ -585,10 +595,8 @@ public class Shop extends JavaPlugin {
             Map<String, Integer> valueMap = new HashMap<>();
             valueMap.put("Sign Creation", allowCreateMethodSign ? 1 : 0);
             valueMap.put("Chest Creation", allowCreateMethodChest ? 1 : 0);
-            valueMap.put("Command Creation", allowCreateMethodCommand ? 1 : 0);
             valueMap.put("Signs Disabled", allowCreateMethodSign ? 0 : 1);
             valueMap.put("Chests Disabled", allowCreateMethodChest ? 0 : 1);
-            valueMap.put("Commands Disabled", allowCreateMethodCommand ? 0 : 1);
             return valueMap;
         }));
 
@@ -608,6 +616,7 @@ public class Shop extends JavaPlugin {
         
         metrics.addCustomChart(new SimplePie("worldguard_enabled", () -> { return String.valueOf(hookWorldGuard); }));
         metrics.addCustomChart(new SimplePie("towny_enabled", () -> { return String.valueOf(hookTowny); }));
+        metrics.addCustomChart(new SimplePie("dynmap_enabled", () -> String.valueOf(dynmapEnabled)));
         metrics.addCustomChart(new SimplePie("bluemap_enabled", () -> String.valueOf(bluemapEnabled)));
         metrics.addCustomChart(new SimplePie("database_type", () -> String.valueOf(config.getString("logging.type"))));
         
@@ -617,6 +626,94 @@ public class Shop extends JavaPlugin {
         
         // Track if shop auto-deletion is enabled
         metrics.addCustomChart(new SimplePie("auto_cleanup_dead_shops", () -> String.valueOf(hoursOfflineToRemoveShops > 0)));
+        // Track if destroying shops requires sneaking
+        metrics.addCustomChart(new SimplePie("destroy_requires_sneak", () -> String.valueOf(destroyShopRequiresSneak)));
+        // Track if combo shops are inverted
+        metrics.addCustomChart(new SimplePie("inverse_combo_shops", () -> String.valueOf(inverseComboShops)));
+
+        // Add container types tracking - group by container categories
+        metrics.addCustomChart(new AdvancedPie("enabled_containers", () -> {
+            Map<String, Integer> valueMap = new HashMap<>();
+            // Track basic chest types
+            boolean hasChests = enabledContainers.contains(Material.CHEST) || 
+                                enabledContainers.contains(Material.TRAPPED_CHEST);
+            valueMap.put("Chests Allowed", hasChests ? 1 : 0);
+            valueMap.put("Chests Disabled", hasChests ? 0 : 1);
+            
+            // Track barrels
+            boolean hasBarrel = enabledContainers.contains(Material.BARREL);
+            valueMap.put("Barrels Allowed", hasBarrel ? 1 : 0);
+            valueMap.put("Barrels Disabled", hasBarrel ? 0 : 1);
+            
+            // Track ender chests
+            boolean hasEnderChest = enabledContainers.contains(Material.ENDER_CHEST);
+            valueMap.put("Ender Chests Allowed", hasEnderChest ? 1 : 0);
+            valueMap.put("Ender Chests Disabled", hasEnderChest ? 0 : 1);
+            
+            // Track if any shulker box is enabled
+            boolean hasShulker = enabledContainers.stream()
+                    .anyMatch(m -> m.name().endsWith("SHULKER_BOX"));
+            valueMap.put("Shulker Boxes Allowed", hasShulker ? 1 : 0);
+            valueMap.put("Shulker Boxes Disabled", hasShulker ? 0 : 1);
+            
+            return valueMap;
+        }));
+        
+        // Track economic barriers (costs)
+        metrics.addCustomChart(new AdvancedPie("economic_barriers", () -> {
+            Map<String, Integer> valueMap = new HashMap<>();
+            valueMap.put("Creation Cost", creationCost > 0 ? 1 : 0);
+            valueMap.put("No Creation Cost", creationCost > 0 ? 0 : 1);
+            valueMap.put("Destruction Cost", destructionCost > 0 ? 1 : 0);
+            valueMap.put("No Destruction Cost", destructionCost > 0 ? 0 : 1);
+            valueMap.put("Teleport Cost", teleportCost > 0 ? 1 : 0);
+            valueMap.put("No Teleport Cost", teleportCost > 0 ? 0 : 1);
+            valueMap.put("Return Creation Cost", returnCreationCost ? 1 : 0);
+            valueMap.put("Do not Return Creation Cost", returnCreationCost ? 0 : 1);
+            return valueMap;
+        }));
+        
+        // Track display enhancement features (1.17+)
+        metrics.addCustomChart(new AdvancedPie("display_enhancements", () -> {
+            Map<String, Integer> valueMap = new HashMap<>();
+            valueMap.put("Custom Light Level", displayLightLevel > 0 ? 1 : 0);
+            valueMap.put("Normal Light Level", displayLightLevel > 0 ? 0 : 1);
+            valueMap.put("Glowing Item Frames", setGlowingItemFrame ? 1 : 0);
+            valueMap.put("Normal Item Frames", setGlowingItemFrame ? 0 : 1);
+            valueMap.put("Glowing Sign Text", setGlowingSignText ? 1 : 0);
+            valueMap.put("Normal Sign Text", setGlowingSignText ? 0 : 1);
+            return valueMap;
+        }));
+        
+        // Track which click types are used for each action
+        // Find which click type is assigned to TRANSACT
+        metrics.addCustomChart(new SimplePie("transaction_action_mapping", () -> {
+            for (Map.Entry<ShopClickType, ShopAction> entry : clickTypeActionMap.entrySet()) {
+                if (entry.getValue() == ShopAction.TRANSACT) return entry.getKey().toString();
+            }
+            return "NOT_SET";
+        }));
+        // Find which click type is assigned to TRANSACT_FULLSTACK
+        metrics.addCustomChart(new SimplePie("full_stack_transaction_action_mapping", () -> {
+            for (Map.Entry<ShopClickType, ShopAction> entry : clickTypeActionMap.entrySet()) {
+                if (entry.getValue() == ShopAction.TRANSACT_FULLSTACK) return entry.getKey().toString();
+            }
+            return "NOT_SET";
+        }));
+        // Find which click type is assigned to VIEW_DETAILS
+        metrics.addCustomChart(new SimplePie("view_details_action_mapping", () -> {
+            for (Map.Entry<ShopClickType, ShopAction> entry : clickTypeActionMap.entrySet()) {
+                if (entry.getValue() == ShopAction.VIEW_DETAILS) return entry.getKey().toString();
+            }
+            return "NOT_SET";
+        }));
+        // Find which click type is assigned to CYCLE_DISPLAY
+        metrics.addCustomChart(new SimplePie("cycle_display_action_mapping", () -> {
+            for (Map.Entry<ShopClickType, ShopAction> entry : clickTypeActionMap.entrySet()) {
+                if (entry.getValue() == ShopAction.CYCLE_DISPLAY) return entry.getKey().toString();
+            }
+            return "NOT_SET";
+        }));
 
         debug_allowUseOwnShop = config.getBoolean("debug.allowUseOwnShop");
         debug_transactionDebugLogs = config.getBoolean("debug.transactionDebugLogs");
@@ -733,10 +830,6 @@ public class Shop extends JavaPlugin {
 
     public boolean getAllowCreationMethodChest(){
         return allowCreateMethodChest;
-    }
-
-    public boolean getAllowCreationMethodCommand(){
-        return allowCreateMethodCommand;
     }
 
     public CurrencyType getCurrencyType() {

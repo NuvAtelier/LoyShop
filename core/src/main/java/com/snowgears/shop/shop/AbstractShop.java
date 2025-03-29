@@ -277,6 +277,16 @@ public abstract class AbstractShop {
         return null;
     }
 
+    public Material getContainerType() {
+        if(chestLocation == null)
+            return null;
+        try {
+            return chestLocation.getBlock().getType();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public UUID getOwnerUUID() {
         return owner;
     }

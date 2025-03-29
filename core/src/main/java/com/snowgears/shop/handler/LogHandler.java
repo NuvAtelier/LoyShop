@@ -33,6 +33,10 @@ public class LogHandler {
 
     public LogHandler(Shop plugin, YamlConfiguration shopConfig){
         this.plugin = plugin;
+        // Initialize metrics buckets
+        for (int i = 0; i < BUCKET_COUNT; i++) {
+            metricsBuckets[i] = new MetricsBucket();
+        }
         // Setup database connection and check if we should enable database logging
         defineDataSource(shopConfig);
 
@@ -192,6 +196,13 @@ public class LogHandler {
                 + new ItemNameUtil().getName(shop.getItemStack()).toPlainText() + "(x" + amount + ")" + " for " + plugin.getPriceString(price, true)
                 + " | Shop owned by " + plugin.getServer().getOfflinePlayer(shop.getOwnerUUID()).getName() + " at (x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ() + ")"
         );
+
+        try {
+            // Update in-memory metrics (regardless of database being enabled)
+            updateMetricsBuckets();
+            boolean isBarterOrItemCurrency = transactionType == ShopType.BARTER || plugin.getCurrencyType() == CurrencyType.ITEM;
+            metricsBuckets[currentBucketIndex].addTransaction(amount, price, isBarterOrItemCurrency);
+        } catch (Exception e) { /* Ignore errors, added for safety. */ }
 
         if(!enabled) return;
         Bukkit.getScheduler().runTaskAsynchronously(plugin, new Runnable() {
@@ -383,73 +394,98 @@ public class LogHandler {
         }
     }
 
-    // Get the number of transactions during the last 30 minutes
-    public int getRecentTransactionCount() {
-        if (!enabled) return 0;
+    // In-memory metrics tracking (rolling 30-minute window)
+    private static final int BUCKET_COUNT = 30; // 30 one-minute buckets
+    private static final long BUCKET_DURATION_MS = 60 * 1000; // 1 minute in milliseconds
+    private final MetricsBucket[] metricsBuckets = new MetricsBucket[BUCKET_COUNT];
+    private int currentBucketIndex = 0;
+    private long lastBucketRotationTime = System.currentTimeMillis();
+
+    // Inner class to store metrics for a time bucket
+    private static class MetricsBucket {
+        private int transactionCount = 0;
+        private int itemVolume = 0;
         
-        int count = 0;
-        Timestamp thirtyMinutesAgo = new Timestamp(System.currentTimeMillis() - (30 * 60 * 1000));
-        
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) FROM shop_action WHERE transaction_id IS NOT NULL AND ts > ?")) {
-            
-            stmt.setTimestamp(1, thirtyMinutesAgo);
-            ResultSet resultSet = stmt.executeQuery();
-            
-            if (resultSet.next()) {
-                count = resultSet.getInt(1);
+        public void addTransaction(int itemCount, double price, boolean isBarterOrItemCurrency) {
+            transactionCount++;
+            itemVolume += itemCount;
+            // For barter transactions or when currency is items, count the "price" as item volume too
+            if (isBarterOrItemCurrency) {
+                itemVolume += (int)price;
             }
-            
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.WARNING, "SQL error occurred while trying to get recent transaction count.");
-            e.printStackTrace();
         }
         
-        return count;
+        public void reset() {
+            transactionCount = 0;
+            itemVolume = 0;
+        }
+        
+        public int getTransactionCount() {
+            return transactionCount;
+        }
+        
+        public int getItemVolume() {
+            return itemVolume;
+        }
+    }
+
+    // Rotate buckets if needed to maintain the 30-minute rolling window
+    private void updateMetricsBuckets() {
+        long currentTime = System.currentTimeMillis();
+        long timeSinceLastRotation = currentTime - lastBucketRotationTime;
+        
+        if (timeSinceLastRotation >= BUCKET_DURATION_MS) {
+            // Calculate how many buckets we need to rotate
+            int bucketsToRotate = (int)(timeSinceLastRotation / BUCKET_DURATION_MS);
+            
+            // Cap at the bucket count to avoid excessive looping
+            bucketsToRotate = Math.min(bucketsToRotate, BUCKET_COUNT);
+            
+            // Rotate and clear the required number of buckets
+            for (int i = 0; i < bucketsToRotate; i++) {
+                currentBucketIndex = (currentBucketIndex + 1) % BUCKET_COUNT;
+                metricsBuckets[currentBucketIndex].reset();
+            }
+            
+            // Update the last rotation time
+            lastBucketRotationTime = currentTime - (timeSinceLastRotation % BUCKET_DURATION_MS);
+        }
+    }
+
+    // Get the number of transactions during the last 30 minutes
+    public int getRecentTransactionCount() {
+        try {
+            // Ensure buckets are up-to-date
+            updateMetricsBuckets();
+            
+            int count = 0;
+            for (MetricsBucket bucket : metricsBuckets) {
+                count += bucket.getTransactionCount();
+            }
+            
+            return count;
+        } catch (Exception e) {
+            plugin.getLogger().debug("Error calculating recent transaction count");
+            return 0; // Return 0 if any error occurs
+        }
     }
 
     // Get the number of items bought and sold during the last 30 minutes
     public int getRecentItemVolume() {
-        if (!enabled) return 0;
-        
-        int volume = 0;
-
-        Timestamp thirtyMinutesAgo = new Timestamp(System.currentTimeMillis() - (30 * 60 * 1000));
-        
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT transaction_id FROM shop_action WHERE transaction_id IS NOT NULL AND ts > ?")) {
+        try {
+            // Ensure buckets are up-to-date
+            updateMetricsBuckets();
             
-            stmt.setTimestamp(1, thirtyMinutesAgo);
-            ResultSet resultSet = stmt.executeQuery();
-            
-            // Loop through the results
-            while (resultSet.next()) {
-                // Get the `price` and `amount` from the `shop_transaction` table
-                PreparedStatement stmt2 = conn.prepareStatement("SELECT t_type, price, amount FROM shop_transaction WHERE id = ?");
-                stmt2.setInt(1, resultSet.getInt("transaction_id"));
-                ResultSet resultSet2 = stmt2.executeQuery();
-                
-                if (resultSet2.next()) {
-                    String tType = resultSet2.getString("t_type");
-                    double price = resultSet2.getDouble("price");
-                    int amount = resultSet2.getInt("amount");
-                    // Add the amount of items transacted to the volume
-                    volume += amount;
-                    // Check if the economy type is set to ITEM, if so, add it to the volume
-                    // Otherwise if it is set to VAULT, only add the price to the volume if it is a barter transaction
-                    // since barter transactions are item-to-item transactions
-                    if (plugin.getCurrencyType() == CurrencyType.ITEM || tType.equalsIgnoreCase(ShopType.BARTER.toString())) {
-                        volume += price;
-                    }
-                }   
+            int volume = 0;
+            for (MetricsBucket bucket : metricsBuckets) {
+                volume += bucket.getItemVolume();
             }
             
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.WARNING, "SQL error occurred while trying to get recent item volume.");
-            e.printStackTrace();
+            return volume;
+        } catch (Exception e) {
+            plugin.getLogger().debug("Error calculating recent item volume");
+            return 0; // Return 0 if any error occurs
         }
-        
-        return volume;
     }
 
     private void initDb() throws SQLException {

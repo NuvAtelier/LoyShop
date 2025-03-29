@@ -582,6 +582,36 @@ public class ShopHandler {
         return shopsWithType;
     }
 
+    public int getNumberOfShopDisplayTypes(DisplayType displayType) {
+        int shopsWithDisplayType = 0;
+        for (AbstractShop shop : allShops.values()) {
+            if (shop.getDisplay().getType() == displayType) { shopsWithDisplayType++; }
+        }
+        return shopsWithDisplayType;
+    }
+
+    public Map<String, Integer> getShopContainerCounts() {
+        int chestShops = 0;
+        int barrelShops = 0;
+        int enderChestShops = 0;
+        int shulkerBoxShops = 0;
+        for (AbstractShop shop : allShops.values()) {
+            Material containerType = shop.getContainerType();
+            if (containerType == null) continue;
+            if (containerType == Material.CHEST || containerType == Material.TRAPPED_CHEST) { chestShops++; }
+            if (containerType == Material.BARREL) { barrelShops++; }
+            if (containerType == Material.ENDER_CHEST) { enderChestShops++; }
+            if (containerType.name().endsWith("SHULKER_BOX")) { shulkerBoxShops++; }
+        }
+        // Return a map of the container types
+        Map<String, Integer> containerTypes = new HashMap<>();
+        containerTypes.put("Chest Shops", chestShops);
+        containerTypes.put("Barrel Shops", barrelShops);
+        containerTypes.put("Ender Chest Shops", enderChestShops);
+        containerTypes.put("Shulker Box Shops", shulkerBoxShops);
+        return containerTypes;
+    }
+
     private ArrayList<AbstractShop> orderedShopList() {
         ArrayList<AbstractShop> list = new ArrayList<AbstractShop>(allShops.values());
         Collections.sort(list, new Comparator<AbstractShop>() {
