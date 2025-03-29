@@ -33,10 +33,6 @@ public class LogHandler {
 
     public LogHandler(Shop plugin, YamlConfiguration shopConfig){
         this.plugin = plugin;
-        // Initialize metrics buckets
-        for (int i = 0; i < BUCKET_COUNT; i++) {
-            metricsBuckets[i] = new MetricsBucket();
-        }
         // Setup database connection and check if we should enable database logging
         defineDataSource(shopConfig);
 
@@ -198,10 +194,8 @@ public class LogHandler {
         );
 
         try {
-            // Update in-memory metrics (regardless of database being enabled)
-            updateMetricsBuckets();
             boolean isBarterOrItemCurrency = transactionType == ShopType.BARTER || plugin.getCurrencyType() == CurrencyType.ITEM;
-            metricsBuckets[currentBucketIndex].addTransaction(amount, price, isBarterOrItemCurrency);
+            txMetrics.addTransaction(amount, price, isBarterOrItemCurrency);
         } catch (Exception e) { /* Ignore errors, added for safety. */ }
 
         if(!enabled) return;
@@ -394,15 +388,10 @@ public class LogHandler {
         }
     }
 
-    // In-memory metrics tracking (rolling 30-minute window)
-    private static final int BUCKET_COUNT = 30; // 30 one-minute buckets
-    private static final long BUCKET_DURATION_MS = 60 * 1000; // 1 minute in milliseconds
-    private final MetricsBucket[] metricsBuckets = new MetricsBucket[BUCKET_COUNT];
-    private int currentBucketIndex = 0;
-    private long lastBucketRotationTime = System.currentTimeMillis();
+    private final TransactionMetrics txMetrics = new TransactionMetrics();
 
     // Inner class to store metrics for a time bucket
-    private static class MetricsBucket {
+    private static class TransactionMetrics {
         private int transactionCount = 0;
         private int itemVolume = 0;
         
@@ -415,8 +404,11 @@ public class LogHandler {
             }
         }
         
-        public void reset() {
+        public void resetTransactionCount() {
             transactionCount = 0;
+        }
+
+        public void resetItemVolume() {
             itemVolume = 0;
         }
         
@@ -429,58 +421,18 @@ public class LogHandler {
         }
     }
 
-    // Rotate buckets if needed to maintain the 30-minute rolling window
-    private void updateMetricsBuckets() {
-        long currentTime = System.currentTimeMillis();
-        long timeSinceLastRotation = currentTime - lastBucketRotationTime;
-        
-        if (timeSinceLastRotation >= BUCKET_DURATION_MS) {
-            // Calculate how many buckets we need to rotate
-            int bucketsToRotate = (int)(timeSinceLastRotation / BUCKET_DURATION_MS);
-            
-            // Cap at the bucket count to avoid excessive looping
-            bucketsToRotate = Math.min(bucketsToRotate, BUCKET_COUNT);
-            
-            // Rotate and clear the required number of buckets
-            for (int i = 0; i < bucketsToRotate; i++) {
-                currentBucketIndex = (currentBucketIndex + 1) % BUCKET_COUNT;
-                metricsBuckets[currentBucketIndex].reset();
-            }
-            
-            // Update the last rotation time
-            lastBucketRotationTime = currentTime - (timeSinceLastRotation % BUCKET_DURATION_MS);
-        }
-    }
-
     // Get the number of transactions during the last 30 minutes
     public int getRecentTransactionCount() {
-        try {
-            // Ensure buckets are up-to-date
-            updateMetricsBuckets();
-            
-            int count = 0;
-            for (MetricsBucket bucket : metricsBuckets) {
-                count += bucket.getTransactionCount();
-            }
-            
-            return count;
-        } catch (Exception e) {
-            plugin.getLogger().debug("Error calculating recent transaction count");
-            return 0; // Return 0 if any error occurs
-        }
+        int count = txMetrics.getTransactionCount();
+        txMetrics.resetTransactionCount();
+        return count;
     }
 
     // Get the number of items bought and sold during the last 30 minutes
     public int getRecentItemVolume() {
         try {
-            // Ensure buckets are up-to-date
-            updateMetricsBuckets();
-            
-            int volume = 0;
-            for (MetricsBucket bucket : metricsBuckets) {
-                volume += bucket.getItemVolume();
-            }
-            
+            int volume = txMetrics.getItemVolume();
+            txMetrics.resetItemVolume();
             return volume;
         } catch (Exception e) {
             plugin.getLogger().debug("Error calculating recent item volume");
