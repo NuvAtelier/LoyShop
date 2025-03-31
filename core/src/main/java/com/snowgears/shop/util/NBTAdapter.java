@@ -24,6 +24,10 @@ public class NBTAdapter {
         }
     }
 
+    public boolean haveErrorsOccured() {
+        return errorCount > 0;
+    }
+
     public String getNBTforItem(ItemStack item) {
         try {
             if (useNBTAPIPlugin) {

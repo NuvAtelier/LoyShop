@@ -467,6 +467,11 @@ public class ShopMessage {
 
     private static HoverEvent getItemHoverEvent(ItemStack item) {
         if (item == null) { return null; }
+        if (plugin.getNBTAdapter().haveErrorsOccured()) {
+            plugin.getLogger().warning("[ShopMessage] NBTAPI errors occurred, unable to show embedded Hover Text for item!");
+            plugin.getNBTAdapter().handleException("NBTAPI errors occurred, unable to show embedded Hover Text for item!");
+            return null; 
+        }
         try {
             ItemStack hoverItem = item.clone();
             hoverItem.setAmount(1);
