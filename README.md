@@ -6,6 +6,8 @@ Allows players to quickly create shops to buy, sell, barter, or gamble items sea
 
 By focusing on ease of use, players of any skill level can create in-game shops in a way that feels like a native feature.
 
+[![Server Metrics](https://bstats.org/signatures/bukkit/shop-the-intuitive-shop-plugin.svg)](https://bstats.org/plugin/bukkit/shop-the-intuitive-shop-plugin/25211)
+
 ## Build Locally
 * Update version in `/pom.xml`
 * `./compile.sh`
