@@ -35,8 +35,12 @@ jobs:
         
     - name: Update version with commit hash
       run: |
-        # Get the short commit hash, take full hash then get just the first 7 characters
-        COMMIT_HASH=${{ github.event.pull_request.head.sha }}
+        # Get the commit hash based on the event type
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          COMMIT_HASH=${{ github.event.pull_request.head.sha }}
+        else
+          COMMIT_HASH=${{ github.sha }}
+        fi
         COMMIT_HASH=${COMMIT_HASH:0:7}
         
         # Read the current version from pom.xml
