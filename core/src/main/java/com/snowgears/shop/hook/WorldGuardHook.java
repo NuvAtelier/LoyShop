@@ -47,7 +47,7 @@ public class WorldGuardHook {
     private static class Internal {
 
         public static void registerAllowShopFlag() {
-            Bukkit.getLogger().log(Level.INFO,"Registering WorldGuard flag '" + FLAG_ALLOW_SHOP + "'.");
+            Shop.getPlugin().getLogger().debug("Registering WorldGuard flag '" + FLAG_ALLOW_SHOP + "'.");
             try {
                 StateFlag allowShopFlag = new StateFlag(FLAG_ALLOW_SHOP, false);
                 WorldGuard.getInstance().getFlagRegistry().register(allowShopFlag);
@@ -163,23 +163,25 @@ public class WorldGuardHook {
             return false;
         }
         try {
+//            System.out.println(player.getName()+" - checking if this player is a region owner at "+ UtilMethods.getCleanLocation(location, true));
             LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
             RegionManager regions = WorldGuard.getInstance().getPlatform().getRegionContainer().get(localPlayer.getWorld());
             BlockVector3 vLoc = BlockVector3.at(location.getX(), location.getY(), location.getZ());
-            if(regions == null)
+            if(regions == null || regions.size() == 0)
                 return false;
-            //System.out.println(player.getName()+" - checking if this player is a region owner at "+ UtilMethods.getCleanLocation(location, true));
+
+            ApplicableRegionSet set = regions.getApplicableRegions(vLoc);
+            if (set.size() == 0)
+                return false;
+
+//            for(ProtectedRegion region : set.getRegions()){
+//                System.out.println("    "+region.getId()+" - owner: "+region.getOwners().contains(player.getUniqueId()));
+//            }
+
             if(regions.getApplicableRegions(vLoc).isOwnerOfAll(localPlayer)){
-                //System.out.println(player.getName()+" - was a owner of all regions at that location");
+//                System.out.println(player.getName()+" - was a owner of all regions at that location");
                 return true;
             }
-//            else{
-//                System.out.println(player.getName()+" - was not a owner of all regions at that location");
-//                ApplicableRegionSet set = regions.getApplicableRegions(vLoc);
-//                for(ProtectedRegion region : set.getRegions()){
-//                    System.out.println("    "+region.getId()+" - owner: "+region.getOwners().contains(player.getUniqueId()));
-//                }
-//            }
         } catch (NoClassDefFoundError ignore) {
         }
         return false;

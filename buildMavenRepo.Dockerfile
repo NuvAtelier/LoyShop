@@ -58,6 +58,7 @@ RUN wget -O BuildTools.jar https://hub.spigotmc.org/jenkins/job/BuildTools/lastS
 # Build our Spigot jar files
 RUN java -jar BuildTools.jar --remapped --rev 1.20.6 && \
     java -jar BuildTools.jar --remapped --rev 1.21 && \
+    java -jar BuildTools.jar --remapped --rev 1.21.1 && \
     rm -r /app/*
 
 # Keep container running

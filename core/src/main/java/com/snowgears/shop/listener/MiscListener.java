@@ -1,13 +1,16 @@
 package com.snowgears.shop.listener;
 
 import com.snowgears.shop.Shop;
+import com.snowgears.shop.display.AbstractDisplay;
 import com.snowgears.shop.event.PlayerDestroyShopEvent;
 import com.snowgears.shop.event.PlayerResizeShopEvent;
 import com.snowgears.shop.hook.WorldGuardHook;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.*;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -30,10 +33,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 
 public class MiscListener implements Listener {
@@ -104,6 +104,7 @@ public class MiscListener implements Listener {
             if (event.getLine(0).toLowerCase().contains(ShopMessage.getCreationWord("SHOP").toLowerCase())) {
 
                 if(!plugin.getShopCreationUtil().shopCanBeCreated(player, chest)){
+                    cancelShopCreationProcess(player);
                     event.setCancelled(true);
                     return;
                 }
@@ -112,11 +113,17 @@ public class MiscListener implements Listener {
                     String line2 = UtilMethods.cleanNumberText(event.getLine(1));
                     amount = Integer.parseInt(line2);
                     if (amount < 1) {
-                        player.sendMessage(ShopMessage.getMessage("interactionIssue", "line2", null, player));
+                        ShopMessage.sendMessage("interactionIssue", "line2", player, null);
+                        ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
+                        cancelShopCreationProcess(player);
+                        event.setCancelled(true);
                         return;
                     }
                 } catch (NumberFormatException e) {
-                    player.sendMessage(ShopMessage.getMessage("interactionIssue", "line2", null, player));
+                    ShopMessage.sendMessage("interactionIssue", "line2", player, null);
+                    ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
+                    cancelShopCreationProcess(player);
+                    event.setCancelled(true);
                     return;
                 }
 
@@ -149,13 +156,13 @@ public class MiscListener implements Listener {
                     return;
                 }
 
-                String message = ShopMessage.getMessage(type.toString(), "initialize", shop, player);
-                if (message != null && !message.isEmpty())
-                    player.sendMessage(message);
+                ShopCreationProcess process = new ShopCreationProcess(player, chest, signDirection);
+                process.setStep(ShopCreationProcess.ChatCreationStep.SIGN_ITEM);
+                playerChatCreationSteps.put(player.getUniqueId(), process);
+
+                process.displayFloatingText(type.toString(), "initialize");
                 if (plugin.allowCreativeSelection() && (type == ShopType.BUY || type == ShopType.COMBO)) {
-                    message = ShopMessage.getMessage(type.toString(), "initializeAlt", shop, player);
-                    if (message != null && !message.isEmpty())
-                        player.sendMessage(message);
+                    ShopMessage.sendMessage(type.toString(), "initializeAlt", player, shop);
                 }
 
                 //give player a limited amount of time to finish creating the shop until it is deleted
@@ -172,11 +179,11 @@ public class MiscListener implements Listener {
                                 sign.setLine(2, lines[2]);
                                 sign.setLine(3, lines[3]);
                                 sign.update(true);
-                                plugin.getCreativeSelectionListener().removePlayerFromCreativeSelection(player);
+                                cancelShopCreationProcess(player);
                             }
                         }
                     }
-                }, 1200L); //1 minute
+                }, 30 * 20); //30 seconds * 20 ticks
             }
         }
     }
@@ -185,15 +192,26 @@ public class MiscListener implements Listener {
         return playerChatCreationSteps.get(player.getUniqueId());
     }
 
+    public void removeShopCreationProcess(Player player){
+        playerChatCreationSteps.remove(player.getUniqueId());
+    }
+
     public void cancelShopCreationProcess(Player player){
-        if (this.getShopCreationProcess(player) != null) {
+        ShopCreationProcess process = this.getShopCreationProcess(player);
+        if (process != null) {
+            process.display.removeDisplayEntities(player, true);
             playerChatCreationSteps.remove(player.getUniqueId());
             // Send message that the creation was cancelled
-            String unformattedMessage = ShopMessage.getUnformattedMessage("interactionIssue", "createCancel");
-            String formattedMessage = ShopMessage.formatMessage(unformattedMessage, null, null, false);
-            if(formattedMessage != null && !formattedMessage.isEmpty())
-                player.sendMessage(formattedMessage);
+            ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
         }
+
+        // Remove player from creative selection if they are in it!
+        // The Bukkit API can only change player game modes in a sync task, not an async task
+        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+            public void run() {
+                plugin.getCreativeSelectionListener().removePlayerFromCreativeSelection(player);
+            }
+        }, 1);
     }
 
     @EventHandler
@@ -240,6 +258,7 @@ public class MiscListener implements Listener {
                     }
                 }
                 event.setCancelled(true); //cancel event regardless
+                Shop.getPlugin().getLogger().trace("[MiscListener.onPreShopSignClick] updateSign");
                 shop.updateSign();
             }
             else if(plugin.getShopHandler().isChest(clicked)){
@@ -253,18 +272,22 @@ public class MiscListener implements Listener {
                     if(plugin.allowCreativeSelection()) {
                         //TODO this section needs to check if the current step is to get the barter item
                         ShopCreationProcess currentProcess = playerChatCreationSteps.get(player.getUniqueId());
-                        if (currentProcess != null && currentProcess.getStep() == ShopCreationProcess.ChatCreationStep.BARTER_ITEM) {
+                        // Check if last created process is within 80ms, if so, cancel the event
+                        Long lastCreatedProcess = lastChatCreation.get(player.getUniqueId());
+                        if (lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < 80) {
+                            event.setCancelled(true);
+                            return;
+                        }
+                        if (currentProcess != null && currentProcess.getStep() == ShopCreationProcess.ChatCreationStep.BARTER_ITEM) {   
                             plugin.getCreativeSelectionListener().putPlayerInCreativeSelection(player, clicked.getLocation(), false);
                             event.setCancelled(true);
                             return;
                         }
                         else if (currentProcess == null && player.isSneaking()){
-                            Long lastCreatedProcess = lastChatCreation.get(player.getUniqueId());
+                            // Long lastCreatedProcess = lastChatCreation.get(player.getUniqueId());
                             //if the player has created a new process in the last 5 seconds, block them from creating another
-                            if(lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < 5000) {
-                                String message = ShopMessage.getMessage("interactionIssue", "createCooldown", null, player);
-                                if (message != null && !message.isEmpty())
-                                    player.sendMessage(message);
+                            if(lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < plugin.getDebug_shopCreateCooldown()) {
+                                ShopMessage.sendMessage("interactionIssue", "createCooldown", player, null);
                                 event.setCancelled(true);
                                 return;
                             }
@@ -291,17 +314,14 @@ public class MiscListener implements Listener {
                 }
                 else {
                     ShopCreationProcess currentProcess = playerChatCreationSteps.get(player.getUniqueId());
+                    plugin.getLogger().debug("Current Shop Creation Process: " + currentProcess);
                     if (currentProcess != null && currentProcess.getStep() == ShopCreationProcess.ChatCreationStep.BARTER_ITEM) {
                         if (!plugin.getShopCreationUtil().itemsCanBeInitialized(player, currentProcess.getItemStack(), event.getItem())) {
                             event.setCancelled(true);
                             return;
                         }
                         currentProcess.setBarterItemStack(event.getItem());
-
-                        String message = ShopMessage.getUnformattedMessage(currentProcess.getShopType().toString(), "createHitChestBarterAmount");
-                        message = ShopMessage.formatMessage(message, currentProcess, player);
-                        if (message != null && !message.isEmpty())
-                            player.sendMessage(message);
+                        currentProcess.displayFloatingText(currentProcess.getShopType().toString(), "createHitChestBarterAmount");
                         event.setCancelled(true);
                         return;
                     }
@@ -311,13 +331,19 @@ public class MiscListener implements Listener {
                     return;
 
                 Long lastCreatedProcess = lastChatCreation.get(player.getUniqueId());
-                //if the player has created a new process in the last 5 seconds, block them from creating another
-                if(lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < 5000) {
-                    String message = ShopMessage.getMessage("interactionIssue", "createCooldown", null, player);
-                    if (message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    event.setCancelled(true);
-                    return;
+                if(lastCreatedProcess != null) {
+                    //if the player has created a new process in the last 5 seconds, block them from creating another
+                    long diff = (new Date().getTime() - lastCreatedProcess);
+                    if (diff < plugin.getDebug_shopCreateCooldown()) {
+                        ShopMessage.sendMessage("interactionIssue", "createCooldown", player, null);
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+                // Cleanup the last process if needed and assume the player wants to start a new process
+                ShopCreationProcess lastProcess = playerChatCreationSteps.get(player.getUniqueId());
+                if (lastProcess != null) {
+                    lastProcess.cleanup(); // removes floating displays
                 }
 
                 //dont let players create shops via chest on shops that already exist
@@ -331,7 +357,6 @@ public class MiscListener implements Listener {
                     return;
 
                 event.setCancelled(true);
-
                 BlockFace signFacing = plugin.getShopCreationUtil().calculateBlockFaceForSign(player, clicked, event.getBlockFace());
                 if(signFacing == null)
                     return;
@@ -343,16 +368,13 @@ public class MiscListener implements Listener {
                 lastChatCreation.put(player.getUniqueId(), new Date().getTime());
 
                 //send player text prompts after they have clicked the chest with the item they want to create a shop with
-                String message = ShopMessage.getUnformattedMessage("createHitChest", null);
-                message = ShopMessage.formatMessage(message, process, player);
-                if(message != null && !message.isEmpty()) {
-                    player.sendMessage(message);
-                }
+                ShopMessage.sendMessage("initialCreateInstruction", null, process, player);
+                process.displayFloatingText("createHitChest", null);
+                List<String> autocomplete = new ArrayList<>();
+                Arrays.asList(ShopType.values()).forEach((shopType -> autocomplete.add(shopType.toString().toLowerCase())));
+                player.setCustomChatCompletions(autocomplete);
                 if((!plugin.usePerms() && player.isOp()) || (plugin.usePerms() && player.hasPermission("shop.operator"))) {
-                    String adminMessage = ShopMessage.getUnformattedMessage("adminCreateHitChest", null);
-                    adminMessage = ShopMessage.formatMessage(adminMessage, process, player);
-                    if (adminMessage != null && !adminMessage.isEmpty())
-                        player.sendMessage(adminMessage);
+                    ShopMessage.sendMessage("adminCreateHitChest", null, process, player);
                 }
 
                 //give player a limited amount of time to finish creating the shop until it is deleted
@@ -362,16 +384,13 @@ public class MiscListener implements Listener {
                         //the shop has still not been initialized with an item from a player
                         ShopCreationProcess process = playerChatCreationSteps.get(player.getUniqueId());
                         if (process != null && process.getUniqueID().equals(originalProcessUUID)) {
+                            process.cleanup();
                             playerChatCreationSteps.remove(player.getUniqueId());
                             plugin.getCreativeSelectionListener().removePlayerFromCreativeSelection(player);
-
-                            String message = ShopMessage.getUnformattedMessage("interactionIssue", "createHitChestTimeout");
-                            message = ShopMessage.formatMessage(message, process, player);
-                            if(message != null && !message.isEmpty())
-                                event.getPlayer().sendMessage(message);
+                            ShopMessage.sendMessage("interactionIssue", "createHitChestTimeout", process, player);
                         }
                     }
-                }, 1200); //1 minute
+                }, 30 * 20); // 30 seconds * 20 ticks
             }
         }
     }
@@ -385,6 +404,7 @@ public class MiscListener implements Listener {
                 case SHOP_TYPE:
                     ShopType type = plugin.getShopCreationUtil().getShopType(event.getMessage());
                     if(type == null){
+                        process.cleanup();
                         playerChatCreationSteps.remove(player.getUniqueId());
                         return;
                     }
@@ -393,18 +413,9 @@ public class MiscListener implements Listener {
                     process.setAdmin(isAdmin);
                     event.setCancelled(true);
 
-                    String message;
-                    if(type == ShopType.GAMBLE){
-                        message = ShopMessage.getUnformattedMessage(type.toString(), "createHitChestPrice");
-                        message = ShopMessage.formatMessage(message, process, player);
-                        if(message != null && !message.isEmpty())
-                            player.sendMessage(message);
-                    }
+                    if(type == ShopType.GAMBLE){ ShopMessage.sendMessage(type.toString(), "createHitChestPrice", process, player); }
                     else {
-                        message = ShopMessage.getUnformattedMessage(type.toString(), "createHitChestAmount");
-                        message = ShopMessage.formatMessage(message, process, player);
-                        if (message != null && !message.isEmpty())
-                            player.sendMessage(message);
+                        process.displayFloatingText(type.toString(), "createHitChestAmount");
                     }
                     break;
                 case ITEM_AMOUNT:
@@ -413,12 +424,15 @@ public class MiscListener implements Listener {
                         String textAmt = UtilMethods.cleanNumberText(event.getMessage());
                         amount = Integer.parseInt(textAmt);
                         if (amount < 1) {
-                            player.sendMessage(ShopMessage.getMessage("interactionIssue", "line2", null, player));
+                            ShopMessage.sendMessage("interactionIssue", "line2", player, null);
+                            ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
                             event.setCancelled(true);
                             return;
                         }
                     } catch (NumberFormatException e) {
-                        player.sendMessage(ShopMessage.getMessage("interactionIssue", "line2", null, player));
+                        ShopMessage.sendMessage("interactionIssue", "line2", player, null);
+                        ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
+                        process.cleanup();
                         //event.setCancelled(true);
                         //instead of cancelling the chat event, just let them know what they typed wasnt a number and break them out of the creation process so they aren't chat locked
                         playerChatCreationSteps.remove(player.getUniqueId());
@@ -428,22 +442,14 @@ public class MiscListener implements Listener {
                     event.setCancelled(true);
 
                     if(process.getShopType() == ShopType.BARTER){
-                        message = ShopMessage.getUnformattedMessage(process.getShopType().toString(), "createHitChest");
-                        message = ShopMessage.formatMessage(message, process, player);
-                        if (message != null && !message.isEmpty())
-                            event.getPlayer().sendMessage(message);
-
+                        process.displayFloatingText(process.getShopType().toString(), "createHitChest");
                         if (plugin.allowCreativeSelection()) {
-                            message = ShopMessage.getMessage(process.getShopType().toString(), "initializeBarterAlt", null, player);
-                            if (message != null && !message.isEmpty())
-                                player.sendMessage(message);
+                            // ToDo: Allow multiple floating displays, or combine this text, up to you
+                            ShopMessage.sendMessage(process.getShopType().toString(), "initializeBarterAlt", player, null);
                         }
                     }
                     else {
-                        message = ShopMessage.getUnformattedMessage(process.getShopType().toString(), "createHitChestPrice");
-                        message = ShopMessage.formatMessage(message, process, player);
-                        if (message != null && !message.isEmpty())
-                            event.getPlayer().sendMessage(message);
+                        process.displayFloatingText(process.getShopType().toString(), "createHitChestPrice");
                     }
                     break;
                 case ITEM_PRICE:
@@ -451,21 +457,21 @@ public class MiscListener implements Listener {
                     if(price == -1){
                         //event.setCancelled(true);
                         //instead of cancelling the chat event, just let them know what they typed wasnt a number and break them out of the creation process so they aren't chat locked
+                        process.cleanup();
                         playerChatCreationSteps.remove(player.getUniqueId());
                         return;
                     }
                     process.setPrice(price);
                     event.setCancelled(true);
 
+                    if(process.getStep() == ShopCreationProcess.ChatCreationStep.ITEM_PRICE_COMBO){
+                        process.displayFloatingText(process.getShopType().toString(), "createHitChestPriceCombo");
+                        return;
+                    }
                     if(process.getStep() == ShopCreationProcess.ChatCreationStep.FINISHED){
                         process.createShop(player);
+                        process.cleanup();
                         playerChatCreationSteps.remove(player.getUniqueId());
-                    }
-                    else if(process.getStep() == ShopCreationProcess.ChatCreationStep.ITEM_PRICE_COMBO){
-                        message = ShopMessage.getUnformattedMessage(process.getShopType().toString(), "createHitChestPriceCombo");
-                        message = ShopMessage.formatMessage(message, process, player);
-                        if(message != null && !message.isEmpty())
-                            event.getPlayer().sendMessage(message);
                     }
                     break;
                 case ITEM_PRICE_COMBO:
@@ -473,6 +479,7 @@ public class MiscListener implements Listener {
                     if(priceCombo == -1){
                         //event.setCancelled(true);
                         //instead of cancelling the chat event, just let them know what they typed wasnt a number and break them out of the creation process so they aren't chat locked
+                        process.cleanup();
                         playerChatCreationSteps.remove(player.getUniqueId());
                         return;
                     }
@@ -481,6 +488,7 @@ public class MiscListener implements Listener {
 
                     if(process.getStep() == ShopCreationProcess.ChatCreationStep.FINISHED){
                         process.createShop(player);
+                        process.cleanup();
                         playerChatCreationSteps.remove(player.getUniqueId());
                     }
                     break;
@@ -490,14 +498,17 @@ public class MiscListener implements Listener {
                         String textAmt = UtilMethods.cleanNumberText(event.getMessage());
                         barterAmount = Integer.parseInt(textAmt);
                         if (barterAmount < 1) {
-                            player.sendMessage(ShopMessage.getMessage("interactionIssue", "line2", null, player));
+                            ShopMessage.sendMessage("interactionIssue", "line2", player, null);
+                            ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
                             event.setCancelled(true);
                             return;
                         }
                     } catch (NumberFormatException e) {
-                        player.sendMessage(ShopMessage.getMessage("interactionIssue", "line2", null, player));
+                        ShopMessage.sendMessage("interactionIssue", "line2", player, null);
+                        ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
                         //event.setCancelled(true);
                         //instead of cancelling the chat event, just let them know what they typed wasnt a number and break them out of the creation process so they aren't chat locked
+                        process.cleanup();
                         playerChatCreationSteps.remove(player.getUniqueId());
                         return;
                     }
@@ -506,6 +517,7 @@ public class MiscListener implements Listener {
 
                     if(process.getStep() == ShopCreationProcess.ChatCreationStep.FINISHED) {
                         process.createShop(player);
+                        process.cleanup();
                         playerChatCreationSteps.remove(player.getUniqueId());
                     }
                     break;
@@ -515,6 +527,7 @@ public class MiscListener implements Listener {
                     // This will happen if the user was meant to select an ITEM or BARTER_ITEM, and exited the window
                     // without selecting their item to buy.
                     // This prevents chat from being locked for the player
+                    process.cleanup();
                     this.cancelShopCreationProcess(player);
                     break;
             }
@@ -532,13 +545,19 @@ public class MiscListener implements Listener {
             AbstractShop shop = plugin.getShopHandler().getShop(b.getLocation());
             if (shop == null)
                 return;
-            else if (!shop.isInitialized()) {
+            // Disable dropping sign if its fake
+            if(shop.isFakeSign()){
+                event.setDropItems(false);
+            }
+            if (!shop.isInitialized()) {
                 event.setCancelled(true);
                 return;
             }
+
             if(plugin.getDestroyShopRequiresSneak()){
                 if(!player.isSneaking()){
                     event.setCancelled(true);
+                    Shop.getPlugin().getLogger().trace("[MiscListener.shopDestroy : getDestroyShopRequiresSneak] updateSign");
                     shop.updateSign();
                     return;
                 }
@@ -547,9 +566,7 @@ public class MiscListener implements Listener {
             if (shop.getOwnerName().equals(player.getName())) {
                 if (plugin.usePerms() && !(player.hasPermission("shop.destroy") || player.hasPermission("shop.operator"))) {
                     event.setCancelled(true);
-                    String message = ShopMessage.getMessage("permission", "destroy", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
+                    ShopMessage.sendMessage("permission", "destroy", player, shop);
                     return;
                 }
 
@@ -558,18 +575,14 @@ public class MiscListener implements Listener {
                 if(cost > 0){
                     // Check for funds
                     if (!EconomyUtils.hasSufficientFunds(player, player.getInventory(), cost)){
-                        String message = ShopMessage.getMessage("interactionIssue", "destroyInsufficientFunds", shop, player);
-                        if(message != null && !message.isEmpty())
-                            player.sendMessage(message);
+                        ShopMessage.sendMessage("interactionIssue", "destroyInsufficientFunds", player, shop);
                         event.setCancelled(true);
                         return;
                     }
                     // Remove funds
                     boolean removed = EconomyUtils.removeFunds(player, player.getInventory(), cost);
                     if(!removed){
-                        String message = ShopMessage.getMessage("interactionIssue", "destroyInsufficientFunds", shop, player);
-                        if(message != null && !message.isEmpty())
-                            player.sendMessage(message);
+                        ShopMessage.sendMessage("interactionIssue", "destroyInsufficientFunds", player, shop);
                         event.setCancelled(true);
                         return;
                     }
@@ -599,11 +612,10 @@ public class MiscListener implements Listener {
                 }
 
 
-                String message = ShopMessage.getMessage(shop.getType().toString(), "destroy", shop, player);
-                if(message != null && !message.isEmpty())
-                    player.sendMessage(message);
+                ShopMessage.sendMessage(shop.getType().toString(), "destroy", player, shop);
+                // We already log on ShopActionType.DESTROY in the Log Handler, so don't log the shop destroy reason
                 shop.delete();
-                plugin.getShopHandler().saveShops(shop.getOwnerUUID());
+                plugin.getShopHandler().saveShops(shop.getOwnerUUID(), true);
 
                 return;
             }
@@ -629,11 +641,9 @@ public class MiscListener implements Listener {
                         event.setDropItems(false);
                     }
 
-                    String message = ShopMessage.getMessage(shop.getType().toString(), "opDestroy", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
+                    ShopMessage.sendMessage(shop.getType().toString(), "opDestroy", player, shop);
                     shop.delete();
-                    plugin.getShopHandler().saveShops(shop.getOwnerUUID());
+                    plugin.getShopHandler().saveShops(shop.getOwnerUUID(), true);
                 } else
                     event.setCancelled(true);
             }
@@ -651,11 +661,9 @@ public class MiscListener implements Listener {
 
                     //the broken block was the initial chest with the sign
                     if(shop.getChestLocation().equals(b.getLocation())){
-                        String message = ShopMessage.getMessage("interactionIssue", "destroyChest", null, player);
-                        if(message != null && !message.isEmpty())
-                            player.sendMessage(message);
+                        ShopMessage.sendMessage("interactionIssue", "destroyChest", player, shop);
                         event.setCancelled(true);
-                        plugin.getTransactionHelper().sendEffects(false, player, shop);
+                        shop.sendEffects(false, player);
                     }
                     else {
                         PlayerResizeShopEvent e = new PlayerResizeShopEvent(player, shop, b.getLocation(), false);
@@ -673,10 +681,8 @@ public class MiscListener implements Listener {
             }
             else{
                 if(shop.getOwnerUUID().equals(player.getUniqueId()) || player.isOp() || (plugin.usePerms() && player.hasPermission("shop.operator"))) {
-                    String message = ShopMessage.getMessage("interactionIssue", "destroyChest", null, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    plugin.getTransactionHelper().sendEffects(false, player, shop);
+                    ShopMessage.sendMessage("interactionIssue", "destroyChest", player, shop);
+                    shop.sendEffects(false, player);
                 }
                 event.setCancelled(true);
             }

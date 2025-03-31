@@ -36,9 +36,7 @@ public class CommandHandler extends BukkitCommand {
     }
 
     private void sendCommandMessage(String subType, Player player) {
-        String message = ShopMessage.getMessage("command", subType, null, player);
-        if(message != null && !message.isEmpty())
-            player.sendMessage(message);
+        ShopMessage.sendMessage("command", subType, player, null);
     }
 
     @Override
@@ -156,7 +154,7 @@ public class CommandHandler extends BukkitCommand {
                         return true;
                     }
                 } else {
-                    sender.sendMessage("The server is using "+plugin.getItemNameUtil().getName(plugin.getItemCurrency())+" as currency.");
+                    sender.sendMessage("The server is using "+plugin.getItemNameUtil().getName(plugin.getItemCurrency()).toPlainText()+" as currency.");
                 }
             }
             else if(args[0].equalsIgnoreCase("setgamble")){

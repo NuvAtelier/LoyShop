@@ -1,5 +1,6 @@
 # THIS FILE IS USED TO CONFIGURE SHOP SIGNS #
 # ================================================================== #
+# You can use any hex code (#FF00FF), or minecraft color code in this config!
 # &b : AQUA
 # &0 : BLACK
 # &9 : BLUE
@@ -54,6 +55,11 @@ sign_creation:
    ADMIN: "admin"
    COMBO: "combo"
 
+# Configure the color/message that is displayed when using [stock color] #
+# It supports minecraft color codes, and hex codes. You can include text in this field if you want custom messages for in stock vs out of stock #
+stock_color:
+   in_stock: "&a"
+   out_of_stock: "&4"
 
 sign_text:
    SELL:

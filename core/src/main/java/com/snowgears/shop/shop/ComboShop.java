@@ -45,20 +45,22 @@ public class ComboShop extends AbstractShop {
 
     @Override
     protected int calculateStock(){
-        stock = 0;
         if(this.isAdmin) {
             stock = Integer.MAX_VALUE;
+            return stock;
         }
         else {
             double funds = EconomyUtils.getFunds(this.getOwner(), this.getInventory());
-            if (this.getPrice() == 0)
+            if (this.getPrice() == 0) {
                 stock = Integer.MAX_VALUE;
-            else{
+                return stock;
+            } else{
                 stock = (int) Math.floor(funds / this.getPrice());
                 // Check if we should show partial stock
                 if (stock == 0 && Shop.getPlugin().getAllowPartialSales()) {
                     if (funds >= this.getPricePerItem()) {
                         stock = 1;
+                        return stock;
                     }
                 }
             }
@@ -75,6 +77,7 @@ public class ComboShop extends AbstractShop {
 
                     if(itemsInShop >= minItemAmountRequired){
                         stock = 1;
+                        return stock;
                     }
                 }
             }

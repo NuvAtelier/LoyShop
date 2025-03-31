@@ -6,6 +6,11 @@ import com.snowgears.shop.hook.WorldGuardHook;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.*;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -23,14 +28,13 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 
 public class ShopListener implements Listener {
@@ -147,14 +151,13 @@ public class ShopListener implements Listener {
 
                 //check that player can use the shop if it is in a WorldGuard region
                 if(!canUseShopInRegion){
-                    String message = ShopMessage.getMessage("interactionIssue", "regionRestriction", null, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
+                    ShopMessage.sendMessage("interactionIssue", "regionRestriction", player, null);
                     event.setCancelled(true);
                     return;
                 }
 
                 if((!plugin.getShopHandler().isChest(shop.getChestLocation().getBlock())) || !(shop.getSignLocation().getBlock().getBlockData() instanceof WallSign)){
+                    plugin.getLogger().warning("Deleting Shop because chest does not exist, or sign is not exist! " + shop);
                     shop.delete();
                     return;
                 }
@@ -174,13 +177,16 @@ public class ShopListener implements Listener {
                     if(!Tag.SIGNS.isTagged(player.getInventory().getItemInMainHand().getType())) {
 
                         boolean actionPerformed = shop.executeClickAction(event, ShopClickType.SHIFT_RIGHT_CLICK_CHEST);
-                        if (actionPerformed)
-                            event.setCancelled(true);
 
                         if(plugin.getDisplayTagOption() == DisplayTagOption.RIGHT_CLICK_CHEST){
                             shop.getDisplay().showDisplayTags(player);
                         }
-                        return;
+
+                        if (actionPerformed) {
+                            event.setCancelled(true);
+                            // Stop processing since we cancelled the event, if no action was performed, continue with logic below
+                            return;
+                        }
                     }
                 }
                 //non-owner is trying to open shop
@@ -197,10 +203,7 @@ public class ShopListener implements Listener {
                             //we are cancelling this event regardless so no need to check if the action was performed
 
                         } else {
-                            String message = ShopMessage.getMessage(shop.getType().toString(), "opOpen", shop, player);
-                            if(message != null && !message.isEmpty())
-                                player.sendMessage(message);
-
+                            ShopMessage.sendMessage(shop.getType().toString(), "opOpen", player, shop);
                         }
                     } else {
                         event.setCancelled(true);
@@ -333,7 +336,7 @@ public class ShopListener implements Listener {
 //    }
 
     @EventHandler
-    public void onLogin(PlayerLoginEvent event){
+    public void onLogin(PlayerJoinEvent event){
         //delete all shops from players that have not played in X amount of hours (if configured)
         if(plugin.getHoursOfflineToRemoveShops() != 0){
             for(OfflinePlayer offlinePlayer : plugin.getShopHandler().getShopOwners()){
@@ -342,10 +345,13 @@ public class ShopListener implements Listener {
                     long hoursSinceLastPlayed = TimeUnit.MILLISECONDS.toHours(msSinceLastPlayed);
 
                     if (hoursSinceLastPlayed >= plugin.getHoursOfflineToRemoveShops()) {
+                        boolean deletedShop = false;
                         for (AbstractShop shop : plugin.getShopHandler().getShops(offlinePlayer.getUniqueId())) {
+                            plugin.getLogger().notice("Deleting Shop because player " + offlinePlayer.getName() + " has not logged in within the required " + (int) hoursSinceLastPlayed + " hours! " + shop);
                             shop.delete();
+                            deletedShop = true;
                         }
-                        plugin.getShopHandler().saveShops(offlinePlayer.getUniqueId());
+                        if (deletedShop) { plugin.getShopHandler().saveShops(offlinePlayer.getUniqueId(), true); }
                     }
                 }
             }
@@ -372,6 +378,7 @@ public class ShopListener implements Listener {
             }
         }, 2L);
 
+
         //setup a repeating task that checks if async sql calculations are still running, if they are done, send messages and cancel task
         OfflineTransactions offlineTransactions = transactionsWhileOffline.get(player.getUniqueId());
         if(offlineTransactions != null) {
@@ -381,12 +388,9 @@ public class ShopListener implements Listener {
                         if (offlineTransactions != null && !offlineTransactions.isCalculating()) {
                             //only display the message if some transactions happened while they were offline
                             if(offlineTransactions.getNumTransactions() > 0) {
-                                List<String> messageList = ShopMessage.getUnformattedMessageList("offline", "transactions");
+                                List<String> messageList = ShopMessage.getUnformattedMessageList("offline", "summary");
                                 for (String message : messageList) {
-                                    message = ShopMessage.formatMessage(message, player, offlineTransactions);
-                                    message = ShopMessage.formatMessage(message, null, player, false);
-                                    if (message != null && !message.isEmpty())
-                                        player.sendMessage(message);
+                                    ShopMessage.sendMessage(message, player, offlineTransactions);
                                 }
                             }
                             transactionsWhileOffline.remove(player.getUniqueId());
@@ -394,7 +398,7 @@ public class ShopListener implements Listener {
                         }
                     }
                 }
-            }.runTaskTimer(plugin, 2L, 2L);
+            }.runTaskTimer(plugin, 10L, 2L);
         }
     }
 
@@ -404,7 +408,7 @@ public class ShopListener implements Listener {
         long lastPlayed = player.getLastPlayed();
 
         //create an object that will calculate offline transactions (if sql is being used)
-        if(plugin.getLogHandler().isEnabled()) {
+        if(plugin.getLogHandler().isEnabled() && plugin.offlinePurchaseNotificationsEnabled()) {
             OfflineTransactions offlineTransactions = new OfflineTransactions(player.getUniqueId(), lastPlayed);
             transactionsWhileOffline.put(event.getUniqueId(), offlineTransactions);
         }

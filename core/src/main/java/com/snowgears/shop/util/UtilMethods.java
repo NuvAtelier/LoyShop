@@ -2,6 +2,7 @@ package com.snowgears.shop.util;
 
 import net.md_5.bungee.api.ChatColor;
 import com.snowgears.shop.Shop;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -12,22 +13,42 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.ArmorMeta;
 import org.bukkit.util.EulerAngle;
 import org.bukkit.util.Vector;
-
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.inventory.meta.FireworkMeta;
+import org.bukkit.potion.PotionEffect;
+import net.md_5.bungee.api.chat.TranslatableComponent;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.UUID;
+import java.util.*;
+
+import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.bukkit.util.io.BukkitObjectOutputStream;
+import org.bukkit.util.io.BukkitObjectInputStream;
 
 public class UtilMethods {
 
     private static ArrayList<Material> nonIntrusiveMaterials = new ArrayList<Material>();
+
+    public static String trimForSign(String text) {
+        // Check if we can fit on a sign, max length is 17.
+        int maxLength = 17;
+        int totalLength = text.length();
+        if (totalLength > maxLength) {
+            return text.substring(0, maxLength);
+        }
+        return text;
+    }
 
     //this is used for formatting numbers like 5000 to 5k
     public static String formatLongToKString(double value, boolean formatZeros) {
@@ -148,7 +169,8 @@ public class UtilMethods {
 
     public static String getCleanLocation(Location loc, boolean includeWorld){
         String text = "";
-        if(includeWorld)
+        if (loc == null) { return text; }
+        if(includeWorld && loc.getWorld() != null)
             text = loc.getWorld().getName() + " - ";
         text = text + "("+ loc.getBlockX() + ", "+loc.getBlockY() + ", "+loc.getBlockZ() + ")";
         return text;
@@ -320,120 +342,111 @@ public class UtilMethods {
         return is.getItemMeta().getLore().toString();
     }
 
-    public static String getEnchantmentsString(ItemStack is){
-        Map<Enchantment, Integer> enchantsMap;
-        if(is.getItemMeta() instanceof EnchantmentStorageMeta){
-            enchantsMap = ((EnchantmentStorageMeta) is.getItemMeta()).getStoredEnchants();
-        }
-        else{
-            enchantsMap = is.getEnchantments();
-        }
-
-        if(enchantsMap == null || enchantsMap.isEmpty())
-            return "";
-
-        String enchants = "[";
-        int i=0;
-        for(Map.Entry<Enchantment, Integer> entry : enchantsMap.entrySet()){
-            enchants += getEnchantmentName(entry.getKey()) + " " + entry.getValue();
-
-            //TODO if enchantment name is Unknown, look up enchantment by namedSpaceKey? Looks like other plugins can register enchantments to server similar to Recipes
-
-            i++;
-            if(i != enchantsMap.size())
-                enchants += ", ";
-            else
-                enchants += "]";
-        }
-        return enchants;
+    public static String translate(String key){
+        return new TranslatableComponent(key).toPlainText();
     }
 
-    public static String getEnchantmentName(Enchantment enchantment){
-//        System.out.println(enchantment.getName());
-//        System.out.println(enchantment.getKey().getKey());
-//        System.out.println(enchantment.getKey().getNamespace());
-        switch (enchantment.getName()) {
-            case "ARROW_DAMAGE":
-                return "Power";
-            case "ARROW_FIRE":
-                return "Flame";
-            case "ARROW_INFINITE":
-                return "Infinity";
-            case "ARROW_KNOCKBACK":
-                return "Punch";
-            case "BINDING_CURSE":
-                return "Curse of Binding";
-            case "CHANNELING":
-                return "Channeling";
-            case "DAMAGE_ALL":
-                return "Sharpness";
-            case "DAMAGE_ARTHROPODS":
-                return "Bane of Arthropods";
-            case "DAMAGE_UNDEAD":
-                return "Smite";
-            case "DEPTH_STRIDER":
-                return "Depth Strider";
-            case "DIG_SPEED":
-                return "Efficiency";
-            case "DURABILITY":
-                return "Unbreaking";
-            case "FIRE_ASPECT":
-                return "Fire Aspect";
-            case "FROST_WALKER":
-                return "Frost Walker";
-            case "IMPALING":
-                return "Impaling";
-            case "KNOCKBACK":
-                return "Knockback";
-            case "LOOT_BONUS_BLOCKS":
-                return "Fortune";
-            case "LOOT_BONUS_MOBS":
-                return "Looting";
-            case "LOYALTY":
-                return "Loyalty";
-            case "LUCK":
-                return "Luck of the Sea";
-            case "LURE":
-                return "Lure";
-            case "MENDING":
-                return "Mending";
-            case "MULTISHOT":
-                return "Multishot";
-            case "OXYGEN":
-                return "Respiration";
-            case "PIERCING":
-                return "Piercing";
-            case "PROTECTION_ENVIRONMENTAL":
-                return "Protection";
-            case "PROTECTION_EXPLOSIONS":
-                return "Blast Protection";
-            case "PROTECTION_FALL":
-                return "Feather Falling";
-            case "PROTECTION_FIRE":
-                return "Fire Protection";
-            case "PROTECTION_PROJECTILE":
-                return "Projectile Protection";
-            case "QUICK_CHARGE":
-                return "Quick Charge";
-            case "RIPTIDE":
-                return "Riptide";
-            case "SILK_TOUCH":
-                return "Silk Touch";
-            case "SOUL_SPEED":
-                return "Soul Speed";
-            case "SWEEPING_EDGE":
-                return "Sweeping Edge";
-            case "SWIFT_SNEAK":
-                return "Swift Sneak";
-            case "THORNS":
-                return "Thorns";
-            case "VANISHING_CURSE":
-                return "Cure of Vanishing";
-            case "WATER_WORKER":
-                return "Aqua Affinity";
-            default:
-                return "Unknown";
+    public static String formatTickTime(int ticks){
+        // Convert ticks to seconds (20 ticks = 1 second)
+        int totalSeconds = ticks / 20;
+        
+        // Calculate hours, minutes, and seconds
+        int hours = totalSeconds / 3600;
+        int minutes = (totalSeconds % 3600) / 60;
+        int seconds = totalSeconds % 60;
+        
+        // Format the time string
+        if (hours > 0) {
+            return " " + String.format("%d:%02d:%02d", hours, minutes, seconds);
+        } else {
+            return " " + String.format("%d:%02d", minutes, seconds);
         }
+    }
+
+    public static String formatRomanNumerals(int number){
+        // only format 2-5, after that just show the number
+        if (number < 2) return ""; // dont return on 1
+        if(number > 5)
+            return " " + String.valueOf(number);
+        String[] romanNumerals = {"I", "II", "III", "IV", "V"};
+        return " " + romanNumerals[number - 1];
+    }
+
+    public static TextComponent getEnchantmentsComponent(ItemStack item){
+        TextComponent formattedMessage = new TextComponent("");
+
+        if(item.getItemMeta() instanceof EnchantmentStorageMeta || item.getEnchantments().size() > 0){
+            Map<Enchantment, Integer> enchantsMap;
+            if(item.getItemMeta() instanceof EnchantmentStorageMeta){
+                enchantsMap = ((EnchantmentStorageMeta) item.getItemMeta()).getStoredEnchants();
+            }
+            else { enchantsMap = item.getEnchantments(); }
+
+            if(enchantsMap == null || enchantsMap.isEmpty()) return formattedMessage;
+
+            formattedMessage.addExtra(" [");
+            int i=0;
+            for(Map.Entry<Enchantment, Integer> entry : enchantsMap.entrySet()){
+                formattedMessage.addExtra(new TranslatableComponent(entry.getKey().getTranslationKey()));
+                formattedMessage.addExtra(formatRomanNumerals(entry.getValue()));
+                i++;
+                if(i != enchantsMap.size()) formattedMessage.addExtra(", ");
+                else formattedMessage.addExtra("]");
+            }
+        }
+
+        if(item.getItemMeta() != null && item.getItemMeta() instanceof ArmorMeta){
+            ArmorMeta armorMeta = (ArmorMeta) item.getItemMeta();
+            if (armorMeta.getTrim() != null) {
+                String material = translate(armorMeta.getTrim().getMaterial().getTranslationKey());
+                String pattern = translate(armorMeta.getTrim().getPattern().getTranslationKey());
+                // Since we want to remove the "Armor Trim" and "Material" from the string, we have to translate it first
+                // causing translatable components to not work clientside.
+                formattedMessage.addExtra(" [" + pattern.replace(" Armor Trim", ""));
+                formattedMessage.addExtra(" (" + material.replace(" Material", "") + ")]");
+            }
+        }
+
+        // Add custom potion formatting
+        if(item.getItemMeta() != null && item.getItemMeta() instanceof PotionMeta){
+            PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
+            String formattedName = "";
+            if (potionMeta.getBasePotionType() != null) {
+                formattedName = UtilMethods.capitalize(potionMeta.getBasePotionType().toString().replace("_", " ").toLowerCase());
+                formattedMessage.addExtra(" [" + formattedName + "]");
+                formattedMessage.addExtra(getPotionEffects(potionMeta.getBasePotionType().getPotionEffects()));
+            }
+            if (potionMeta.getCustomEffects().size() > 0) {
+                formattedMessage.addExtra(getPotionEffects(potionMeta.getCustomEffects()));
+            }
+        }
+
+        if(item.getItemMeta() != null && item.getItemMeta() instanceof FireworkMeta){
+            FireworkMeta fireworkMeta = (FireworkMeta) item.getItemMeta();
+            int power = fireworkMeta.getPower();
+            if (power == 0) power = 1;
+            formattedMessage.addExtra(" [Duration " + power + "]");
+        }
+        
+        return formattedMessage;
+    }
+
+    private static TextComponent getPotionEffects(List<PotionEffect> effects){
+        TextComponent formattedEffects = new TextComponent("");
+        int numEffects = effects.size();
+        if (numEffects == 0) return formattedEffects;
+        formattedEffects.addExtra(" (");
+        for (int i = 0; i < numEffects; i++) {
+            PotionEffect effect = effects.get(i);
+            formattedEffects.addExtra(new TranslatableComponent(effect.getType().getTranslationKey()));
+            if(effect.getAmplifier() > 0) formattedEffects.addExtra(formatRomanNumerals(effect.getAmplifier()));
+            if(effect.getDuration() > 0) formattedEffects.addExtra(formatTickTime(effect.getDuration()));
+            // if we have more than one effect, add a comma, dont add a comma after the last effect
+            if(i < numEffects - 1)
+                formattedEffects.addExtra(", ");
+        }
+        formattedEffects.addExtra(")");
+        return formattedEffects;
     }
 
     private static void initializeNonIntrusiveMaterials(){
@@ -627,5 +640,85 @@ public class UtilMethods {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static String itemStackToBase64(ItemStack item) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
+
+        // Write the ItemStack to the ObjectOutputStream
+        dataOutput.writeObject(item);
+        dataOutput.close();
+
+        // Encode the byte array to a Base64 string
+        return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+    }
+
+    public static ItemStack itemStackFromBase64(String data) throws IOException, ClassNotFoundException {
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(data));
+        BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
+
+        // Read the ItemStack from the ObjectInputStream
+        ItemStack item = (ItemStack) dataInput.readObject();
+        dataInput.close();
+        return item;
+    }
+
+    public static List<String> splitStringIntoLines(String text, int maxLineLength) {
+        final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORa-fk-or])";
+
+        Matcher matcher = Pattern.compile(COLOR_CODE_REGEX + "| |[^&§\\s]+").matcher(text);
+        List<String> words = new ArrayList<>();
+        while (matcher.find()) {
+            words.add(matcher.group());
+        }
+
+        StringBuilder currentLine = new StringBuilder();
+        List<String> linesByColor = new ArrayList<>();
+
+        String latestColor = "";
+        for (String word : words) {
+            if (word.matches(COLOR_CODE_REGEX)) {
+                if (!latestColor.equals(word)) {
+                    latestColor = word;
+                    // New color, add the line and start a new line
+                    linesByColor.add(currentLine.toString().trim());
+                    currentLine = new StringBuilder(latestColor);
+                }
+                continue;
+            }
+
+            // Also split if the single color line is too long!
+            int potentialLength = ChatColor.stripColor(currentLine.toString()).length() + ChatColor.stripColor(word).length() + 1;
+            if (word.matches(" ") && potentialLength > maxLineLength) {
+                linesByColor.add(currentLine.toString().trim());
+                currentLine = new StringBuilder(latestColor);
+            } else {
+                currentLine.append(word);
+            }
+        }
+
+        // Append the last line if there's any content left
+        if (currentLine.length() > 0) {
+            linesByColor.add(currentLine.toString().trim());
+        }
+
+        // Now we need to start taking the "blocks" of text and combining them into lines, limited by maxLineLength
+        List<String> result = new ArrayList<>();
+        currentLine = new StringBuilder();
+        for (String line : linesByColor) {
+            // Add it if we are less than the max line length or if the line is only a color
+            if (currentLine.length() + line.length() <= maxLineLength || ChatColor.stripColor(line).length() == 0) {
+                if (currentLine.toString().trim().length() == 0 || ChatColor.stripColor(line).trim().length() == 0) currentLine.append(line);
+                else currentLine.append(" " + line);
+            } else {
+                result.add(currentLine.toString().trim());
+                currentLine = new StringBuilder(line);
+            }
+        }
+        if (currentLine.length() > 0) {
+            result.add(currentLine.toString().trim());
+        }
+        return result;
     }
 }

@@ -9,6 +9,7 @@ import com.snowgears.shop.util.*;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
@@ -29,9 +30,7 @@ public class TransactionHandler {
         Player player = event.getPlayer();
 
         if(shop.isPerformingTransaction()) {
-            String message = ShopMessage.getMessage("interactionIssue", "useShopAlreadyInUse", shop, player);
-            if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+            ShopMessage.sendMessage("interactionIssue", "useShopAlreadyInUse", player, shop);
             event.setCancelled(true);
             return;
         }
@@ -43,15 +42,14 @@ public class TransactionHandler {
 
         //check that player can use the shop if it is in a WorldGuard region
         if(!canUseShopInRegion){
-            String message = ShopMessage.getMessage("interactionIssue", "regionRestriction", null, player);
-            if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+            ShopMessage.sendMessage("interactionIssue", "regionRestriction", player, shop);
             event.setCancelled(true);
             return;
         }
 
         //delete shop if it does not have a chest attached to it
         if(!(plugin.getShopHandler().isChest(shop.getChestLocation().getBlock()))){
+            plugin.getLogger().warning("Deleting Shop because chest does not exist! " + shop);
             shop.delete();
             return;
         }
@@ -65,9 +63,7 @@ public class TransactionHandler {
 
             if (plugin.usePerms() && !(player.hasPermission("shop.use."+shop.getType().toString().toLowerCase()) || player.hasPermission("shop.use"))) {
                 if (!player.hasPermission("shop.operator")) {
-                    String message = ShopMessage.getMessage("permission", "use", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
+                    ShopMessage.sendMessage("permission", "use", player, shop);
                     return;
                 }
             }
@@ -93,10 +89,8 @@ public class TransactionHandler {
                 executeTransactionSequence(player, shop, shop.getType(), fullStackOrder);
             }
         } else {
-            String message = ShopMessage.getMessage("interactionIssue", "useOwnShop", shop, player);
-            if(message != null && !message.isEmpty())
-                player.sendMessage(message);
-            sendEffects(false, player, shop);
+            ShopMessage.sendMessage("interactionIssue", "useOwnShop", player, shop);
+            shop.sendEffects(false, player);
         }
         event.setCancelled(true);
     }
@@ -125,10 +119,12 @@ public class TransactionHandler {
 
         //the transaction has finished and the exchange event has not been cancelled
         sendExchangeMessagesAndLog(shop, player, actionType, transaction);
-        sendEffects(true, player, shop);
+        shop.sendEffects(true, player);
         //make sure to update the shop sign, but only if the sign lines use a variable that requires a refresh (like stock that is dynamically updated)
-        if(shop.getSignLinesRequireRefresh())
+        if(shop.getSignLinesRequireRefresh()){
+            plugin.getLogger().trace("[TransactionHandler.executeTransactionSequence] updateSign");
             shop.updateSign();
+        }
     }
 
     private void sendErrorMessage(Player player, AbstractShop shop, ShopType actionType, Transaction transaction) {
@@ -142,16 +138,14 @@ public class TransactionHandler {
                         ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_STOCK);
 
                         if (guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON) {
-                            String ownerMessage = ShopMessage.getMessage(actionType.toString(), "ownerNoStock", shop, owner);
-                            if (ownerMessage != null && !ownerMessage.isEmpty())
-                                owner.sendMessage(ownerMessage);
+                            ShopMessage.sendMessage(actionType.toString(), "ownerNoStock", owner, shop);
                         }
                     }
                 }
-                message = ShopMessage.getMessage(actionType.toString(), "shopNoStock", shop, player);
+                message = ShopMessage.getUnformattedMessage(actionType.toString(), "shopNoStock");
                 break;
             case INSUFFICIENT_FUNDS_PLAYER:
-                message = ShopMessage.getMessage(actionType.toString(), "playerNoStock", shop, player);
+                message = ShopMessage.getUnformattedMessage(actionType.toString(), "playerNoStock");
                 break;
             case INVENTORY_FULL_SHOP:
                 if (!shop.isAdmin()) {
@@ -161,89 +155,49 @@ public class TransactionHandler {
                         ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_STOCK);
 
                         if (guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_STOCK_ON) {
-                            String ownerMessage = ShopMessage.getMessage(actionType.toString(), "ownerNoSpace", shop, owner);
-                            if (ownerMessage != null && !ownerMessage.isEmpty())
-                                owner.sendMessage(ownerMessage);
+                            ShopMessage.sendMessage(actionType.toString(), "ownerNoSpace", owner, shop);
                         }
                     }
                 }
-                message = ShopMessage.getMessage(actionType.toString(), "shopNoSpace", shop, player);
+                message = ShopMessage.getUnformattedMessage(actionType.toString(), "shopNoSpace");
                 break;
             case INVENTORY_FULL_PLAYER:
-                message = ShopMessage.getMessage(actionType.toString(), "playerNoSpace", shop, player);
+                message = ShopMessage.getUnformattedMessage(actionType.toString(), "playerNoSpace");
                 break;
         }
 
         // Since there was an error during the transaction, send the message, then exit the transaction early.
         if (message != null && !message.isEmpty())
-            player.sendMessage(message);
-        sendEffects(false, player, shop);
+            ShopMessage.sendMessage(message, player, shop);
+        shop.sendEffects(false, player);
     }
 
     private void sendExchangeMessagesAndLog(AbstractShop shop, Player player, ShopType transactionType, Transaction transaction) {
 
         double price = transaction.getPrice();
-        String message = getMessageFromOrders(shop, player, transactionType, "user", price, transaction);
+        String message = ShopMessage.getMessageFromOrders(transactionType, "user", price, transaction.getAmount());
 
         ShopGuiHandler.GuiIcon guiIcon = plugin.getGuiHandler().getIconFromOption(player, PlayerSettings.Option.NOTIFICATION_SALE_USER);
         if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_USER_ON) {
-            if(message != null && !message.isEmpty())
-                player.sendMessage(message);
+            if(message != null && !message.isEmpty()) {
+                ShopMessage.sendMessage(message, player, shop);
+            }
         }
 
         Player owner = Bukkit.getPlayer(shop.getOwnerUUID());
         if ((owner != null) && (!shop.isAdmin())) {
-            message = getMessageFromOrders(shop, player, transactionType, "owner", price, transaction);
+            message = ShopMessage.getMessageFromOrders(transactionType, "owner", price, transaction.getAmount());
 
             guiIcon = plugin.getGuiHandler().getIconFromOption(owner, PlayerSettings.Option.NOTIFICATION_SALE_OWNER);
             if(guiIcon != null && guiIcon == ShopGuiHandler.GuiIcon.SETTINGS_NOTIFY_OWNER_ON) {
                 if(message != null && !message.isEmpty())
-                    owner.sendMessage(message);
+                    ShopMessage.sendMessage(message, owner, player, shop);
             }
         }
 
         int amount = transaction.getAmount();
 
         plugin.getLogHandler().logTransaction(player, shop, transactionType, price, amount);
-    }
-
-    private String getMessageFromOrders(AbstractShop shop, Player player, ShopType transactionType, String subKey, double price, Transaction transaction){
-        String message = ShopMessage.getUnformattedMessage(transactionType.toString(), subKey);
-        String priceStr = Shop.getPlugin().getPriceString(price, false);
-        message = message.replace("[price]", ""+priceStr);
-
-        if(shop.getItemStack() != null) {
-            //int amount = shop.getItemStack().getAmount() * orders;
-            int amount = transaction.getAmount();
-            message = message.replace("[item amount]", "" + amount);
-        }
-        if(shop.getType() == ShopType.BARTER) {
-           // int amount = shop.getSecondaryItemStack().getAmount() * transactions.size();
-            int amount = (int) transaction.getPrice();
-            message = message.replace("[barter item amount]", "" + amount);
-        }
-        message = ShopMessage.formatMessage(message, shop, player, false);
-        return message;
-    }
-
-    public void sendEffects(boolean success, Player player, AbstractShop shop){
-        try {
-            if (success) {
-                if (plugin.playSounds()) {
-                    try {
-                        player.playSound(shop.getSignLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
-                    } catch (NoSuchFieldError e) {}
-                }
-                if (plugin.playEffects())
-                    player.getWorld().playEffect(shop.getChestLocation(), Effect.STEP_SOUND, Material.EMERALD_BLOCK);
-            } else {
-                if (plugin.playSounds())
-                    player.playSound(shop.getSignLocation(), Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
-                if (plugin.playEffects())
-                    player.getWorld().playEffect(shop.getChestLocation(), Effect.STEP_SOUND, Material.REDSTONE_BLOCK);
-            }
-        } catch (Error e){
-        } catch (Exception e) {}
     }
 
     private boolean notifyOwner(final AbstractShop shop){

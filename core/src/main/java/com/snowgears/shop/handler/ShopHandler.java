@@ -81,7 +81,7 @@ public class ShopHandler {
         if (packageName.equals("org.bukkit.craftbukkit") || plugin.getNmsBullshitHandler().getServerVersion() >= 120.6D) {
             // We are on a newer version that does not relocate CB classes, load the default display package
             try {
-                Shop.getPlugin().getLogger().log(Level.INFO, "Using default display class - com.snowgears.shop.display.Display");
+                Shop.getPlugin().getLogger().info("Using item display handler - com.snowgears.shop.display.Display");
                 final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display");
                 if (AbstractDisplay.class.isAssignableFrom(clazz)) {
                     this.displayClass = clazz;
@@ -103,8 +103,8 @@ public class ShopHandler {
             //        }
 
             try {
-                Shop.getPlugin().getLogger().log(Level.WARNING, "Minecraft version is old or Spigot, watch out for bugs!");
-                Shop.getPlugin().getLogger().log(Level.INFO, "Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
+                Shop.getPlugin().getLogger().info( "Minecraft version is old or Spigot, watch out for bugs!");
+                Shop.getPlugin().getLogger().info("Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
                 final Class<?> clazz = Class.forName("com.snowgears.shop.display.Display_" + nmsVersion);
                 if (AbstractDisplay.class.isAssignableFrom(clazz)) {
                     this.displayClass = clazz;
@@ -264,7 +264,7 @@ public class ShopHandler {
             chunkShops.put(chunkKey, chunkShopLocations);
         }
 
-        plugin.getGuiHandler().reloadPlayerHeadIcon(shop.getOwnerUUID());
+        plugin.getGuiHandler().reloadPlayerHeadIcon(shop);
     }
 
     //This method should only be used by AbstractShop object to delete
@@ -317,10 +317,11 @@ public class ShopHandler {
             }
             unloadedShopsByChunk.remove(key);
 
-            //resave all shops for the player with the facing variable missing
-            for(UUID playerUUID : playerUUIDs){
-                saveShops(playerUUID);
-            }
+            // No need to save all the shops here anymore
+//            //resave all shops for the player with the facing variable missing
+//            for(UUID playerUUID : playerUUIDs){
+//                saveShops(playerUUID);
+//            }
         }
     }
 
@@ -347,6 +348,18 @@ public class ShopHandler {
                 shops.add(shop);
         }
         return shops;
+    }
+
+    public int numShopsNeedSave(UUID player){
+        List<AbstractShop> shops = getShops(player);
+
+        // Default does not need to be saved;
+        int needToBeSaved = 0;
+        for (AbstractShop shop : shops) {
+            if (shop.needsSave()) { needToBeSaved++; }
+        }
+
+        return needToBeSaved;
     }
 
     public List<AbstractShop> getShopsByItem(ItemStack itemStack){
@@ -479,7 +492,7 @@ public class ShopHandler {
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if(shop != null && player != null && player.isOnline() && shop.isInitialized())
                         shop.getDisplay().spawn(player);
-                }, 50L); // Delay of 50 ticks to allow player to finish logging in, otherwise the item display doesn't appear!
+                }, 5L); // Delay of 5 ticks to allow player to finish logging in, otherwise the item display doesn't appear!
             }
         }
         playersWithActiveShopDisplays.put(player.getUniqueId(), shopsNearPlayer);
@@ -561,6 +574,44 @@ public class ShopHandler {
         return getShopLocations(playerUUID).size();
     }
 
+    public int getNumberOfShops(ShopType shopType) {
+        int shopsWithType = 0;
+        for (AbstractShop shop : allShops.values()) {
+            if (shop.getType() == shopType) { shopsWithType++; }
+        }
+        return shopsWithType;
+    }
+
+    public int getNumberOfShopDisplayTypes(DisplayType displayType) {
+        int shopsWithDisplayType = 0;
+        for (AbstractShop shop : allShops.values()) {
+            if (shop.getDisplay().getType() == displayType) { shopsWithDisplayType++; }
+        }
+        return shopsWithDisplayType;
+    }
+
+    public Map<String, Integer> getShopContainerCounts() {
+        int chestShops = 0;
+        int barrelShops = 0;
+        int enderChestShops = 0;
+        int shulkerBoxShops = 0;
+        for (AbstractShop shop : allShops.values()) {
+            Material containerType = shop.getContainerType();
+            if (containerType == null) continue;
+            if (containerType == Material.CHEST || containerType == Material.TRAPPED_CHEST) { chestShops++; }
+            if (containerType == Material.BARREL) { barrelShops++; }
+            if (containerType == Material.ENDER_CHEST) { enderChestShops++; }
+            if (containerType.name().endsWith("SHULKER_BOX")) { shulkerBoxShops++; }
+        }
+        // Return a map of the container types
+        Map<String, Integer> containerTypes = new HashMap<>();
+        containerTypes.put("Chest Shops", chestShops);
+        containerTypes.put("Barrel Shops", barrelShops);
+        containerTypes.put("Ender Chest Shops", enderChestShops);
+        containerTypes.put("Shulker Box Shops", shulkerBoxShops);
+        return containerTypes;
+    }
+
     private ArrayList<AbstractShop> orderedShopList() {
         ArrayList<AbstractShop> list = new ArrayList<AbstractShop>(allShops.values());
         Collections.sort(list, new Comparator<AbstractShop>() {
@@ -586,7 +637,8 @@ public class ShopHandler {
     private String getChunkKey(Location location){
         int chunkX = UtilMethods.floor(location.getBlockX()) >> 4;
         int chunkZ = UtilMethods.floor(location.getBlockZ()) >> 4;
-        return location.getWorld().getName()+"_"+chunkX+"_"+chunkZ;
+        String worldName = location.getWorld() != null ? location.getWorld().getName() : "unknown_world";
+        return worldName+"_"+chunkX+"_"+chunkZ;
     }
 
     private String getChunkKey(Chunk chunk){
@@ -617,28 +669,49 @@ public class ShopHandler {
         for(UUID shopOwnerUUID : plugin.getShopHandler().getShopOwnerUUIDs()){
             for(AbstractShop shop : plugin.getShopHandler().getShops(shopOwnerUUID)){
                 if(shop.getChestLocation().getChunk().isLoaded()) {
+                    plugin.getLogger().debug("[ShopHander.removeLegacyDisplays] updateSign");
                     shop.updateSign();
                 }
             }
         }
     }
 
-    public void saveShops(final UUID player){
-        if(playersSavingShops.contains(player))
-            return;
-
-        BukkitScheduler scheduler = plugin.getServer().getScheduler();
-        scheduler.runTaskLaterAsynchronously(plugin, new Runnable() {
-            @Override
-            public void run() {
-                playersSavingShops.add(player);
-                saveShopsDriver(player);
-            }
-        }, 20L);
+    public int saveShops(final UUID player){ return saveShops(player, false); }
+    public int saveShops(final UUID player, boolean force){
+        return saveShopsDriver(player, force);
+//        // async code
+//        if(playersSavingShops.contains(player))
+//            return 0;
+//
+//        playersSavingShops.add(player);
+//        saveShopsDriver(player, force);
+//
+//        BukkitScheduler scheduler = plugin.getServer().getScheduler();
+//        scheduler.runTaskAsynchronously(plugin, new Runnable() {
+//            @Override
+//            public void run() {
+//                playersSavingShops.add(player);
+//                saveShopsDriver(player, force);
+//            }
+//        });
     }
 
-    private void saveShopsDriver(UUID player){
-        //System.out.println("[Shop] saving shops for player - "+player.toString());
+    private int saveShopsDriver(UUID player, boolean force) {
+        // Check if any of the players shops want to be saved
+        String playerName = player == this.getAdminUUID() ? "admin" : plugin.getServer().getOfflinePlayer(player).getName();
+        int numWantingToUpdate = numShopsNeedSave(player);
+        if (!force && numWantingToUpdate == 0) {
+            plugin.getLogger().trace("save shops for player (" + playerName + ") was called, but no shops for player need updating! " + player.toString());
+//            // async code
+//            if(playersSavingShops.contains(player)){
+//                playersSavingShops.remove(player);
+//            }
+            return 0;
+        }
+
+        // There are shops that need to be saved, so go ahead and save the file!
+        plugin.getLogger().debug("attempting to save shops for player " + playerName + " (" + player.toString() + ") isAdmin: " + (player == Shop.getPlugin().getShopHandler().getAdminUUID()));
+        File currentFile = null;
         try {
 
             File fileDirectory = new File(plugin.getDataFolder(), "Data");
@@ -647,7 +720,6 @@ public class ShopHandler {
                 fileDirectory.mkdir();
 
             String owner = null;
-            File currentFile = null;
             if(player.equals(adminUUID)) {
                 owner = "admin";
                 currentFile = new File(fileDirectory + "/admin.yml");
@@ -659,6 +731,8 @@ public class ShopHandler {
             }
             //owner = currentFile.getName().substring(0, currentFile.getName().length()-4); //remove .yml
 
+            plugin.getLogger().trace("    current file " + currentFile);
+
             if (!currentFile.exists()) // file doesn't exist
                 currentFile.createNewFile();
             else{
@@ -666,14 +740,17 @@ public class ShopHandler {
                 currentFile.createNewFile();
             }
             YamlConfiguration config = YamlConfiguration.loadConfiguration(currentFile);
+            plugin.getLogger().trace("    loaded yaml... " + currentFile);
 
             List<AbstractShop> shopList = getShops(player);
             if (shopList.isEmpty()) {
                 currentFile.delete();
-                if(playersSavingShops.contains(player)){
-                    playersSavingShops.remove(player);
-                }
-                return;
+                plugin.getLogger().debug("    no shops exist for player (" + playerName + "), deleting file... " + currentFile);
+//                // async code
+//                if(playersSavingShops.contains(player)){
+//                    playersSavingShops.remove(player);
+//                }
+                return 0;
             }
 
             int shopNumber = 1;
@@ -685,6 +762,7 @@ public class ShopHandler {
 
                 //don't save shops that are not initialized with items
                 if (shop.isInitialized()) {
+                    config.set("shops." + owner + "." + shopNumber + ".id", shop.getId().toString());
                     config.set("shops." + owner + "." + shopNumber + ".location", locationToString(shop.getSignLocation()));
                     if(shop.getFacing() != null)
                         config.set("shops." + owner + "." + shopNumber + ".facing", shop.getFacing().toString());
@@ -722,28 +800,40 @@ public class ShopHandler {
                         barterItemStack.setAmount(1);
                         config.set("shops." + owner + "." + shopNumber + ".itemBarter", barterItemStack);
                     }
+
+                    shop.setNeedsSave(false);
                     shopNumber++;
                 }
             }
+            plugin.getLogger().spam("    built config to save... \n" + config.saveToString());
             config.save(currentFile);
+            plugin.getLogger().helpful("Saved " + shopNumber + " Shops for Player " + playerName + " to file: " + currentFile);
+            return shopNumber;
         } catch (Exception e){
+            plugin.getLogger().severe("Unable to save player shop file: " + currentFile);
             e.printStackTrace();
-        }
-
-        if(playersSavingShops.contains(player)){
-            playersSavingShops.remove(player);
+            return 0;
         }
     }
 
-    public void saveAllShops() {
+    public int saveAllShops() {
         HashMap<UUID, Boolean> allPlayersWithShops = new HashMap<>();
-        for(AbstractShop shop : allShops.values()){
+        for (AbstractShop shop : allShops.values()) {
             allPlayersWithShops.put(shop.getOwnerUUID(), true);
         }
 
-        for(UUID player : allPlayersWithShops.keySet()){
-            saveShops(player);
+        int numberUpdated = 0;
+        int playersWithUpdate = 0;
+        for (UUID player : allPlayersWithShops.keySet()) {
+            int shopsUpdated = saveShops(player);
+
+            if (shopsUpdated > 0) {
+                numberUpdated += shopsUpdated;
+                playersWithUpdate++;
+            }
         }
+        if (playersWithUpdate > 0) plugin.getLogger().info("Saved " + playersWithUpdate + " Player Shop file updates to disk");
+        return numberUpdated;
     }
 
     public void convertLegacyShopSaves(){
@@ -781,41 +871,50 @@ public class ShopHandler {
 
                 // load all the yml files from the data directory
                 for (File file : fileDirectory.listFiles()) {
-                    if (file.isFile()) {
-                        if (file.getName().endsWith(".yml")
-                                && !file.getName().contains("enderchests")
-                                && !file.getName().contains("itemCurrency")
-                                && !file.getName().contains("gambleDisplay")) {
-                            YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-                            boolean isLegacyConfig = false;
-                            UUID playerUUID = null;
-                            String fileNameNoExt = null;
-                            try {
-                                int dotIndex = file.getName().lastIndexOf('.');
-                                fileNameNoExt = file.getName().substring(0, dotIndex); //remove .yml
+                    Shop.getPlugin().getLogger().debug("Loading player shops from file: " + file.getName());
+                    try {
+                        if (file.isFile()) {
+                            if (file.getName().endsWith(".yml")
+                                    && !file.getName().contains("enderchests")
+                                    && !file.getName().contains("itemCurrency")
+                                    && !file.getName().contains("gambleDisplay")) {
+                                YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+                                boolean isLegacyConfig = false;
+                                UUID playerUUID = null;
+                                String fileNameNoExt = null;
+                                try {
+                                    int dotIndex = file.getName().lastIndexOf('.');
+                                    fileNameNoExt = file.getName().substring(0, dotIndex); //remove .yml
 
-                                //all files are saved as UUID.yml except for admin shops which are admin.yml
-                                if (!fileNameNoExt.equals("admin")) {
-                                    playerUUID = UUID.fromString(fileNameNoExt);
-                                    //file names are in UUID format. Load from new save files -> ownerUUID.yml
+                                    //all files are saved as UUID.yml except for admin shops which are admin.yml
+                                    if (!fileNameNoExt.equals("admin")) {
+                                        playerUUID = UUID.fromString(fileNameNoExt);
+                                        //file names are in UUID format. Load from new save files -> ownerUUID.yml
+                                    } else {
+                                        playerUUID = adminUUID;
+                                    }
+                                } catch (IllegalArgumentException iae) {
+                                    //file names are not in UUID format. Load from legacy save files -> ownerName + " (" + ownerUUID + ").yml
+                                    isLegacyConfig = true;
+                                    convertLegacySaves = true;
+                                    playerUUID = uidFromString(fileNameNoExt);
                                 }
-                                else{
-                                    playerUUID = adminUUID;
+                                numShopsLoaded += loadShopsFromConfig(config, isLegacyConfig);
+                                if (isLegacyConfig) {
+                                    //save new file
+                                    saveShops(playerUUID, true);
+                                    //delete old file
+                                    file.delete();
                                 }
-                            } catch (IllegalArgumentException iae) {
-                                //file names are not in UUID format. Load from legacy save files -> ownerName + " (" + ownerUUID + ").yml
-                                isLegacyConfig = true;
-                                convertLegacySaves = true;
-                                playerUUID = uidFromString(fileNameNoExt);
-                            }
-                            numShopsLoaded += loadShopsFromConfig(config, isLegacyConfig);
-                            if(isLegacyConfig){
-                                //save new file
-                                saveShops(playerUUID);
-                                //delete old file
-                                file.delete();
+                                if (plugin.getDebug_forceResaveAll()) {
+                                    saveShops(playerUUID, true);
+                                }
                             }
                         }
+                    }
+                    catch (Exception e) {
+                        Shop.getPlugin().getLogger().log(Level.SEVERE, "Error while loading Shop from player file (" + file.getName() + "), please report this error to the Shop developers: " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
                 if(convertLegacySaves)
@@ -847,10 +946,18 @@ public class ShopHandler {
             //System.out.println("[Shop] loading shops for player - "+shopOwner);
 
             Set<String> allShopNumbers = config.getConfigurationSection("shops." + shopOwner).getKeys(false);
+            int playerLoadedShops = 0;
             for (String shopNumber : allShopNumbers) {
                 Location signLoc = locationFromString(config.getString("shops." + shopOwner + "." + shopNumber + ".location"));
                 if(signLoc != null) {
                     try {
+                        // Track each shop using a uuid so that we can log purchases better
+                        String idString = config.getString("shops." + shopOwner + "." + shopNumber + ".id");
+                        UUID id = null;
+                        if (idString != null && !idString.isEmpty()){
+                            id = UUID.fromString(idString);
+                        }
+
                         if (shopOwner.equals("admin"))
                             owner = this.getAdminUUID();
                         else if(isLegacy)
@@ -871,9 +978,8 @@ public class ShopHandler {
                         }
                         int amount = Integer.parseInt(config.getString("shops." + shopOwner + "." + shopNumber + ".amount"));
 
-                        boolean isAdmin = false;
-                        if (type.contains("admin"))
-                            isAdmin = true;
+                        boolean isAdmin = shopOwner.equals("admin");
+
                         ShopType shopType = typeFromString(type);
 
                         ItemStack itemStack = config.getItemStack("shops." + shopOwner + "." + shopNumber + ".item");
@@ -881,8 +987,14 @@ public class ShopHandler {
                             itemStack = plugin.getGambleDisplayItem();
                         }
 
+                        if (itemStack == null) {
+                            Shop.getPlugin().getLogger().log(Level.WARNING, "Unable to load Shop #" + shopNumber + " for owner '" + shopOwner + "'! Skipping!");
+                            continue;
+                        }
+
                         //this inits a new shop but wont calculate anything yet
                         AbstractShop shop = AbstractShop.create(signLoc, owner, price, priceSell, amount, isAdmin, shopType, facing);
+                        if (id != null) shop.setId(id);
                         shop.setItemStack(itemStack);
                         if (shop.getType() == ShopType.BARTER) {
                             ItemStack barterItemStack = config.getItemStack("shops." + shopOwner + "." + shopNumber + ".itemBarter");
@@ -899,6 +1011,13 @@ public class ShopHandler {
 
                         int stock = config.getInt("shops." + shopOwner + "." + shopNumber + ".stock");
                         shop.setStockOnLoad(stock);
+                        // Load the GUI Icon so that it appears when players perform a search, even if the chunks haven't loaded yet.
+                        shop.refreshGuiIcon();
+
+                        // We will need to save the file again if we are a legacy config
+                        if (isLegacy) { shop.setNeedsSave(true); }
+                        // If we just added an ID to a shop for the first time, then it will need to be saved/updated as well
+                        if (idString == null || idString.isEmpty()) { shop.setNeedsSave(true); }
 
                         //if chunk its in is already loaded, calculate it here
                         if(shop.getDisplay().isChunkLoaded()) {
@@ -920,9 +1039,12 @@ public class ShopHandler {
                         }
 
                         numShopsLoaded++;
+                        playerLoadedShops++;
                     } catch (NullPointerException e) {e.printStackTrace();}
                 }
             }
+            String ownerName = shopOwner.equals("admin") ? "admin" : plugin.getServer().getOfflinePlayer(UUID.fromString(shopOwner)).getName();
+            plugin.getLogger().helpful("Loaded (" + playerLoadedShops + ") shops for Player " + ownerName + " from: " + shopOwner + ".yml");
         }
 
         return numShopsLoaded;
@@ -934,7 +1056,8 @@ public class ShopHandler {
 
 
     private String locationToString(Location loc) {
-        return loc.getWorld().getName() + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
+        String worldName = loc.getWorld() == null ? "unknown_world" : loc.getWorld().getName();
+        return worldName + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
     }
 
     private Location locationFromString(String locString) {

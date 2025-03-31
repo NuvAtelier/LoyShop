@@ -46,9 +46,24 @@
             <id>bluecolored</id>
             <url>https://repo.bluecolored.de/releases</url>
         </repository>
+        <repository>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.11.0</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
@@ -112,7 +127,7 @@
         <dependency>
             <groupId>com.github.alex9849</groupId>
             <artifactId>advanced-region-market</artifactId>
-            <version>3.4.3</version>
+            <version>3.5.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -128,9 +143,21 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.1.214</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.tr7zw</groupId>
+            <artifactId>item-nbt-api-plugin</artifactId>
+            <version>2.14.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>de.tr7zw</groupId>
             <artifactId>item-nbt-api</artifactId>
-            <version>2.13.2</version>
+            <version>2.14.1</version>
         </dependency>
         <dependency>
             <groupId>org.spigotmc</groupId>
@@ -139,10 +166,23 @@
             <classifier>remapped-mojang</classifier>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <!--  this shade plugin is to shade in hikari so that database connections can be used -->
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

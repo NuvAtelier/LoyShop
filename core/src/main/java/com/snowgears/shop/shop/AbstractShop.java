@@ -5,10 +5,7 @@ import com.snowgears.shop.display.AbstractDisplay;
 import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.util.*;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,6 +13,8 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
+import org.bukkit.Sound;
+import org.bukkit.Effect;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
@@ -28,14 +27,15 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.logging.Level;
 
 import static com.snowgears.shop.util.UtilMethods.isMCVersion17Plus;
 
 public abstract class AbstractShop {
 
+    protected UUID id = UUID.randomUUID();
+    protected boolean needsSave = false;
     protected Location signLocation;
     protected Location chestLocation;
     protected BlockFace facing;
@@ -63,6 +63,8 @@ public abstract class AbstractShop {
         this.isAdmin = admin;
         this.item = null;
         this.facing = facing;
+
+        this.signLinesRequireRefresh = true; // Reload signs on load in case config changed!
 
         display = Shop.getPlugin().getShopHandler().createDisplay(this.signLocation);
         fakeSign = false;
@@ -123,6 +125,14 @@ public abstract class AbstractShop {
         return null;
     }
 
+    public void setId(UUID newId) {
+        this.id = newId;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
     //this calls BlockData which loads the chunk the shop is in by doing so
     public boolean load() {
         if (signLocation != null) {
@@ -137,24 +147,34 @@ public abstract class AbstractShop {
                         return false;
                     }
                 }
-                this.setGuiIcon();
-                // Stock is recalculated in setGuiIcon
-                this.updateSign();
+                this.updateStock();
+                Shop.getPlugin().getLogger().debug("Loaded shop: " + this);
                 return true;
             } catch (ClassCastException cce) {
                 //this shop has no sign on it. return false
+                Shop.getPlugin().getLogger().warning("Failed to load shop, no sign for chest: " + this);
                 return false;
             }
         } else {
             //this shop has no sign location defined
+            Shop.getPlugin().getLogger().warning("Failed to load shop, no signLocation: " + this);
             return false;
         }
+    }
+
+    public boolean needsSave() {
+        return needsSave;
+    }
+
+    public void setNeedsSave(boolean shouldSave) {
+        needsSave = shouldSave;
     }
 
     //abstract methods that must be implemented in each shop subclass
 
     protected int calculateStock() {
         if(this.isAdmin) {
+            // There is always stock in the admin shop!
             stock = Integer.MAX_VALUE;
             return stock;
         }
@@ -186,15 +206,25 @@ public abstract class AbstractShop {
         this.calculateStock();
 
         // Update sign if needed
-        if(stock != oldStock){
+        boolean hasStockChange = stock != oldStock;
+        if(hasStockChange){
             signLinesRequireRefresh = true;
+            Shop.getPlugin().getLogger().trace("[AbstractShop.updateStock] updateSign, new stock != oldStock! newStock: " + stock + " old stock: " + oldStock + "\n" + this);
             this.updateSign();
-            Shop.getPlugin().getShopHandler().saveShops(getOwnerUUID());
 
             //also set marker in here if using a marker integration
             if(Shop.getPlugin().getBluemapHookListener() != null) {
                 Shop.getPlugin().getBluemapHookListener().updateMarker(this);
             }
+
+            needsSave = true;
+            return;
+        }
+
+        // If there is not a stock change but we need to refresh the signs, then update the sign.
+        // This is triggered upon a server restart to make sure that the signs are updated.
+        if (!hasStockChange && signLinesRequireRefresh) {
+            this.updateSign();
         }
     }
 
@@ -246,6 +276,16 @@ public abstract class AbstractShop {
         return null;
     }
 
+    public Material getContainerType() {
+        if(chestLocation == null)
+            return null;
+        try {
+            return chestLocation.getBlock().getType();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public UUID getOwnerUUID() {
         return owner;
     }
@@ -253,8 +293,14 @@ public abstract class AbstractShop {
     public String getOwnerName() {
         if(this.isAdmin())
             return "admin";
-        if (this.getOwner() != null)
-            return Bukkit.getOfflinePlayer(this.owner).getName();
+        if (this.getOwner() != null){
+            // If we can load the owner name, just use that
+            if (this.getOwner().getName() != null) return this.getOwner().getName();
+            // Return unknown player text
+            String shortId = this.getOwnerUUID().toString();
+            shortId = shortId.substring(0,3) + "..." + shortId.substring(shortId.length()-3);
+            return "Unknown Player (" + shortId + ")";
+        }
         return ChatColor.RED + "CLOSED";
     }
 
@@ -304,7 +350,7 @@ public abstract class AbstractShop {
 
     public String getPriceString() {
         if(this.type == ShopType.BARTER && this.isInitialized()){
-            return (int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack());
+            return (int)this.getPrice() + " " + Shop.getPlugin().getItemNameUtil().getName(this.getSecondaryItemStack()).toPlainText();
         }
         return Shop.getPlugin().getPriceString(this.price, false);
     }
@@ -338,27 +384,23 @@ public abstract class AbstractShop {
     }
 
     public ItemStack getGuiIcon(){
+        // Load it when it is first called
+        if (guiIcon == null) { this.refreshGuiIcon(); }
         return guiIcon;
     }
 
     //setter methods
 
     public void setItemStack(ItemStack is) {
-        this.item = is.clone();
+        // If the item stack passed is null, go ahead and just skip it.
+        if (is == null) return;
 
         // Remove "0 Damage" from item meta (old config bug)
-        this.item = this.removeZeroDamageMeta(this.item);
-
-        setGuiIcon();
+        this.item = this.removeZeroDamageMeta(is.clone());
     }
 
     public void setSecondaryItemStack(ItemStack is) {
-        this.secondaryItem = is.clone();
-
-        // Remove "0 Damage" from item meta (old config bug)
-        this.secondaryItem = this.removeZeroDamageMeta(this.secondaryItem);
-
-        setGuiIcon();
+        this.secondaryItem = this.removeZeroDamageMeta(is.clone());
     }
 
     public ItemStack removeZeroDamageMeta(ItemStack item) {
@@ -395,9 +437,7 @@ public abstract class AbstractShop {
         this.amount = amount;
     }
 
-    public void setGuiIcon(){
-        this.updateStock();
-
+    public void refreshGuiIcon() {
         if(this.type != ShopType.GAMBLE) {
             if (this.getItemStack() == null)
                 return;
@@ -415,10 +455,12 @@ public abstract class AbstractShop {
         String name = ShopMessage.formatMessage(placeHolderIcon.getItemMeta().getDisplayName(), this, null, false);
         List<String> lore = new ArrayList<>();
         for(String loreLine : placeHolderIcon.getItemMeta().getLore()){
-            if(loreLine.contains("[barter item]") && this.getType() != ShopType.BARTER) {}
-            else {
-                lore.add(ShopMessage.formatMessage(loreLine, this, null, false));
-            }
+            // Don't add barter line to non barter shops
+            if(loreLine.contains("[barter item]") && this.getType() != ShopType.BARTER) continue;
+            // Add all lore lines
+            PlaceholderContext context = new PlaceholderContext();
+            context.setShop(this);
+            lore.add(ShopMessage.format(loreLine, context).toLegacyText());
         }
 
         ItemMeta iconMeta = guiIcon.getItemMeta();
@@ -454,10 +496,15 @@ public abstract class AbstractShop {
     }
 
     public void updateSign() {
+        // If we don't need to update the lines, then don't update them!
+        if (!signLinesRequireRefresh) { return; }
+
         signLines = ShopMessage.getSignLines(this, this.type);
 
         Shop.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(Shop.getPlugin(), new Runnable() {
             public void run() {
+                // Update the GUI Icon since the sign needs an update.
+                refreshGuiIcon();
 
                 Sign signBlock;
                 try {
@@ -518,6 +565,7 @@ public abstract class AbstractShop {
 
         //finally remove the shop from the shop handler
         Shop.getPlugin().getShopHandler().removeShop(this);
+        Shop.getPlugin().getLogger().debug("Deleted Shop " + this);
     }
 
     public void teleportPlayer(Player player){
@@ -541,8 +589,14 @@ public abstract class AbstractShop {
 
     public void printSalesInfo(Player player) {
         for (String message : ShopMessage.getUnformattedMessageList(this.getType().toString(), "description")) {
-            if (message != null && !message.isEmpty())
-                formatAndSendFancyMessage(message, player);
+            if (message != null && !message.isEmpty()) {
+                Map<ItemStack, Integer> items = new HashMap<>();
+                items.put(this.item, this.amount);
+                if (this.getSecondaryItemStack() != null) { items.put(this.getSecondaryItemStack(), (int) this.price); }
+//                String formattedMsg = ShopMessage.formatMessage(message, this, player, false);
+                (new ShopMessage(Shop.getPlugin())).sendMessage(message, player, this);
+//                ShopMessage.embedAndSendHoverItemsMessage(formattedMsg, player, items);
+            }
         }
     }
 
@@ -552,49 +606,6 @@ public abstract class AbstractShop {
 
     public void setFakeSign(boolean fakeSign){
         this.fakeSign = fakeSign;
-    }
-
-    protected void formatAndSendFancyMessage(String message, Player player){
-        if(message == null)
-            return;
-
-        String[] parts = message.split("(?=&[0-9A-FK-ORa-fk-or])");
-        TextComponent fancyMessage = new TextComponent("");
-
-        for(String part : parts){
-            ComponentBuilder builder = new ComponentBuilder("");
-            net.md_5.bungee.api.ChatColor cc = UtilMethods.getChatColor(part);
-            if(cc != null)
-                part = part.substring(2, part.length());
-            boolean barterItem = false;
-            if(part.contains("[barter item]"))
-                barterItem = true;
-            part = ShopMessage.formatMessage(part, this, player, false);
-            //part = ChatColor.stripColor(part);
-            builder.append(part);
-            if(cc != null) {
-                builder.color(ChatColor.valueOf(cc.name()));
-            }
-
-            if(part.startsWith("[")) {
-//                String itemJson;
-//                if (barterItem) {
-//                    itemJson = ReflectionUtil.convertItemStackToJson(this.secondaryItem);
-//                } else {
-//                    itemJson = ReflectionUtil.convertItemStackToJson(this.item);
-//                }
-//                // Prepare a BaseComponent array with the itemJson as a text component
-//                BaseComponent[] hoverEventComponents = new BaseComponent[]{ new TextComponent(itemJson) }; // The only element of the hover events basecomponents is the item json
-//                HoverEvent event = new HoverEvent(HoverEvent.Action.SHOW_ITEM, hoverEventComponents);
-//
-//                builder.event(event);
-            }
-
-            for(BaseComponent b : builder.create()) {
-                fancyMessage.addExtra(b);
-            }
-        }
-        player.spigot().sendMessage(fancyMessage);
     }
 
     public boolean executeClickAction(PlayerInteractEvent event, ShopClickType clickType){
@@ -632,5 +643,32 @@ public abstract class AbstractShop {
                 break;
         }
         return true;
+    }
+
+    public void sendEffects(boolean success, Player player){
+        try {
+            if (success) {
+                if (Shop.getPlugin().playSounds()) player.playSound(this.getSignLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+                if (Shop.getPlugin().playEffects()) player.getWorld().playEffect(this.getChestLocation(), Effect.STEP_SOUND, Material.EMERALD_BLOCK);
+            } else {
+                if (Shop.getPlugin().playSounds()) player.playSound(this.getSignLocation(), Sound.ITEM_SHIELD_BLOCK, 1.0F, 1.0F);
+                if (Shop.getPlugin().playEffects()) player.getWorld().playEffect(this.getChestLocation(), Effect.STEP_SOUND, Material.REDSTONE_BLOCK);
+            }
+        } catch (Error e){
+        } catch (Exception e) {}
+    }
+
+    @Override
+    public String toString() {
+        return "AbstractShop{" +
+                "type=" + type.toString().toUpperCase() +
+                ", item=" + item +
+                ", price=" + price +
+                (secondaryItem != null ? ", secondaryItem=" + secondaryItem : "") +
+                (isAdmin ? ", isAdmin=" + isAdmin : "") +
+                ", stock=" + stock +
+                ", owner=" + owner +
+                ", chestLocation=" + ((chestLocation != null) ? chestLocation.getWorld().getName() + ":" + chestLocation.getBlockX() + "/" + chestLocation.getBlockY() + "/" + chestLocation.getBlockZ() : "null") +
+                '}';
     }
 }

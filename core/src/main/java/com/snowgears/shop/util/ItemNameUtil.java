@@ -1,12 +1,15 @@
 package com.snowgears.shop.util;
 
 import net.md_5.bungee.api.chat.TranslatableComponent;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.chat.ComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ArmorMeta;
 import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.potion.PotionData;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.potion.PotionEffect;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,98 +18,35 @@ public class ItemNameUtil {
 
     private Map<String, String> names = new HashMap<String, String>();
 
-    public ItemNameUtil() {
+    public ItemNameUtil() { }
 
-        //no longer reading from items.tsv file as all item ids are deprecated. May revisit later with material names but removing for now
-//        try {
-//            File itemNameFile = new File(Shop.getPlugin().getDataFolder(), "items.tsv");
-//            BufferedReader reader = new BufferedReader(new FileReader(itemNameFile));
-//
-//            String row;
-//                while ((row = reader.readLine()) != null) {
-//                    row = row.trim();
-//                    if (row.isEmpty())
-//                        continue;
-//                    String[] cols = row.split("\t");
-//                    String name = cols[2];
-//                    String id = cols[0];
-//                    String metadata = cols[1];
-//                    //String idAndMetadata = metadata.equals("0") ? id : (id + ":" + metadata);
-//                    String idAndMetadata = id+":"+metadata;
-//                    names.put(idAndMetadata, name);
-//                }
-//            } catch (IOException e) {
-//                System.out.println("[Shop] ERROR! Unable to initialize item name buffer reader. Using default spigot item names.");
-//                return;
-//            }
+    public String translate(String key){
+        return new TranslatableComponent(key).toPlainText();
     }
 
-    public String getName(ItemStack item){
+    public TextComponent getName(ItemStack item){
         if(item == null)
-            return "";
+            return new TextComponent("");
 
-        if(item.getItemMeta() != null && item.getItemMeta().getDisplayName() != null && !item.getItemMeta().getDisplayName().isEmpty())
-            return item.getItemMeta().getDisplayName();
 
-        if(item.getItemMeta() != null && item.getItemMeta() instanceof PotionMeta){
-            String name = getName(item.getType());
-            PotionData data = ((PotionMeta) item.getItemMeta()).getBasePotionData();
-            name += " {"+UtilMethods.capitalize(data.getType().name().replace("_", " ").toLowerCase());
-            if(data.isUpgraded())
-                name += " 2";
-            if(data.isExtended())
-                name += " - extended";
-            name += "}";
-            return name;
+        // Check if there is a name embedded in the item, aka named by an anvil or command
+        if(item.getItemMeta() != null && item.getItemMeta().getDisplayName() != null && !item.getItemMeta().getDisplayName().isEmpty()){
+            return new TextComponent(item.getItemMeta().getDisplayName());
         }
-//
-//        String format = ""+item.getTypeId()+":"+item.getData().getData();
-//        String name = names.get(format);
-//        if(name != null)
-//            return name;
-//        return getBackupName(item.getType());
 
-        return getName(item.getType());
-    }
-
-    public String getName(Material material){
-        ItemStack is = new ItemStack(material);
-        String name = null;
-        if(is.getItemMeta() != null)
-            name = is.getItemMeta().getLocalizedName();
-        if(name == null || name.isEmpty()){
-            return UtilMethods.capitalize(is.getType().name().replace("_", " ").toLowerCase());
+        // Add custom formatting for player heads
+        if(item.getItemMeta() != null && item.getItemMeta() instanceof SkullMeta){
+            SkullMeta skullMeta = (SkullMeta) item.getItemMeta();
+            if (skullMeta.getOwningPlayer() != null) {
+                return new TextComponent(skullMeta.getOwnerProfile().getName() + "'s Head");
+            }
         }
-        return name;
+
+        // Fallback to the material name
+        return getNameTranslatable(item.getType());
     }
 
-//    private TranslatableComponent getTranslatableName(ItemStack item){
-//        String key = item.getType().getKey().toString();
-//        key.replaceAll("^minecraft:", "");
-//        String itemKey = (item.getType().isItem() ? "item" : "block") + ".minecraft." + key;
-//        System.out.println(itemKey); //like 'item.swordDiamond.name' or 'block.minecraft.stone'
-//        TranslatableComponent component = new TranslatableComponent(itemKey);
-//        return component;
-//    }
-
-    public TranslatableComponent getTranslatableName(Material material){
-        String key = material.getKey().toString();
-        key = key.replaceAll("^minecraft:", "");
-        String itemKey = (material.isItem() ? "item" : "block") + ".minecraft." + key;
-//        System.out.println(itemKey); //like 'item.swordDiamond.name' or 'block.minecraft.stone'
-        TranslatableComponent component = new TranslatableComponent(itemKey);
-//        System.out.println(ComponentSerializer.toString(component));
-        return component;
-    }
-
-    private TranslatableComponent getTranslatableName(Player player, Material material){
-        String key = material.getKey().toString();
-        key = key.replaceAll("^minecraft:", "");
-        String itemKey = (material.isItem() ? "item" : "block") + ".minecraft." + key;
-//        System.out.println(itemKey); //like 'item.swordDiamond.name' or 'block.minecraft.stone'
-        TranslatableComponent component = new TranslatableComponent(itemKey);
-        player.spigot().sendMessage(component); //TODO this translates correctly on the client (Arrow is displayed as "Flecha")
-        player.sendMessage(ComponentSerializer.toString(component));
-        return component;
+    public TextComponent getNameTranslatable(Material material){
+        return new TextComponent(new TranslatableComponent(material.getTranslationKey()));
     }
 }

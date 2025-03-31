@@ -1,6 +1,25 @@
 
 # =================================================================== #
-#                      ECONOMY AND CURRENCY                           #
+#                         GENERAL SETTINGS                            #
+# =================================================================== #
+# This runs a check and notifies operators on login that a new Shop version is available #
+checkUpdates: true
+
+# If you do not use a permissions plugin, you should set this to false #
+usePermissions: true
+
+# This enables a graphical user interface to use all shop features without typing commands #
+enableGUI: true
+
+# This is the command alias that will be used as the base for all shop commands #
+commandAlias: shop
+
+# This will permanently delete a player's shops if they have not logged onto the server after X hours #
+# Set this to 0 to never auto-delete a player's shops #
+deletePlayerShopsAfterXHoursOffline: 0
+
+# =================================================================== #
+#                      CURRENCY AND ECONOMY                           #
 # =================================================================== #
 
 # type :
@@ -23,15 +42,21 @@ currency:
    name: "Emerald(s)"
    format: "[price] [name]"
 
+# This allows shops to sell partial stacks for a calculated partial rate if the shop is low on stock #
+allowPartialSales: true
+# This will make it so shops will only complete transactions if the item durabilities are the same #
+checkItemDurability: true
+# This will make it so shops will still complete transactions if the item "repair cost" is different, like with enchanted books or armor
+# * "repair cost" defines how many times an item has been combined in an anvil
+ignoreItemRepairCost: true
+
 # The amount of money a player is charged to create a shop #
 creationCost: 0
-
 # The amount of money a player is charged to destroy a shop #
 destructionCost: 0
 
 # The amount of money a player is charged to teleport to a shop (via the GUI) #
 teleportCost: 0
-
 # The amount of time (in seconds) a player must wait between shop teleports #
 teleportCooldown: 0
 
@@ -39,19 +64,38 @@ teleportCooldown: 0
 # Adds virtual funds if using vault currency and drops the item on the chest location if using physical currency #
 returnCreationCost: false
 
-# This allows shops to sell partial stacks for a calculated partial rate if the shop is low on stock #
-allowPartialSales: true
-
+# This formats suffixes for large numbers like (5,000 = 5k) or (5,000,000 = 5M) #
+# minimumValue = minimum value to start formatting strings #
+priceSuffixes:
+   minimumValue: 10000
+   k:
+      enabled: true
+      value: 1000
+   M:
+      enabled: true
+      value: 1000000
+   B:
+      enabled: true
+      value: 1000000000
+   T:
+      enabled: true
+      value: 1000000000000
+   P:
+      enabled: true
+      value: 1000000000000000
+   E:
+      enabled: true
+      value: 1000000000000000000
 
 # =================================================================== #
-#                         DISPLAY SETTINGS                            #
+#                           SHOP DISPLAY                              #
 # =================================================================== #
 
-# This will change the type of display that shops will use by default above their chests #
+# This will change the type of item display that shops will use by default above their chests #
 # The options are: NONE, ITEM, GLASS_CASE, LARGE_ITEM, ITEM_FRAME #
 displayType: ITEM
 
-# This will show the name tags above the display items #
+# This will show the hover text above the item display #
 # The options are: NONE, RIGHT_CLICK_CHEST, VIEW_SIGN #
 displayNameTags: VIEW_SIGN
 
@@ -81,45 +125,63 @@ setGlowingItemFrame: false
 # THIS CAN ONLY BE USED IN MINECRAFT 1.17 OR ABOVE #
 setGlowingSignText: false
 
-# This formats suffixes for large numbers like (5,000 = 5k) or (5,000,000 = 5M) #
-# minimumValue = minimum value to start formatting strings #
-priceSuffixes:
-   minimumValue: 10000
-   k:
-      enabled: true
-      value: 1000
-   M:
-      enabled: true
-      value: 1000000
-   B:
-      enabled: true
-      value: 1000000000
-   T:
-      enabled: true
-      value: 1000000000000
-   P:
-      enabled: true
-      value: 1000000000000000
-   E:
-      enabled: true
-      value: 1000000000000000000
-
-
 # =================================================================== #
-#                         GENERAL SETTINGS                            #
+#                         SHOP INTERACTIONS                           #
 # =================================================================== #
 
-# If you do not use a permissions plugin, you should set this to false #
-usePermissions: true
+# Here you can map player actions on shops to specific controls
+#   - NONE
+#   - LEFT_CLICK_SIGN
+#   - SHIFT_LEFT_CLICK_SIGN
+#   - RIGHT_CLICK_SIGN
+#   - SHIFT_RIGHT_CLICK_SIGN
+#
+#   - LEFT_CLICK_CHEST
+#   - SHIFT_LEFT_CLICK_CHEST
+#   - RIGHT_CLICK_CHEST
+#   - SHIFT_RIGHT_CLICK_CHEST
+actionMappings:
+   transactWithShop: RIGHT_CLICK_SIGN
+   transactWithShopFullStack: SHIFT_RIGHT_CLICK_SIGN
+   viewShopDetails: LEFT_CLICK_CHEST
+   cycleShopDisplay: SHIFT_RIGHT_CLICK_CHEST
 
-# This runs a check and notifies operators on login that a new Shop version is available #
-checkUpdates: true
+# These are the methods players are able to use to create shops #
+# placeSign - players can place signs on chests and fill out the info on the sign itself #
+# hitChest - players can hit a chest and they will be prompted to fill out the info in chat. A sign will be created. #
+creationMethod:
+   placeSign: true
+   hitChest: true
 
-# This enables a graphical user interface to use all shop features without typing commands #
-enableGUI: true
+# This will show shop creation instructions as floating text above shops #
+displayFloatingCreateText: true
 
-# This is the command alias that will be used as the base for all shop commands #
-commandAlias: shop
+# This will allow players to use the limited creative mode selection tool to choose shop items when creating a shop #
+# This is triggered when the player right clicks a chest with an empty hand #
+allowCreativeSelection: true
+
+# If this is set to true, shops will require you to be sneaking (holding 'shift') to destroy them
+destroyShopRequiresSneak: false
+
+# These will play sounds and particle effects when creating and using shops #
+# These will need to be set to false if your server is running anything less than Minecraft 1.9 #
+playSounds: true
+playEffects: true
+
+# If this is set to true, LEFT side of combo shop signs will BUY items and RIGHT side will SELL items #
+# If this is set to false, LEFT side of combo shop signs will SELL items and RIGHT side will BUY items #
+inverseComboShops: false
+
+# Options:
+# NONE - all items can be listed in shops
+# DENY_LIST - all items except those defined in itemList.yml can be listed in shops
+# ALLOW_LIST - only items defined in itemList.yml can be listed in shops
+itemList: NONE
+
+# Add the names of worlds that you do not want shops to be able to be created in here #
+worldBlacklist:
+   - "example_world"
+   - "example2_world"
 
 # These are the different types of containers that can be used for shops #
 enabledContainers:
@@ -145,69 +207,45 @@ enabledContainers:
    - WHITE_SHULKER_BOX
    - YELLOW_SHULKER_BOX
 
-# These are the methods players are able to use to create shops #
-# placeSign - players can place signs on chests and fill out the info on the sign itself #
-# hitChest - players can hit a chest and they will be prompted to fill out the info in chat. A sign will be created. #
-creationMethod:
-   placeSign: true
-   hitChest: true
+# =================================================================== #
+#                    DATABASE LOGGING SETTINGS                        #
+#                  OFFLINE PURCHASE NOTIFICATIONS                     #
+# =================================================================== #
 
-# This will make it so shops will only complete transactions if the item durabilities are the same #
-checkItemDurability: true
-
-# This will allow players to use the limited creative selection tool to choose shop items #
-allowCreativeSelection: true
-
-# This will permanently delete a player's shops if they have not logged onto the server after X hours #
-# Set this to 0 to never auto-delete a player's shops #
-deletePlayerShopsAfterXHoursOffline: 0
-
-# These will play sounds and particle effects when creating and using shops #
-# These will need to be set to false if your server is running anything less than Minecraft 1.9 #
-playSounds: true
-playEffects: true
-
-# If this is set to true, LEFT side of combo shop signs will BUY items and RIGHT side will SELL items #
-# If this is set to false, LEFT side of combo shop signs will SELL items and RIGHT side will BUY items #
-inverseComboShops: false
-
-# Options:
-# NONE - all items can be listed in shops
-# DENY_LIST - all items except those defined in itemList.yml can be listed in shops
-# ALLOW_LIST - only items defined in itemList.yml can be listed in shops
-itemList: NONE
-
-# Add the names of worlds that you do not want shops to be able to be created in here #
-worldBlacklist:
-   - "example_world"
-   - "example2_world"
-
-# Here you can map player actions on shops to specific controls
-#   - NONE
-#   - LEFT_CLICK_SIGN
-#   - SHIFT_LEFT_CLICK_SIGN
-#   - RIGHT_CLICK_SIGN
-#   - SHIFT_RIGHT_CLICK_SIGN
+# Database logging for player Shop Actions & Transactions #
+# Required for Offline Purchase Notifications to be sent, default enabled with FILE database #
+# Also helpful if you want to keep an eye out for cheaters that abuse Shop bugs so that you can take action. #
 #
-#   - LEFT_CLICK_CHEST
-#   - SHIFT_LEFT_CLICK_CHEST
-#   - RIGHT_CLICK_CHEST
-#   - SHIFT_RIGHT_CLICK_CHEST
-actionMappings:
-   transactWithShop: RIGHT_CLICK_SIGN
-   transactWithShopFullStack: SHIFT_RIGHT_CLICK_SIGN
-   viewShopDetails: LEFT_CLICK_CHEST
-   cycleShopDisplay: SHIFT_RIGHT_CLICK_CHEST
+# It will track:
+# * Anytime a player performs a Shop action (see `actionMappings`). Tracks timestamp, shop, player, action performed, and transaction id.
+# * Shop Transactions that are executed. Tracks transaction id, price, amount, and item traded in the transaction.
+logging:
+   # options for database `type` are:
+   # - 'OFF': Disables database logging and offline purchase notifications
+   # - 'FILE': (Default) Uses a File based H2 database for tracking purchases, requires no extra setup
+   # - 'MYSQL': Uses a remote MYSQL Database to manage purchase tracking
+   # - 'MARIADB': Uses a remote MARIADB Database to manage purchase tracking
+   type: "FILE"
+   serverName: "127.0.0.1"
+   databaseName: "shopdb"
+   port: 3306
+   user: "shop"
+   password: "mysecurepassword"
+   # properties are only used on a 'MYSQL' type for now, you shouldn't need to touch this normally
+   properties:
+      - "useSSL=false"
 
-# If this is set to true, shops will require you to be sneaking (holding 'shift') to destroy them
-destroyShopRequiresSneak: false
-
+# Logging must be enabled for purchase notifications to appear!
+offlinePurchaseNotifications:
+   # Should offline purchases be shown to the user
+   enabled: true
 
 # =================================================================== #
 #                    INTEGRATION HOOK SETTINGS                        #
 # =================================================================== #
 
-# Setting this to true will force all Shops to be created in WorldGuard regions with a shop flag (flag=allow-shop) #
+# If WorldGuard is installed Shop will by default ALWAYS respect the WG flags 'passthrough', 'build', 'chest-access'. #
+# If you would like to ADDITIONALLY require Shops to be created in WorldGuard regions with a Shop flag set (flag=allow-shop), set `hookWorldGuard` to `true` #
 # WorldGuard plugin must be installed for this feature to work #
 hookWorldGuard: false
 
@@ -226,27 +264,17 @@ dynmap-marker:
 bluemap-marker:
    enabled: false
    icon: "https://i.imgur.com/oCI3XJC.png"
-   label: "Item: [item](x[item amount])\n\nOwner: [owner]\n\nType: [shop type]\n\nPrice: [price]\n\nStock: [stock]"
+   label: |
+      <div style='background: rgba(0,0,0,0.7); color: #fff; font-size: 16px; padding: 5px; width: 200px; height: 140px;'>
+        <div style='font-weight: bold; color: #fff; font-size: 20px;'>[item] x[item amount]</div>
+        <div style='mt:80px;'>Owner: [owner]</div>
+        <div style='mt:80px;'>Type: [shop type]</div>
+        <div style='mt:80px; color: #7fca8c;'>Price: [price]</div>
+        <div style='mt:80px;'>Stock: [stock]</div>
+        <div style='mt:80px; color: #aaa; font-size: 20px;'>[location]</div>
+      </div>
    minDistance: 0
    maxDistance: 500
-
-
-# =================================================================== #
-#                         LOGGING SETTINGS                            #
-# =================================================================== #
-
-# All logging functionality requires a compatible database to be defined and enabled #
-# options for type are: 'OFF', 'MYSQL', 'MARIADB'
-logging:
-   type: 'OFF'
-   serverName: "localhost"
-   databaseName: "test"
-   port: 3306
-   user: "test"
-   password: "test"
-   # properties are only used on a 'MYSQL' type for now
-   properties:
-      - "useSSL=false"
 
 # =================================================================== #
 #                            DEBUG TOOLS                              #
@@ -257,9 +285,27 @@ logging:
 # If you are running into issues, or doing a lot of testing, you can enable these debug settings
 # in order to speed up your debugging!
 
+# To get more visibility into Shop actions, you can increase the log level to see more!
+# Available Log Levels:
+# * INFO   : Standard logging, only logs on startup, warnings, and errors
+# * NOTICE : Logs significant events like shop creation/deletion
+# * HELPFUL: Logs important in-game events such as transactions (RECOMMENDED)
+# * DEBUG  : Logs detailed information useful for debugging features
+# * TRACE  : Logs step-by-step execution details
+# * SPAM   : Logs extremely verbose information for deep diagnostics
+# * HYPER  : Logs at hyper speed, the deepest level of diagnostics
+logLevel: HELPFUL
+enableLogColor: false
+
 debug:
    # (default: false) Should owners be able to buy/sell from their own shop
    allowUseOwnShop: false
-   # (default: false) Show price calculation logs when purchases are made
+   # (default: false) Show price calculation debug logs when purchases are made
    transactionDebugLogs: false
+   # (default: 5000) The cooldown in milliseconds for how long a player must wait between creating new shop creation processes
+   shopCreateCooldown: 5000
+   # (default: false) Set ALL shops to be saved when the server starts up, right after they are loaded from the file.
+   #                  Can be helpful if you have very old nbt data or items that are incompatible in player files.
+   # Note: MAKE BACKUP BEFORE USING THIS!
+   forceResaveAll: false
 

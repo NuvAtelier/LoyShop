@@ -46,7 +46,7 @@ public abstract class AbstractDisplay {
     }
 
     public boolean isChunkLoaded(){
-        return shopSignLocation.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
+        return shopSignLocation.getWorld() != null && shopSignLocation.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
     }
 
     //spawns a floating item packet for a specific player
@@ -73,7 +73,7 @@ public abstract class AbstractDisplay {
 
         AbstractShop shop = this.getShop();
 
-        if (shop.getItemStack() == null || shop.getChestLocation() == null)
+        if (shop == null || shop.getItemStack() == null || shop.getChestLocation() == null)
             return;
 
         //define the initial display item
@@ -213,15 +213,16 @@ public abstract class AbstractDisplay {
                 if (tagLine.contains("[lshift]")) {
                     asTagLocation = asTagLocation.add(getLargeItemBarterOffset(false));
                     asTagLocation = asTagLocation.add(getLargeItemBarterOffset(false));
-                    tagLine = tagLine.replace("[lshift]", "");
+//                    tagLine = tagLine.replace("[lshift]", "");
                 }
                 if (tagLine.contains("[rshift]")) {
                     asTagLocation = asTagLocation.add(getLargeItemBarterOffset(true));
                     asTagLocation = asTagLocation.add(getLargeItemBarterOffset(true));
-                    tagLine = tagLine.replace("[rshift]", "");
+//                    tagLine = tagLine.replace("[rshift]", "");
                 }
 
                 asTagLocation = asTagLocation.add(0, verticalAddition, 0);
+                Shop.getPlugin().getLogger().spam("[Display] Adding tag line: " + tagLine, true);
                 createTagEntity(player, tagLine, asTagLocation);
                 verticalAddition += 0.3;
             }
@@ -236,12 +237,16 @@ public abstract class AbstractDisplay {
         }
     }
 
-    private void createTagEntity(Player player, String text, Location location){
+    public void createTagEntity(Player player, String text, Location location){
         ArmorStandData caseStandData = new ArmorStandData();
         caseStandData.setSmall(false);
         caseStandData.setLocation(location);
 
         spawnArmorStandPacket(player, caseStandData, text);
+    }
+
+    public void addRemoveDisplayTask(Player player) {
+        removeDisplayTagsDelayedTask(player);
     }
 
     public DisplayType getType(){
@@ -352,9 +357,12 @@ public abstract class AbstractDisplay {
         this.setType(cycle[index], true);
         this.spawn(player);
         Shop.getPlugin().getShopHandler().addActiveShopDisplay(player, this.shopSignLocation);
-        getShop().updateSign();
+        Shop.getPlugin().getLogger().trace("[AbstractDisplay.cycleType] updateSign");
 
-        Shop.getPlugin().getShopHandler().saveShops(getShop().getOwnerUUID());
+//        getShop().updateSign();
+        getShop().setNeedsSave(true);
+        // We save upon shutdown now
+//        Shop.getPlugin().getShopHandler().saveShops(getShop().getOwnerUUID());
     }
 
     public void remove(Player player) {
@@ -379,7 +387,11 @@ public abstract class AbstractDisplay {
             return null;
 
         //calculate which x,z to drop items at depending on direction of the shop sign
-        double dropY = 0.9;
+        double dropY = 0.98; // 1 - 0.02 to account for dropped item shadow
+        Material blockType = shop.getChestLocation().getBlock().getType();
+        if (blockType == Material.CHEST || blockType == Material.TRAPPED_CHEST || blockType == Material.ENDER_CHEST) {
+            dropY = 0.9;
+        }
         double dropX = 0.5;
         double dropZ = 0.5;
         if (shop.getType() == ShopType.BARTER) {

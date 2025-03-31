@@ -38,9 +38,7 @@ public class ShopCreationUtil {
             if(UtilMethods.materialIsNonIntrusive(futureSign.getType()))
                 return face;
         }
-        String message = ShopMessage.getMessage("interactionIssue", "signRoom", null, player);
-        if (message != null && !message.isEmpty())
-            player.sendMessage(message);
+        ShopMessage.sendMessage("interactionIssue", "signRoom", player, null);
         return null;
     }
 
@@ -53,14 +51,14 @@ public class ShopCreationUtil {
 
         if ((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
             if (numberOfShops >= buildPermissionNumber) {
-                player.sendMessage(ShopMessage.getMessage("permission", "buildLimit", null, player));
+                ShopMessage.sendMessage("permission", "buildLimit", player, null);
                 return false;
             }
         }
 
         if (plugin.getWorldBlacklist().contains(chest.getWorld().getName())) {
             if ((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
-                player.sendMessage(ShopMessage.getMessage("interactionIssue", "worldBlacklist", null, player));
+                ShopMessage.sendMessage("interactionIssue", "worldBlacklist", player, null);
                 return false;
             }
         }
@@ -77,7 +75,7 @@ public class ShopCreationUtil {
                 canCreate = true;
             }
             if(!canCreate){
-                player.sendMessage(ShopMessage.getMessage("permission", "create", null, player));
+                ShopMessage.sendMessage("permission", "create", player, null);
                 return false;
             }
         }
@@ -105,7 +103,7 @@ public class ShopCreationUtil {
         }
 
         if (!canCreateShopInRegion) {
-            player.sendMessage(ShopMessage.getMessage("interactionIssue", "regionRestriction", null, player));
+            ShopMessage.sendMessage("interactionIssue", "regionRestriction", player, null);
             return false;
         }
 
@@ -121,14 +119,14 @@ public class ShopCreationUtil {
 
         if (plugin.usePerms()) {
             if (!(player.hasPermission("shop.create." + type.toString().toLowerCase()) || player.hasPermission("shop.create")))
-                playerMessage = ShopMessage.getMessage("permission", "create", shop, player);
+                playerMessage = ShopMessage.getUnformattedMessage("permission", "create");
         }
 
         if (type == ShopType.GAMBLE) {
             isAdmin = true;
             shop.setAdmin(true);
             if ((plugin.usePerms() && !player.hasPermission("shop.operator")) || (!plugin.usePerms() && !player.isOp())) {
-                playerMessage = ShopMessage.getMessage("permission", "create", shop, player);
+                playerMessage = ShopMessage.getUnformattedMessage("permission", "create");
             }
         }
 
@@ -136,7 +134,7 @@ public class ShopCreationUtil {
         double cost = plugin.getCreationCost();
         if (cost > 0) {
             if (!EconomyUtils.hasSufficientFunds(player, player.getInventory(), cost)) {
-                playerMessage = ShopMessage.getMessage("interactionIssue", "createInsufficientFunds", shop, player);
+                playerMessage = ShopMessage.getUnformattedMessage("interactionIssue", "createInsufficientFunds");
             }
         }
 
@@ -148,13 +146,13 @@ public class ShopCreationUtil {
         AbstractShop existingShop = plugin.getShopHandler().getShopByChest(chestBlock);
         if (existingShop != null && !existingShop.isAdmin()) {
             if (!existingShop.getOwnerUUID().equals(player.getUniqueId())) {
-                playerMessage = ShopMessage.getMessage("interactionIssue", "createOtherPlayer", null, player);
+                playerMessage = ShopMessage.getUnformattedMessage("interactionIssue", "createOtherPlayer");
             }
         }
 
         if (playerMessage != null) {
             if(!playerMessage.isEmpty())
-                player.sendMessage(playerMessage);
+                ShopMessage.sendMessage(playerMessage, player, shop);
             return null;
         }
 
@@ -166,9 +164,7 @@ public class ShopCreationUtil {
             if (existingShop != null) {
                 //if the block they are adding a sign to is already a shop, do not let them
                 if (chestBlock.getLocation().equals(existingShop.getChestLocation())) {
-                    String message = ShopMessage.getMessage("interactionIssue", "createOtherPlayer", null, player);
-                    if (message != null && !message.isEmpty())
-                        player.sendMessage(message);
+                    ShopMessage.sendMessage("interactionIssue", "createOtherPlayer", player, shop);
                     return null;
                 }
             }
@@ -221,19 +217,32 @@ public class ShopCreationUtil {
             }
 
             plugin.getShopHandler().addShop(shop);
+            Shop.getPlugin().getLogger().trace("[ShopCreationUtil.createShop] updateSign");
             shop.updateSign();
         }
         return shop;
     }
 
+    public void cleanupShopCreationProcess(Player player){
+        ShopCreationProcess process = plugin.getMiscListener().getShopCreationProcess(player);
+        if (process != null) {
+            process.cleanup();
+            plugin.getMiscListener().removeShopCreationProcess(player);
+        }
+    }
+
     public void sendCreationSuccess(Player player, AbstractShop shop){
         shop.getDisplay().spawn(player);
+        Shop.getPlugin().getLogger().trace("[ShopCreationUtil.sendCreationSuccess] updateSign");
+        shop.setSignLinesRequireRefresh(true);
         shop.updateSign();
-        String message = ShopMessage.getMessage(shop.getType().toString(), "create", shop, player);
-        if(message != null && !message.isEmpty())
-            player.sendMessage(message);
-        Shop.getPlugin().getTransactionHelper().sendEffects(true, player, shop);
-        Shop.getPlugin().getShopHandler().saveShops(shop.getOwnerUUID());
+        shop.setNeedsSave(true);
+        ShopMessage.sendMessage(shop.getType().toString(), "create", player, shop);
+        shop.sendEffects(true, player);
+        // Save the shop to disk
+        Shop.getPlugin().getShopHandler().saveShops(shop.getOwnerUUID(), true);
+        // Cleanup the shop creation process
+        cleanupShopCreationProcess(player);
     }
 
     public boolean itemsCanBeInitialized(Player player, ItemStack itemStack, ItemStack barterItemStack){
@@ -244,10 +253,8 @@ public class ShopCreationUtil {
         if (!isAdmin) {
             boolean passesItemList = plugin.getShopHandler().passesItemListCheck(itemStack);
             if (!passesItemList) {
-                String message = ShopMessage.getMessage("interactionIssue", "itemListDeny", null, player);
-                if (message != null && !message.isEmpty())
-                    player.sendMessage(message);
-                //plugin.getTransactionListener().sendEffects(false, player, shop);
+                ShopMessage.sendMessage("interactionIssue", "itemListDeny", player, null);
+                //shop.sendEffects(false, player);
                 return false;
             }
         }
@@ -255,10 +262,8 @@ public class ShopCreationUtil {
         //System.out.println("[shop] item: "+ itemStack.getType().toString()+", otherItem: "+barterItemStack.getType().toString());
         // Always perform this check, even if admin!
         if (InventoryUtils.itemstacksAreSimilar(itemStack, barterItemStack)) {
-            String message = ShopMessage.getMessage("interactionIssue", "sameItem", null, player);
-            if(message != null && !message.isEmpty())
-                player.sendMessage(message);
-            //plugin.getTransactionListener().sendEffects(false, player, shop);
+            ShopMessage.sendMessage("interactionIssue", "sameItem", player, null);
+            //shop.sendEffects(false, player);
             return false;
         }
         return true;
@@ -268,10 +273,8 @@ public class ShopCreationUtil {
         if (!player.getUniqueId().equals(shop.getOwnerUUID())) {
             //do not allow non operators to initialize other player's shops
             if((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
-                String message = ShopMessage.getMessage("interactionIssue", "initialize", null, player);
-                if(message != null && !message.isEmpty())
-                    player.sendMessage(message);
-                plugin.getTransactionHelper().sendEffects(false, player, shop);
+                ShopMessage.sendMessage("interactionIssue", "initialize", player, shop);
+                shop.sendEffects(false, player);
                 return false;
             }
         }
@@ -290,10 +293,8 @@ public class ShopCreationUtil {
                     //shop.updateSign();
                 }
                 else {
-                    String message = ShopMessage.getMessage("interactionIssue", "displayRoom", null, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
-                    plugin.getTransactionHelper().sendEffects(false, player, shop);
+                    ShopMessage.sendMessage("interactionIssue", "displayRoom", player, shop);
+                    shop.sendEffects(false, player);
                     return false;
                 }
             }
@@ -301,13 +302,13 @@ public class ShopCreationUtil {
 
         //if players must pay to create shops, remove money first
         double cost = plugin.getCreationCost();
-        if(cost > 0 && !shop.isAdmin()){
+        // Check if the shop is not an admin shop and if the shop is not a barter shop or the barter item is not null
+        // When creating a barter shop with a sign, initializeShop is called twice, we only want to charge them once both items are selected
+        if(cost > 0 && !shop.isAdmin() && !(shop.getType() == ShopType.BARTER && barterItem == null)){
             boolean removed = EconomyUtils.removeFunds(player, player.getInventory(), cost);
             if(!removed){
-                String message = ShopMessage.getMessage("interactionIssue", "createInsufficientFunds", shop, player);
-                if(message != null && !message.isEmpty())
-                    player.sendMessage(message);
-                plugin.getTransactionHelper().sendEffects(false, player, shop);
+                ShopMessage.sendMessage("interactionIssue", "createInsufficientFunds", player, shop);
+                shop.sendEffects(false, player);
                 return false;
             }
         }
@@ -322,7 +323,7 @@ public class ShopCreationUtil {
         } catch (NoSuchFieldError e) {}
 
         if(!itemsCanBeInitialized(player, item, barterItem)){
-            plugin.getTransactionHelper().sendEffects(false, player, shop);
+            shop.sendEffects(false, player);
             return false;
         }
 
@@ -336,17 +337,14 @@ public class ShopCreationUtil {
 
             shop.setItemStack(item);
 
+            ShopCreationProcess process = plugin.getMiscListener().getShopCreationProcess(player);
             if (shop.getType() == ShopType.BARTER && barterItem == null) {
-                String message = ShopMessage.getMessage(shop.getType().toString(), "initializeInfo", shop, player);
-                if(message != null && !message.isEmpty())
-                    player.sendMessage(message);
-                message = ShopMessage.getMessage(shop.getType().toString(), "initializeBarter", shop, player);
-                if(message != null && !message.isEmpty())
-                    player.sendMessage(message);
+                ShopMessage.sendMessage(shop.getType().toString(), "initializeInfo", player, shop);
+                process.setStep(ShopCreationProcess.ChatCreationStep.SIGN_BARTER_ITEM);
+                process.displayFloatingText(shop.getType().toString(), "initializeBarter");
+                // ShopMessage.sendMessage(shop.getType().toString(), "initializeBarter", player, shop);
                 if(plugin.allowCreativeSelection()) {
-                    message = ShopMessage.getMessage("BUY", "initializeAlt", shop, player);
-                    if(message != null && !message.isEmpty())
-                        player.sendMessage(message);
+                    ShopMessage.sendMessage("BUY", "initializeAlt", player, shop);
                 }
             }
             else if(shop.getType() != ShopType.BARTER){
@@ -396,7 +394,7 @@ public class ShopCreationUtil {
 
                 price *= multiplyValue;
             } catch (NumberFormatException e) {
-                player.sendMessage(ShopMessage.getMessage("interactionIssue", "line3", null, player));
+                ShopMessage.sendMessage("interactionIssue", "line3", player, null);
                 return -1;
             }
         } else {
@@ -405,14 +403,14 @@ public class ShopCreationUtil {
                 price = Long.parseLong(line3);
 
             } catch (NumberFormatException e) {
-                player.sendMessage(ShopMessage.getMessage("interactionIssue", "line3", null, player));
+                ShopMessage.sendMessage("interactionIssue", "line3", player, null);
                 return -1;
             }
         }
         //only allow price to be zero if the type is selling
         //if (price < 0 || (price == 0 && !(type == ShopType.SELL))) {
         if (price < 0 || (price == 0 && shopType == ShopType.BARTER)) {
-            player.sendMessage(ShopMessage.getMessage("interactionIssue", "line3", null, player));
+            ShopMessage.sendMessage("interactionIssue", "line3", player, null);
             return -1;
         }
         return price;
@@ -433,7 +431,7 @@ public class ShopCreationUtil {
                 priceCombo *= multiplyValue;
 
             } catch (NumberFormatException e) {
-                player.sendMessage(ShopMessage.getMessage("interactionIssue", "line3", null, player));
+                ShopMessage.sendMessage("interactionIssue", "line3", player, null);
                 return -1;
             }
         } else {
@@ -441,7 +439,7 @@ public class ShopCreationUtil {
                 String line3 = UtilMethods.cleanNumberText(input);
                 priceCombo = Long.parseLong(line3);
             } catch (NumberFormatException e) {
-                player.sendMessage(ShopMessage.getMessage("interactionIssue", "line3", null, player));
+                ShopMessage.sendMessage("interactionIssue", "line3", player, null);
                 return -1;
             }
         }
@@ -479,7 +477,7 @@ public class ShopCreationUtil {
                 priceCombo *= multiplyValue;
 
             } catch (NumberFormatException e) {
-                player.sendMessage(ShopMessage.getMessage("interactionIssue", "line3", null, player));
+                ShopMessage.sendMessage("interactionIssue", "line3", player, null);
                 return null;
             }
         } else {
@@ -494,14 +492,14 @@ public class ShopCreationUtil {
                     price = Long.parseLong(line3);
                 }
             } catch (NumberFormatException e) {
-                player.sendMessage(ShopMessage.getMessage("interactionIssue", "line3", null, player));
+                ShopMessage.sendMessage("interactionIssue", "line3", player, null);
                 return null;
             }
         }
         //only allow price to be zero if the type is selling
         //if (price < 0 || (price == 0 && !(type == ShopType.SELL))) {
         if (price < 0 || (price == 0 && shopType == ShopType.BARTER)) {
-            player.sendMessage(ShopMessage.getMessage("interactionIssue", "line3", null, player));
+            ShopMessage.sendMessage("interactionIssue", "line3", player, null);
             return null;
         }
         return new PricePair(price, priceCombo);

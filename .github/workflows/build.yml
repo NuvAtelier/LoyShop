@@ -1,0 +1,93 @@
+name: Build and Package
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Fetch all history for all branches and tags
+      
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '22'  # Adjust based on your project requirements
+        distribution: 'temurin'
+        cache: maven
+        
+    - name: Cache SpigotBuildTools
+      uses: actions/cache@v3
+      with:
+        path: |
+          ./SpigotBuildTools
+          ./m2repo
+        key: ${{ runner.os }}-spigot-${{ hashFiles('buildMavenRepo.sh', 'buildMavenRepo.Dockerfile') }}
+        restore-keys: |
+          ${{ runner.os }}-spigot-
+        
+    - name: Update version with commit hash
+      run: |
+        # Get the short commit hash, take full hash then get just the first 7 characters
+        COMMIT_HASH=${{ github.event.pull_request.head.sha }}
+        COMMIT_HASH=${COMMIT_HASH:0:7}
+        
+        # Read the current version from pom.xml
+        CURRENT_VERSION=$(grep -m 1 "<revision>" pom.xml | sed 's/.*<revision>\(.*\)<\/revision>.*/\1/')
+        
+        # Create new version with commit hash
+        NEW_VERSION="${CURRENT_VERSION}-${COMMIT_HASH}"
+        
+        # Update the version in pom.xml
+        sed -i "s/<revision>$CURRENT_VERSION<\/revision>/<revision>$NEW_VERSION<\/revision>/" pom.xml
+        
+        echo "Updated version from $CURRENT_VERSION to $NEW_VERSION"
+        echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        
+    - name: Build Maven Repository
+      run: |
+        chmod +x ./buildMavenRepo.sh
+        ./buildMavenRepo.sh
+      
+    - name: Build with Maven
+      run: mvn -B clean compile package
+      
+    - name: Upload Artifact
+      id: upload-artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: shop-plugin
+        path: target/Shop-*.jar
+        exclude: target/original-Shop-*.jar
+        
+    - name: Find JAR filename
+      id: find-jar
+      run: |
+        JAR_FILE=$(find target -name "Shop-*.jar" -not -name "original-Shop-*.jar" | head -n 1)
+        JAR_FILENAME=$(basename "$JAR_FILE")
+        echo "JAR_FILENAME=$JAR_FILENAME" >> $GITHUB_ENV
+        
+    - name: Create workflow summary
+      run: |
+        echo "# Build Completed Successfully! 🎉" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Download" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Direct Download Link" >> $GITHUB_STEP_SUMMARY
+        echo "⬇️ [Download ${{ env.JAR_FILENAME }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "To download, click the link above, then click on the 'Artifacts' dropdown and select 'shop-plugin'." >> $GITHUB_STEP_SUMMARY
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: target/Shop-*.jar 

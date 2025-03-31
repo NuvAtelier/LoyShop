@@ -27,6 +27,11 @@ public class GambleShop extends AbstractShop {
         this.setAmount(this.gambleItem.getAmount());
     }
 
+    @Override
+    protected int calculateStock() {
+        return Integer.MAX_VALUE;
+    }
+
     // Called upon a successful gamble transaction
     public void shuffleGambleItem(Player player){
         isPerformingTransaction = true;

@@ -80,9 +80,12 @@ public class ShopGuiHandler {
     }
 
     //TODO make this text configurable
-    public void reloadPlayerHeadIcon(UUID playerUUID){
-        if(playerUUID == null)
+    public void reloadPlayerHeadIcon(AbstractShop shop){
+        if(shop == null || shop.getOwnerUUID() == null)
             return;
+
+        UUID playerUUID = shop.getOwnerUUID();
+        OfflinePlayer offlinePlayer = shop.getOwner();
         ItemStack playerHead = playerHeads.get(playerUUID);
         ItemMeta itemMeta;
         ItemStack placeHolderIcon;
@@ -95,14 +98,12 @@ public class ShopGuiHandler {
                 itemMeta = playerHead.getItemMeta();
             }
             else{
-                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
                 playerHead = new ItemStack(Material.PLAYER_HEAD);
                 itemMeta = playerHead.getItemMeta();
 
                 //System.out.println("[Shop] player was not null. Adding owning player to icon skin");
-                if (offlinePlayer == null)
-                    return;
-                ((SkullMeta)itemMeta).setOwningPlayer(offlinePlayer);
+                if (offlinePlayer != null && offlinePlayer.getName() != null)
+                    ((SkullMeta)itemMeta).setOwningPlayer(offlinePlayer);
             }
 
         }
@@ -114,17 +115,20 @@ public class ShopGuiHandler {
             //get the placeholder icon with all of the unformatted fields
             placeHolderIcon = Shop.getPlugin().getGuiHandler().getIcon(GuiIcon.ALL_ADMIN_ICON, playerUUID, null);
         }
-        else{
+        else {
             //get the placeholder icon with all of the unformatted fields
             placeHolderIcon = Shop.getPlugin().getGuiHandler().getIcon(GuiIcon.ALL_PLAYER_ICON, playerUUID, null);
         }
 
-        String name = ShopMessage.partialFormatMessageUUID(placeHolderIcon.getItemMeta().getDisplayName(), playerUUID);
-        name = ShopMessage.formatMessage(name, null, null, false);
+        String name = ShopMessage.formatMessage(placeHolderIcon.getItemMeta().getDisplayName(), shop);
+        if (name == null || name.isEmpty()) {
+            String shortId = playerUUID.toString();
+            shortId = shortId.substring(0,3) + "..." + shortId.substring(shortId.length()-3);
+            name = "Unknown Player (" + shortId + ")";
+        }
         List<String> lore = new ArrayList<>();
         for(String loreLine : placeHolderIcon.getItemMeta().getLore()){
-            loreLine = ShopMessage.partialFormatMessageUUID(loreLine, playerUUID);
-            lore.add(ShopMessage.formatMessage(loreLine, null, null, false));
+            lore.add(ShopMessage.formatMessage(loreLine, shop));
         }
 
         itemMeta.setDisplayName(name);
@@ -264,6 +268,8 @@ public class ShopGuiHandler {
 
         //load all icons next
         for(GuiIcon iconEnum : GuiIcon.values()) {
+            // If creative selection is disabled then disable the search icon
+            if (!plugin.allowCreativeSelection() && iconEnum == GuiIcon.HOME_SEARCH) { continue; }
 
             boolean translateColors = true;
             if(iconEnum == GuiIcon.ALL_SHOP_ICON || iconEnum == GuiIcon.ALL_PLAYER_ICON)
@@ -310,15 +316,20 @@ public class ShopGuiHandler {
             }
 
             if(icon != null) {
-                ItemMeta iconMeta = icon.getItemMeta();
+                // Check if are set to "AIR" and if we should be disabled.
+                if (icon.getItemMeta() != null) {
+                    ItemMeta iconMeta = icon.getItemMeta();
 
-                if (name != null)
-                    iconMeta.setDisplayName(name);
-                if (lore != null && !lore.isEmpty())
-                    iconMeta.setLore(lore);
-
-                icon.setItemMeta(iconMeta);
-                guiIcons.put(iconEnum, icon);
+                    // iconMeta will be null if the icon is "Air", only update iconMeta if it actually exists
+                    if (iconMeta != null) {
+                        if (name != null)
+                            iconMeta.setDisplayName(name);
+                        if (lore != null && !lore.isEmpty())
+                            iconMeta.setLore(lore);
+                        icon.setItemMeta(iconMeta);
+                        guiIcons.put(iconEnum, icon);
+                    }
+                }
             }
         }
     }

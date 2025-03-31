@@ -20,7 +20,8 @@ public class PlayerData {
     private boolean guiSearch;
     private boolean allowFlight;
     private boolean isFlying;
-
+    private long lastMessageTime;
+    
     public PlayerData(Player player, Location shopSignLocation, boolean guiSearch) {
         this.playerUUID = player.getUniqueId();
         this.shopSignLocation = shopSignLocation;
@@ -28,6 +29,7 @@ public class PlayerData {
         this.guiSearch = guiSearch;
         this.allowFlight = player.getAllowFlight();
         this.isFlying = player.isFlying();
+        this.lastMessageTime = 0;
         saveToFile();
     }
 
@@ -60,7 +62,6 @@ public class PlayerData {
             config.set("player.allowFlight", allowFlight);
             config.set("player.isFlying", isFlying);
             config.set("player.guiSearch", guiSearch);
-
             config.save(playerDataFile);
         } catch(Exception e){
             e.printStackTrace();
@@ -148,5 +149,13 @@ public class PlayerData {
 
     public boolean isGuiSearch(){
         return guiSearch;
+    }
+
+    public long getLastMessageTime() {
+        return lastMessageTime;
+    }
+
+    public void setLastMessageTime(long lastMessageTime) {
+        this.lastMessageTime = lastMessageTime;
     }
 }

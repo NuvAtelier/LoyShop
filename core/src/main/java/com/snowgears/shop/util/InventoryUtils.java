@@ -4,22 +4,22 @@ package com.snowgears.shop.util;
 import com.snowgears.shop.Shop;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.block.ShulkerBox;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.Repairable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.*;
 
 public class InventoryUtils {
 
     //removes itemstack from inventory
     //returns the amount of items it could not remove
     public static int removeItem(Inventory inventory, ItemStack itemStack) {
-        if(inventory == null)
+        if(inventory == null || itemStack.getAmount() >= (27 * 64)) // 27 stacks max, large values > 27 stacks can crash server!
             return itemStack.getAmount();
         if (itemStack == null || itemStack.getAmount() <= 0)
             return 0;
@@ -58,7 +58,7 @@ public class InventoryUtils {
     //takes an ItemStack and splits it up into multiple ItemStacks with correct stack sizes
     //then adds those items to the given inventory
     public static int addItem(Inventory inventory, ItemStack itemStack) {
-        if(inventory == null)
+        if(inventory == null || itemStack.getAmount() >= (27 * 64)) // 27 stacks max, large values > 27 stacks can crash server!
             return itemStack.getAmount();
         if (itemStack.getAmount() <= 0)
             return 0;
@@ -89,7 +89,7 @@ public class InventoryUtils {
     }
 
     public static boolean hasRoom(Inventory inventory, ItemStack itemStack) {
-        if (inventory == null)
+        if (inventory == null || itemStack.getAmount() >= (27 * 64)) // 27 stacks max, large values > 27 stacks can crash server!
             return false;
         if (itemStack.getAmount() <= 0)
             return true;
@@ -139,20 +139,32 @@ public class InventoryUtils {
         ItemStack itemStack1 = i1.clone();
         ItemStack itemStack2 = i2.clone();
 
-        ItemMeta i1Meta = itemStack1.getItemMeta();
-        ItemMeta i2Meta = itemStack2.getItemMeta();
-
         // Check if we are ignoring item durability, if so, reset the durability of both items and continue with later checks
         if (!Shop.getPlugin().checkItemDurability()) {
-            Damageable is1Damagable = (Damageable)i1Meta;
+            Damageable is1Damagable = (Damageable) itemStack1.getItemMeta();
             is1Damagable.setDamage(0);
 
-            Damageable is2Damagable = (Damageable)i2Meta;
+            Damageable is2Damagable = (Damageable) itemStack2.getItemMeta();
             is2Damagable.setDamage(0);
 
             itemStack1.setItemMeta(is1Damagable);
             itemStack2.setItemMeta(is2Damagable);
         }
+
+        // Check if we are ignoring item durability, if so, reset the durability of both items and continue with later checks
+        if (Shop.getPlugin().ignoreItemRepairCost()) {
+            Repairable item1Cost = (Repairable) itemStack1.getItemMeta();
+            item1Cost.setRepairCost(0);
+
+            Repairable item2Cost = (Repairable) itemStack2.getItemMeta();
+            item2Cost.setRepairCost(0);
+
+            itemStack1.setItemMeta(item1Cost); // @TODO: I believe this should be item1Cost
+            itemStack2.setItemMeta(item2Cost);
+        }
+
+        ItemMeta i1Meta = itemStack1.getItemMeta();
+        ItemMeta i2Meta = itemStack2.getItemMeta();
 
         //special case to check for beehives
         //TODO might have to implement some other case checks for potions and other unique items
@@ -162,6 +174,31 @@ public class InventoryUtils {
 //            if(((Beehive)((BlockStateMeta)i1Meta).getBlockState()).getEntityCount() == ((Beehive)((BlockStateMeta)i2Meta).getBlockState()).getEntityCount())
 //                return true;
 //        }
+
+        // Check if shulker box contents are identical
+        if(itemStack1.getType().toString().toLowerCase().contains("shulker_box")){
+            if (!itemStack2.getType().toString().toLowerCase().contains("shulker_box")) return false;
+
+            // Note: You must reference i1 and i2 here, if you do not then both inventories are identical for some reason... Do not reference the cloned item stacks here...
+            BlockStateMeta bsm1 = (BlockStateMeta) i1.getItemMeta();
+            BlockStateMeta bsm2 = (BlockStateMeta) i2.getItemMeta();
+            Inventory inv1 = ((ShulkerBox) bsm1.getBlockState()).getInventory();
+            Inventory inv2 = ((ShulkerBox) bsm2.getBlockState()).getInventory();
+
+            ItemStack[] inv1Contents = inv1.getContents();
+            ItemStack[] inv2Contents = inv2.getContents();
+
+            for (int i = 0; i < inv1Contents.length; i++) {
+                ItemStack inv1Item = inv1Contents[i];
+                ItemStack inv2Item = inv2Contents[i];
+
+                if (inv1Item == null && inv2Item == null) continue;
+                if (inv1Item == null && inv2Item != null) return false;
+                if (inv1Item != null && inv2Item == null) return false;
+                if (!itemstacksAreSimilar(inv1Item, inv2Item)) return false;
+            }
+        }
+
 
         //fix NBT attributes for cached older items to be compatible with Spigot serializer updates
         if (i1Meta != null && i2Meta != null && i1Meta.hasAttributeModifiers() && i2Meta.hasAttributeModifiers()) {

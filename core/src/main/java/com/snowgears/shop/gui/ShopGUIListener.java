@@ -43,6 +43,33 @@ public class ShopGUIListener implements Listener {
         }
     }
 
+    private ShopGuiHandler.GuiIcon getNextOptionIcon(ItemStack[] iconItems, ShopGuiHandler.GuiIcon[] icons, ShopGuiHandler.GuiIcon current) {
+        int currentIndex = -1;
+        // Find the current index of the icon
+        for (int i = 0; i < icons.length; i++) {
+            if (icons[i] == current) {
+                currentIndex = i;
+                break;
+            }
+        }
+
+        // If current icon is not found, return itself (sanity check)
+        if (currentIndex == -1) {
+            return current;
+        }
+
+        // Iterate through the list starting from the next element
+        for (int i = 1; i < icons.length; i++) {
+            int nextIndex = (currentIndex + i) % icons.length;
+            if (iconItems[nextIndex] != null) { // Check if the next icon is available
+                return icons[nextIndex];
+            }
+        }
+
+        // If no other option is available, return the current icon
+        return current;
+    }
+
     @EventHandler (ignoreCancelled = true)
     public void onInvClick(InventoryClickEvent event){
         if(event.getWhoClicked() instanceof Player){
@@ -117,13 +144,13 @@ public class ShopGUIListener implements Listener {
                             plugin.getGuiHandler().setWindow(player, playersWindow);
                             return;
                         }
-                        else if(clicked.getType() == searchIcon.getType()){
+                        else if(searchIcon != null && clicked.getType() == searchIcon.getType()){
                             plugin.getGuiHandler().closeWindow(player);
                             plugin.getCreativeSelectionListener().putPlayerInCreativeSelection(player, player.getLocation(), true);
 
-                            for(String message : ShopMessage.getMessageList("guiSearchSelection", "prompt", null, null)){
+                            for(String message : ShopMessage.getUnformattedMessageList("guiSearchSelection", "prompt")){
                                 if(message != null && !message.isEmpty())
-                                    player.sendMessage(message);
+                                    ShopMessage.sendMessage(message, player);
                             }
                             return;
                         }
@@ -172,9 +199,7 @@ public class ShopGUIListener implements Listener {
                                                 if (EconomyUtils.hasSufficientFunds(player, player.getInventory(), plugin.getTeleportCost())) {
                                                     EconomyUtils.removeFunds(player, player.getInventory(), plugin.getTeleportCost());
                                                 } else {
-                                                    String message = ShopMessage.getMessage("interactionIssue", "teleportInsufficientFunds", shop, player);
-                                                    if (message != null && !message.isEmpty())
-                                                        player.sendMessage(message);
+                                                    ShopMessage.sendMessage("interactionIssue", "teleportInsufficientFunds", player, shop);
                                                     plugin.getGuiHandler().closeWindow(player);
                                                     return;
                                                 }
@@ -182,9 +207,7 @@ public class ShopGUIListener implements Listener {
                                             if(plugin.getTeleportCooldown() > 0){
                                                 int secondsRemaining = plugin.getShopListener().getTeleportCooldownRemaining(player);
                                                 if(secondsRemaining > 0){
-                                                    String message = ShopMessage.getMessage("interactionIssue", "teleportInsufficientCooldown", shop, player);
-                                                    if (message != null && !message.isEmpty())
-                                                        player.sendMessage(message);
+                                                    ShopMessage.sendMessage("interactionIssue", "teleportInsufficientCooldown", player, shop);
                                                     plugin.getGuiHandler().closeWindow(player);
                                                     return;
                                                 }
@@ -213,21 +236,33 @@ public class ShopGUIListener implements Listener {
                             ItemStack sortPriceLow = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_LOW, null, null);
                             ItemStack sortPriceHigh = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_HIGH, null, null);
 
+                            ShopGuiHandler.GuiIcon[] sortOptions = new ShopGuiHandler.GuiIcon[]{
+                                ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW,
+                                ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_HIGH,
+                                ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_LOW,
+                                ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_HIGH,
+                            };
+                            ItemStack[] sortItems = new ItemStack[]{
+                                    sortNameLow,
+                                    sortNameHigh,
+                                    sortPriceLow,
+                                    sortPriceHigh
+                            };
                             boolean reloadPage = false;
                             if(clicked.isSimilar(sortNameLow)){
-                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_HIGH);
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, getNextOptionIcon(sortItems, sortOptions, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW));
                                 reloadPage = true;
                             }
                             else if(clicked.isSimilar(sortNameHigh)){
-                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_LOW);
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, getNextOptionIcon(sortItems, sortOptions, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_HIGH));
                                 reloadPage = true;
                             }
                             else if(clicked.isSimilar(sortPriceLow)){
-                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_HIGH);
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, getNextOptionIcon(sortItems, sortOptions, ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_LOW));
                                 reloadPage = true;
                             }
                             else if(clicked.isSimilar(sortPriceHigh)){
-                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, ShopGuiHandler.GuiIcon.MENUBAR_SORT_NAME_LOW);
+                                plugin.getGuiHandler().setIconForOption(player, PlayerSettings.Option.GUI_SORT, getNextOptionIcon(sortItems, sortOptions, ShopGuiHandler.GuiIcon.MENUBAR_SORT_PRICE_HIGH));
                                 reloadPage = true;
                             }
 
@@ -289,13 +324,13 @@ public class ShopGUIListener implements Listener {
                             ItemStack searchIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SEARCH, null, null);
 
                             //if they click the search icon, close current window and give instruction for searching
-                            if(clicked.getType() == searchIcon.getType()){
+                            if(searchIcon != null && clicked.getType() == searchIcon.getType()){
                                 plugin.getGuiHandler().closeWindow(player);
                                 plugin.getCreativeSelectionListener().putPlayerInCreativeSelection(player, player.getLocation(), true);
 
-                                for(String message : ShopMessage.getMessageList("guiSearchSelection", "prompt", null, null)){
+                                for(String message : ShopMessage.getUnformattedMessageList("guiSearchSelection", "prompt")){
                                     if(message != null && !message.isEmpty())
-                                        player.sendMessage(message);
+                                        ShopMessage.sendMessage(message, player);
                                 }
                                 return;
                             }

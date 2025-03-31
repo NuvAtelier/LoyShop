@@ -146,4 +146,12 @@ public class TransactionParty {
         InventoryUtils.removeItem(inventory, item);
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "TransactionParty{" +
+                "isPlayer=" + isPlayer +
+                ", funds=" + availableFunds +
+                '}';
+    }
 }

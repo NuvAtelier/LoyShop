@@ -1,5 +1,6 @@
-# THIS FILE IS USED TO CONFIGURE WHAT MESSAGES ARE DISPLAYED #
+# THIS FILE IS USED TO CONFIGURE GUI ICONS AND MESSAGES #
 # ================================================================== #
+# You can use any hex code (#FF00FF), or minecraft color code in this config!
 # &b : AQUA
 # &0 : BLACK
 # &9 : BLUE
@@ -22,6 +23,7 @@
 # &n : UNDERLINE
 # &f : WHITE
 # &e : YELLOW
+# Note: If you want to disable an icon completely, set the "type" to "AIR" and it will not appear. Be careful, you could get unexpected results!
 
 titles:
    home: "Shop Menu"
@@ -37,7 +39,6 @@ icons:
          name: "[item] &7(x[item amount])"
          lore:
             - "&7Type: &b[shop type]"
-            - "&7Barter: &f[barter item] &7(x[barter item amount])"
             - "&7Price: &a[price]"
             - "[stock color]Stocked"
       player_icon:
