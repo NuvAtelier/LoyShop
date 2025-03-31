@@ -1,16 +1,9 @@
 package com.snowgears.shop.handler;
 
 import com.snowgears.shop.Shop;
-import de.tr7zw.changeme.nbtapi.NBTCompound;
-import de.tr7zw.changeme.nbtapi.NBTCompoundList;
-import de.tr7zw.changeme.nbtapi.NBTFile;
-import de.tr7zw.changeme.nbtapi.NBTItem;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -51,22 +44,7 @@ public class EnderChestHandler {
         try {
             for (File file : files) {
                 if (file.getName().equalsIgnoreCase(player.getUniqueId()+".dat")) {
-
-                    //get NBT compounds of EnderItems (enderchest items in a list)
-                    NBTFile nbtFile = new NBTFile(file);
-                    NBTCompoundList enderListCompounds = nbtFile.getCompoundList("EnderItems");
-                    NBTCompound[] enderNBTCompounds = enderListCompounds.stream().toArray(NBTCompound[]::new);
-
-                    //create a new temporary inventory out of that EnderItems list
-                    Inventory tempEnderEnv = Bukkit.createInventory(null, 27, "TempEnderInv");
-
-                    for(int i=0; i < enderNBTCompounds.length; i++){
-                        ItemStack is = NBTItem.convertNBTtoItem(enderNBTCompounds[i]);
-                        int slot = enderListCompounds.get(i).getByte("Slot");
-                        tempEnderEnv.setItem(slot, is);
-                        //System.out.println(slot+" - "+is.getType().toString());
-                    }
-
+                    Inventory tempEnderEnv = plugin.getNBTAdapter().getEnderChestNBT(file);
                     enderChestInventoryCache.put(player.getUniqueId(), tempEnderEnv);
                     return tempEnderEnv;
                 }
@@ -105,26 +83,7 @@ public class EnderChestHandler {
         try {
             for (File file : files) {
                 if (file.getName().equalsIgnoreCase(player.getUniqueId()+".dat")) {
-
-                    //get NBT compounds of EnderItems (enderchest items in a list)
-                    NBTFile nbtFile = new NBTFile(file);
-                    NBTCompoundList enderListCompounds = nbtFile.getCompoundList("EnderItems");
-                    NBTCompound[] enderNBTCompounds = enderListCompounds.stream().toArray(NBTCompound[]::new);
-
-                    //clear the ender item list before populating it again
-                    enderListCompounds.clear();
-
-                    for(int i=0; i < playerEnderInventory.getSize(); i++){
-                        ItemStack is = playerEnderInventory.getItem(i);
-                        if(is != null && is.getType() != Material.AIR) {
-                            NBTCompound nbtCompound = NBTItem.convertItemtoNBT(is);
-                            nbtCompound.setByte("Slot", (byte)i);
-                            enderListCompounds.addCompound(nbtCompound);
-                            //System.out.println("saving -> " + i + " - " + is.getType().toString());
-                        }
-                    }
-                    nbtFile.save();
-
+                    plugin.getNBTAdapter().saveEnderChestNBT(file, playerEnderInventory);
                     //after you have saved, remove the inventory from the cache
                     if(enderChestInventoryCache.containsKey(player.getUniqueId())) {
                         enderChestInventoryCache.remove(player.getUniqueId());

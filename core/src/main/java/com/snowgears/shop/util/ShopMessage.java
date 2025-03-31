@@ -6,6 +6,7 @@ import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
+import com.snowgears.shop.util.NBTAdapter;
 import de.tr7zw.changeme.nbtapi.NBT;
 import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
@@ -54,6 +55,7 @@ public class ShopMessage {
     private static YamlConfiguration displayConfig;
 
     public ShopMessage(Shop plugin) {
+
         File chatConfigFile = new File(plugin.getDataFolder(), "chatConfig.yml");
         chatConfig = YamlConfiguration.loadConfiguration(chatConfigFile);
         File signConfigFile = new File(plugin.getDataFolder(), "signConfig.yml");
@@ -468,7 +470,7 @@ public class ShopMessage {
         try {
             ItemStack hoverItem = item.clone();
             hoverItem.setAmount(1);
-            BaseComponent[] component = new BaseComponent[]{new TextComponent(NBT.itemStackToNBT(hoverItem).toString())};
+            BaseComponent[] component = new BaseComponent[]{new TextComponent(plugin.getNBTAdapter().getNBTforItem(hoverItem))};
             return new HoverEvent(HoverEvent.Action.SHOW_ITEM, component);
         } catch (Exception e) {
             return null;

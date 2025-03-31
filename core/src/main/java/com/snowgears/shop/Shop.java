@@ -67,6 +67,7 @@ public class Shop extends JavaPlugin {
     private ShopCreationUtil shopCreationUtil;
 
     private NMSBullshitHandler nmsBullshitHandler;
+    private NBTAdapter nbtAdapter;
 
     private boolean usePerms;
     private boolean checkUpdates;
@@ -235,7 +236,8 @@ public class Shop extends JavaPlugin {
         this.getLogger().enableColor(config.getBoolean("enableLogColor"));
 
         nmsBullshitHandler = new NMSBullshitHandler(this);
-
+        nbtAdapter = new NBTAdapter(this);
+        
         shopCreationUtil = new ShopCreationUtil(this);
 
         //removed item names file after item ids are no longer used. may revisit later with new materials
@@ -1093,6 +1095,10 @@ public class Shop extends JavaPlugin {
 
     public NMSBullshitHandler getNmsBullshitHandler() {
         return nmsBullshitHandler;
+    }
+
+    public NBTAdapter getNBTAdapter() {
+        return nbtAdapter;
     }
 
     public NamespacedKey getSignLocationNameSpacedKey(){

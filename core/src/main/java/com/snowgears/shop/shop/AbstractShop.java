@@ -4,7 +4,6 @@ import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.AbstractDisplay;
 import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.util.*;
-import de.tr7zw.changeme.nbtapi.NBT;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
