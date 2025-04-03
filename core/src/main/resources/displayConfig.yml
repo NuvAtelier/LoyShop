@@ -48,8 +48,9 @@
 # [location] : The x,y,z coordinates of the shop sign #
 # [world] : The name of the world the shop is in #
 
-# [lshift] : shift location of entire nametag left #
-# [rshift] : shift location of entire nametag right #
+# Hologram Exclusive Shifts
+# [lshift] : shift location of a single hologram line one block left #
+# [rshift] : shift location of a single hologram line one block right #
 
 display_tag_text:
    SELL:

@@ -169,8 +169,8 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
-            <scope>compile</scope>
+            <version>24.0.1</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

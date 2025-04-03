@@ -211,14 +211,12 @@ public abstract class AbstractDisplay {
 
                 String tagLine = displayTags.get(i);
                 if (tagLine.contains("[lshift]")) {
-                    asTagLocation = asTagLocation.add(getLargeItemBarterOffset(false));
-                    asTagLocation = asTagLocation.add(getLargeItemBarterOffset(false));
-//                    tagLine = tagLine.replace("[lshift]", "");
+                    asTagLocation = asTagLocation.add(getShiftOffset(true, false));
+                    tagLine = tagLine.replace("[lshift]", "");
                 }
                 if (tagLine.contains("[rshift]")) {
-                    asTagLocation = asTagLocation.add(getLargeItemBarterOffset(true));
-                    asTagLocation = asTagLocation.add(getLargeItemBarterOffset(true));
-//                    tagLine = tagLine.replace("[rshift]", "");
+                    asTagLocation = asTagLocation.add(getShiftOffset(false, true));
+                    tagLine = tagLine.replace("[rshift]", "");
                 }
 
                 asTagLocation = asTagLocation.add(0, verticalAddition, 0);
@@ -428,6 +426,43 @@ public abstract class AbstractDisplay {
         }
         return shop.getChestLocation().clone().add(dropX, dropY, dropZ);
     }
+
+    public Vector getShiftOffset(boolean isLeftShift, boolean isRightShift){
+        AbstractShop shop = this.getShop();
+
+        Vector offset = new Vector(0,0,0);
+        double space = 1;
+
+        // @TODO: Verify that we are modifying the coordinates correctly!
+        switch (shop.getFacing()) {
+            case NORTH:
+                if (isRightShift)
+                    offset.setX(-space);
+                else if (isLeftShift)
+                    offset.setX(space);
+                break;
+            case EAST:
+                if (isRightShift)
+                    offset.setZ(-space);
+                else if (isLeftShift)
+                    offset.setZ(space);
+                break;
+            case SOUTH:
+                if (isRightShift)
+                    offset.setX(space);
+                else if (isLeftShift)
+                    offset.setX(-space);
+                break;
+            case WEST:
+                if (isRightShift)
+                    offset.setZ(space);
+                else if (isLeftShift)
+                    offset.setZ(-space);
+                break;
+        }
+        return offset;
+    }
+
 
     private Vector getLargeItemBarterOffset(boolean isBarterItem){
         AbstractShop shop = this.getShop();
