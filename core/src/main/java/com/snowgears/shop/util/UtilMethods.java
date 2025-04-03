@@ -19,6 +19,7 @@ import org.bukkit.util.Vector;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.block.Sign;
 import net.md_5.bungee.api.chat.TranslatableComponent;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -41,15 +42,72 @@ public class UtilMethods {
     private static ArrayList<Material> nonIntrusiveMaterials = new ArrayList<Material>();
 
     public static String trimForSign(String text) {
-        String tmpText = text;
-        String line = "";
-        while (ChatColor.stripColor(line).length() < 17 && tmpText.length() > 0) {
-            // Add a single character to the line
-            line += tmpText.charAt(0);
-            // Remove the first character from the text
-            tmpText = tmpText.substring(1);
+        final int MAX_SIGN_WIDTH = 80; // Maximum width allowed on a sign line
+        int currentWidth = 0;
+        StringBuilder result = new StringBuilder();
+        
+        // Process each character
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            
+            // Handle color codes (they don't take up width)
+            if ((c == '§' || c == '&') && i + 1 < text.length()) {
+                char nextChar = text.charAt(i + 1);
+                if ("0123456789abcdefklmnorABCDEFKLMNOR".indexOf(nextChar) != -1) {
+                    result.append(c).append(nextChar);
+                    i++; // Skip the next character (color code)
+                    continue;
+                }
+            }
+            
+            // Get the width of the current character
+            int charWidth = getMinecraftCharWidth(c);
+            
+            // Check if adding this character would exceed the width
+            if (currentWidth + charWidth >= MAX_SIGN_WIDTH) {
+                break; // We've reached the maximum width for the sign
+            }
+            
+            // Add the character and update the width
+            result.append(c);
+            currentWidth += charWidth;
         }
-        return line;
+        
+        return result.toString();
+    }
+
+    /**
+     * Returns the width of a character in the Minecraft font.
+     * Based on the width data from Minecraft's font.
+     * From: https://bukkit.org/threads/formatting-plugin-output-text-into-columns.8481/#post-133295
+     */
+    private static int getMinecraftCharWidth(char c) {
+        switch (c) {
+            // Narrow characters (width = 2)
+            case '!': case ',': case '.': case ':': case ';': case 'i': case '|': case '¡':
+                return 3;
+                // return 2; // For some reason, this width of 2 is not working as expected!
+            
+            // Width = 3
+            case '\'': case 'l': case 'ì': case 'í':
+                return 3;
+            
+            // Width = 4
+            case ' ': case 'I': case '[': case ']': case 'ï': case '×':
+                return 4;
+            
+            // Width = 5
+            case '"': case '(': case ')': case '<': case '>': case 'f': case 'k': case '{': case '}':
+                return 5;
+            
+            // Width = 7
+            case '@': case '~': case '®':
+                return 7;
+            
+            // All other characters (width = 6)
+            default:
+                return 6;
+        }
     }
 
     //this is used for formatting numbers like 5000 to 5k

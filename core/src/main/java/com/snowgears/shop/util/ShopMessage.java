@@ -804,10 +804,7 @@ public class ShopMessage {
         for(int i=0; i<lines.length; i++) {
             lines[i] = formatMessage(lines[i], shop, null, true);
             lines[i] = ChatColor.translateAlternateColorCodes('&', lines[i]);
-
-            //TODO have smart way of cutting lines if too long so at least some of word can go on
-//            if(lines[i].length() > 15)
-//                lines[i]
+            lines[i] = UtilMethods.trimForSign(lines[i]);
         }
         return lines;
     }
