@@ -277,7 +277,7 @@ guiSearchSelection:
 
 command:
    list: "&b/[plugin] list &7- list your shops on the server"
-   list_output_total: "There are &6[total shops]&f shops registered on the server."
+   list_output_total: "&lThere are &6[total shops]&f shops registered on the server."
    list_output_perms: "&7You have built [user amount] out of your [build limit] allotted shops."
    list_output_noperms: "&7You own [user amount] of these shops."
    currency: "&b/[plugin] currency &7- info about the currency shops use"

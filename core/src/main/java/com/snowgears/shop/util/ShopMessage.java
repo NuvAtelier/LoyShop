@@ -6,22 +6,17 @@ import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
-import com.snowgears.shop.util.NBTAdapter;
-import de.tr7zw.changeme.nbtapi.NBT;
 import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,12 +29,18 @@ public class ShopMessage {
     // Regex pattern to identify placeholders within square brackets, e.g., [owner]
     private static final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORa-fk-or])";
     private static final String HEX_CODE_REGEX = "(#[0-9a-fA-F]{6})";
-    private static final String PLACEHOLDER_REGEX = "(\\[[^\\[\\]]+\\])";
+    // Modified placeholder regex to only match real placeholders
+    private static final String PLACEHOLDER_REGEX = "(\\[([^&§#\\[\\]]+)\\])";
     private static final String TEXT_SEGMENT_REGEX = "([^&§\\[#]+)";
+    // Add dedicated patterns for brackets to ensure they're matched individually
+    private static final String OPEN_BRACKET_REGEX = "(\\[)";
+    private static final String CLOSE_BRACKET_REGEX = "(\\])";
     private static final String MESSAGE_PARTS_REGEX = 
         COLOR_CODE_REGEX + "|" + 
         HEX_CODE_REGEX + "|" + 
         PLACEHOLDER_REGEX + "|" + 
+        OPEN_BRACKET_REGEX + "|" +  // Match opening bracket
+        CLOSE_BRACKET_REGEX + "|" +  // Match closing bracket
         TEXT_SEGMENT_REGEX + "|" +  // Match text segments
         "(.{1})";          // Match any single character as fallback
 
@@ -147,6 +148,13 @@ public class ShopMessage {
 
         ChatColor latestColor = null;
         boolean addedText = false;
+
+        boolean isBold = false;
+        boolean isItalic = false;
+        boolean isStrikethrough = false;
+        boolean isUnderlined = false;
+        boolean isObfuscated = false;
+        
         for (String part : parts) {
             plugin.getLogger().spam("\n\n");
             plugin.getLogger().trace("[ShopMessage.format] part: " + part);
@@ -157,11 +165,27 @@ public class ShopMessage {
                 try {
                     ChatColor newColor = getColor(part);
                     if (newColor != null) {
-                        latestColor = newColor;
+                        if (newColor == ChatColor.BOLD) isBold = true;
+                        else if (newColor == ChatColor.ITALIC) isItalic = true;
+                        else if (newColor == ChatColor.STRIKETHROUGH) isStrikethrough = true;
+                        else if (newColor == ChatColor.UNDERLINE) isUnderlined = true;
+                        else if (newColor == ChatColor.MAGIC) isObfuscated = true;
+                        else if (newColor == ChatColor.RESET) {
+                            plugin.getLogger().hyper("[ShopMessage.format]     matched RESET color code: " + part);
+                            latestColor = ChatColor.WHITE;
+                            isBold = false;
+                            isItalic = false;
+                            isStrikethrough = false;
+                            isUnderlined = false;
+                            isObfuscated = false;
+                        } else {
+                            latestColor = newColor;
+                        }
                     }
                     plugin.getLogger().hyper("[ShopMessage.format]     matched COLOR_CODE_REGEX: " + part);
                     plugin.getLogger().hyper("[ShopMessage.format]     newColor: " + newColor.toString());
                     plugin.getLogger().hyper("[ShopMessage.format] *** skipping to next part: " + newColor.getName().toUpperCase());
+                    plugin.getLogger().hyper("[ShopMessage.format]     isBold: " + isBold + " isItalic: " + isItalic + " isStrikethrough: " + isStrikethrough + " isUnderlined: " + isUnderlined + " isObfuscated: " + isObfuscated);
                     continue; // Don't add this text to the message, just go to the next part
                 } catch (Exception e) {
                     plugin.getLogger().hyper("[ShopMessage.format] XXX unknown color code! Going to add this as a normal string! " + part);
@@ -185,6 +209,11 @@ public class ShopMessage {
                 plugin.getLogger().hyper("[ShopMessage.format]     setting part color to: " + latestColor.getName().toUpperCase());
                 partComponent.setColor(latestColor);
             }
+            partComponent.setBold(isBold);
+            partComponent.setItalic(isItalic);
+            partComponent.setStrikethrough(isStrikethrough);
+            partComponent.setUnderlined(isUnderlined);
+            partComponent.setObfuscated(isObfuscated);
             // Add the part of the string to the
             formattedMessage.addExtra(partComponent);
             addedText = true;
