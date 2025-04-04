@@ -736,15 +736,47 @@ public class UtilMethods {
         StringBuilder currentLine = new StringBuilder();
         List<String> linesByColor = new ArrayList<>();
 
-        String latestColor = "";
+        String latestColors = "";
+        ChatColor latestColor = ChatColor.WHITE;
+        boolean isBold = false;
+        boolean isItalic = false;
+        boolean isStrikethrough = false;
+        boolean isUnderlined = false;
+        boolean isObfuscated = false;
         for (String word : words) {
             if (word.matches(COLOR_CODE_REGEX)) {
-                if (!latestColor.equals(word)) {
-                    latestColor = word;
+                ChatColor newColor = ChatColor.getByChar(word.charAt(1));
+                if (newColor == ChatColor.BOLD) isBold = true;
+                else if (newColor == ChatColor.ITALIC) isItalic = true;
+                else if (newColor == ChatColor.STRIKETHROUGH) isStrikethrough = true;
+                else if (newColor == ChatColor.UNDERLINE) isUnderlined = true;
+                else if (newColor == ChatColor.MAGIC) isObfuscated = true;
+                else if (newColor == ChatColor.RESET) {
+                    Shop.getPlugin().getLogger().hyper("[ShopMessage.format]     matched RESET color code: " + word);
+                    latestColor = ChatColor.WHITE;
+                    isBold = false;
+                    isItalic = false;
+                    isStrikethrough = false;
+                    isUnderlined = false;
+                    isObfuscated = false;
+                } else {
+                    latestColor = newColor;
+                }
+
+                String newColors = latestColor.toString();
+                if (isBold) newColors += ChatColor.BOLD;
+                if (isItalic) newColors += ChatColor.ITALIC;
+                if (isStrikethrough) newColors += ChatColor.STRIKETHROUGH;
+                if (isUnderlined) newColors += ChatColor.UNDERLINE;
+                if (isObfuscated) newColors += ChatColor.MAGIC;
+
+                if (!latestColors.equals(newColors)) {
+                    latestColors = newColors;
                     // New color, add the line and start a new line
                     linesByColor.add(currentLine.toString().trim());
-                    currentLine = new StringBuilder(latestColor);
+                    currentLine = new StringBuilder(latestColors);
                 }
+
                 continue;
             }
 
@@ -752,7 +784,8 @@ public class UtilMethods {
             int potentialLength = ChatColor.stripColor(currentLine.toString()).length() + ChatColor.stripColor(word).length() + 1;
             if (word.matches(" ") && potentialLength > maxLineLength) {
                 linesByColor.add(currentLine.toString().trim());
-                currentLine = new StringBuilder(latestColor);
+                Shop.getPlugin().getLogger().hyper("[ShopMessage.format]     matched RESET color code: " + word);
+                currentLine = new StringBuilder(latestColors);
             } else {
                 currentLine.append(word);
             }
