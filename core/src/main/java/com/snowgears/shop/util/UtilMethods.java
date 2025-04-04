@@ -53,7 +53,7 @@ public class UtilMethods {
             // Handle color codes (they don't take up width)
             if ((c == '§' || c == '&') && i + 1 < text.length()) {
                 char nextChar = text.charAt(i + 1);
-                if ("0123456789abcdefklmnorABCDEFKLMNOR".indexOf(nextChar) != -1) {
+                if ("0123456789abcdefklmnorxABCDEFKLMNORX".indexOf(nextChar) != -1) {
                     result.append(c).append(nextChar);
                     i++; // Skip the next character (color code)
                     continue;
