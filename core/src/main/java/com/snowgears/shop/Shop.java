@@ -56,6 +56,7 @@ public class Shop extends JavaPlugin {
     private boolean dynmapEnabled;
     private BentoBoxHookListener bentoBoxHookListener;
     private ARMHookListener armHookListener;
+    private PlotSquaredHookListener plotSquaredHookListener;
 
     private ShopHandler shopHandler;
     private CommandHandler commandHandler;
@@ -556,6 +557,12 @@ public class Shop extends JavaPlugin {
             armHookListener = new ARMHookListener(this);
             getServer().getPluginManager().registerEvents(armHookListener, this);
             this.getLogger().notice("AdvancedRegionMarket is installed, creating AdvancedRegionMarket listener");
+        }
+
+        if(getServer().getPluginManager().getPlugin("PlotSquared") != null){
+            plotSquaredHookListener = new PlotSquaredHookListener(this);
+            getServer().getPluginManager().registerEvents(plotSquaredHookListener, this);
+            this.getLogger().notice("PlotSquared is installed, creating PlotSquared listener");
         }
 
         int bstatsPluginId = 25211;
