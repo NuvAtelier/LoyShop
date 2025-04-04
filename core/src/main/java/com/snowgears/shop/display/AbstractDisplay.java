@@ -431,7 +431,7 @@ public abstract class AbstractDisplay {
         AbstractShop shop = this.getShop();
 
         Vector offset = new Vector(0,0,0);
-        double space = 1;
+        double space = 0.48;
 
         // @TODO: Verify that we are modifying the coordinates correctly!
         switch (shop.getFacing()) {
