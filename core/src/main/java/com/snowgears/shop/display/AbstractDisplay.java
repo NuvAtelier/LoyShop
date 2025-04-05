@@ -235,6 +235,34 @@ public abstract class AbstractDisplay {
         }
     }
 
+    public void updateDisplayTags(){
+        // Update any players display tags who currently have them open
+        if (displayTagEntityIDs == null || displayTagEntityIDs.isEmpty()) {
+            return;
+        }
+        
+        // Get a copy of the keys to avoid concurrent modification issues
+        Set<UUID> playerUUIDs = new HashSet<>(displayTagEntityIDs.keySet());
+        
+        for (UUID playerUUID : playerUUIDs) {
+            Player player = Shop.getPlugin().getServer().getPlayer(playerUUID);
+            
+            // Skip if player is offline or in a different world
+            if (player == null || !player.isOnline() || !isSameWorld(player)) {
+                continue;
+            }
+            
+            // Check if player has display tags visible
+            if (displayTagsVisible(player)) {
+                // Remove the current display tags
+                removeDisplayEntities(player, true);
+                
+                // Show updated display tags
+                showDisplayTags(player);
+            }
+        }
+    }
+
     public void createTagEntity(Player player, String text, Location location){
         ArmorStandData caseStandData = new ArmorStandData();
         caseStandData.setSmall(false);
