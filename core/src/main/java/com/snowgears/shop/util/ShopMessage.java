@@ -27,7 +27,7 @@ public class ShopMessage {
 
     private static final Map<String, Function<PlaceholderContext, TextComponent>> placeholders = new HashMap<>();
     // Regex pattern to identify placeholders within square brackets, e.g., [owner]
-    private static final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORa-fk-or])";
+    private static final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORXa-fk-orx])";
     private static final String HEX_CODE_REGEX = "(#[0-9a-fA-F]{6})";
     // Modified placeholder regex to only match real placeholders
     private static final String PLACEHOLDER_REGEX = "(\\[([^&§#\\[\\]]+)\\])";
@@ -517,10 +517,10 @@ public class ShopMessage {
 
     private static TextComponent embedItem(TextComponent message, ItemStack item) {
         if (item == null) { return null; }
-        TextComponent msg = new TextComponent(message);
+        BaseComponent msg = TextComponent.fromLegacy(message.toLegacyText());
         HoverEvent event = getItemHoverEvent(item);
         if (event != null) { msg.setHoverEvent(event); }
-        return msg;
+        return (TextComponent) msg;
     }
 
     private static HoverEvent getTransactionsHoverEvent(PlaceholderContext context) {
