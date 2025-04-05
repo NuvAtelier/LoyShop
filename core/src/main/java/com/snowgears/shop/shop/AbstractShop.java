@@ -397,10 +397,14 @@ public abstract class AbstractShop {
 
         // Remove "0 Damage" from item meta (old config bug)
         this.item = this.removeZeroDamageMeta(is.clone());
+        this.signLinesRequireRefresh = true;
+        this.calculateStock();
     }
 
     public void setSecondaryItemStack(ItemStack is) {
         this.secondaryItem = this.removeZeroDamageMeta(is.clone());
+        this.signLinesRequireRefresh = true;
+        this.calculateStock();
     }
 
     public ItemStack removeZeroDamageMeta(ItemStack item) {
