@@ -725,9 +725,10 @@ public class UtilMethods {
     }
 
     public static List<String> splitStringIntoLines(String text, int maxLineLength) {
+        final String HEX_COLOR_CODE_REGEX = "(§x§.§.§.§.§.§.)"; // Hex code format using mc color codes
         final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORa-fk-or])";
 
-        Matcher matcher = Pattern.compile(COLOR_CODE_REGEX + "| |[^&§\\s]+").matcher(text);
+        Matcher matcher = Pattern.compile(HEX_COLOR_CODE_REGEX + "|" + COLOR_CODE_REGEX + "| |[^&§\\s]+").matcher(text);
         List<String> words = new ArrayList<>();
         while (matcher.find()) {
             words.add(matcher.group());
@@ -744,6 +745,7 @@ public class UtilMethods {
         boolean isUnderlined = false;
         boolean isObfuscated = false;
         for (String word : words) {
+            Shop.getPlugin().getLogger().hyper("[ShopMessage.format]     word: " + word);
             if (word.matches(COLOR_CODE_REGEX)) {
                 ChatColor newColor = ChatColor.getByChar(word.charAt(1));
                 if (newColor == ChatColor.BOLD) isBold = true;
@@ -773,7 +775,7 @@ public class UtilMethods {
                 if (!latestColors.equals(newColors)) {
                     latestColors = newColors;
                     // New color, add the line and start a new line
-                    linesByColor.add(currentLine.toString().trim());
+                    linesByColor.add(currentLine.toString());
                     currentLine = new StringBuilder(latestColors);
                 }
 
@@ -782,9 +784,10 @@ public class UtilMethods {
 
             // Also split if the single color line is too long!
             int potentialLength = ChatColor.stripColor(currentLine.toString()).length() + ChatColor.stripColor(word).length() + 1;
+            Shop.getPlugin().getLogger().spam("[ShopMessage.format]     potentialLength: " + potentialLength + " maxLineLength: " + maxLineLength);
             if (word.matches(" ") && potentialLength > maxLineLength) {
-                linesByColor.add(currentLine.toString().trim());
-                Shop.getPlugin().getLogger().hyper("[ShopMessage.format]     matched RESET color code: " + word);
+                Shop.getPlugin().getLogger().debug("[ShopMessage.format]     adding line: " + currentLine.toString().trim());
+                linesByColor.add(currentLine.toString());
                 currentLine = new StringBuilder(latestColors);
             } else {
                 currentLine.append(word);
@@ -793,7 +796,8 @@ public class UtilMethods {
 
         // Append the last line if there's any content left
         if (currentLine.length() > 0) {
-            linesByColor.add(currentLine.toString().trim());
+            Shop.getPlugin().getLogger().debug("[ShopMessage.format]     adding line: " + currentLine.toString().trim());
+            linesByColor.add(currentLine.toString());
         }
 
         // Now we need to start taking the "blocks" of text and combining them into lines, limited by maxLineLength
@@ -803,14 +807,14 @@ public class UtilMethods {
             // Add it if we are less than the max line length or if the line is only a color
             if (currentLine.length() + line.length() <= maxLineLength || ChatColor.stripColor(line).length() == 0) {
                 if (currentLine.toString().trim().length() == 0 || ChatColor.stripColor(line).trim().length() == 0) currentLine.append(line);
-                else currentLine.append(" " + line);
+                else currentLine.append(line);
             } else {
-                result.add(currentLine.toString().trim());
+                result.add(currentLine.toString().trim()); // only trim on final add
                 currentLine = new StringBuilder(line);
             }
         }
         if (currentLine.length() > 0) {
-            result.add(currentLine.toString().trim());
+            result.add(currentLine.toString().trim()); // only trim on final add
         }
         return result;
     }
