@@ -66,7 +66,7 @@ public class DisplayListener implements Listener {
                     plugin.getShopHandler().processShopDisplaysNearPlayer(player);
                 }
             }
-        }, 0, 100);
+        }, 0, 20);
     }
 
     public DisplayListener(Shop instance) {

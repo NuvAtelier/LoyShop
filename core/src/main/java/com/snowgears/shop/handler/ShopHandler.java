@@ -457,11 +457,11 @@ public class ShopHandler {
                     double distance = player.getLocation().distance(shop.getSignLocation());
                     if (distance < 2) {
                         // Very close to shop, always show
-                        shop.getDisplay().spawn(player);
+                        if (!hasActiveDisplay(player, shop.getSignLocation())) shop.getDisplay().spawn(player);
                         addActiveShopDisplay(player, shop.getSignLocation());
                     } else if (distance < 10) {
                         // Within reasonable distance
-                        shop.getDisplay().spawn(player);
+                        if (!hasActiveDisplay(player, shop.getSignLocation())) shop.getDisplay().spawn(player);
                         addActiveShopDisplay(player, shop.getSignLocation());
                     } else {
                         // Too far, remove display
@@ -481,6 +481,11 @@ public class ShopHandler {
     public void clearShopDisplaysNearPlayer(Player player){
         if(playersWithActiveShopDisplays.containsKey(player.getUniqueId()))
             playersWithActiveShopDisplays.remove(player.getUniqueId());
+    }
+
+    public boolean hasActiveDisplay(Player player, Location shopSignLocation) { 
+        HashSet<Location> shops = playersWithActiveShopDisplays.get(player.getUniqueId());
+        return shops != null && shops.contains(shopSignLocation);
     }
 
     public void addActiveShopDisplay(Player player, Location shopSignLocation){

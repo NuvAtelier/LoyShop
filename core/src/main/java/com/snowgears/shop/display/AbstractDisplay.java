@@ -564,7 +564,7 @@ public abstract class AbstractDisplay {
 
     protected void removeDisplayTagsDelayedTask(Player player) {
         //remove all armor stand name tag entities after x seconds
-        Shop.getPlugin().getFoliaLib().getScheduler().runLater(() -> {
+        Shop.getPlugin().getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
             if(!displayTagsVisible(player)){
                 removeDisplayEntities(player, true);
                 return;
