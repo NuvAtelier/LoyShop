@@ -3,6 +3,7 @@ package com.snowgears.shop.util;
 import net.md_5.bungee.api.ChatColor;
 import com.snowgears.shop.Shop;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -432,6 +433,17 @@ public class UtilMethods {
         return " " + romanNumerals[number - 1];
     }
 
+    // Remove white color codes if the message only contains white color codes
+    // This can occur since we are building up TextComponents and it adds white color codes to the start of messages
+    public static String removeColorsIfOnlyWhite(String message){
+        String COLOR_CODE_REGEX_NO_WHITE = "([&§][0-9A-EK-ORXa-ek-orx])";
+        // Check if there are any non-white color codes in the message
+        boolean hasOtherColors = Pattern.compile(COLOR_CODE_REGEX_NO_WHITE).matcher(message).find();
+        String msgStr = message;
+        if (!hasOtherColors) { msgStr = ChatColor.stripColor(msgStr); }
+        return msgStr;
+    }
+
     public static TextComponent getEnchantmentsComponent(ItemStack item){
         TextComponent formattedMessage = new TextComponent("");
 
@@ -487,8 +499,8 @@ public class UtilMethods {
             if (power == 0) power = 1;
             formattedMessage.addExtra(" [Duration " + power + "]");
         }
-        
-        return formattedMessage;
+
+        return new TextComponent(ChatColor.stripColor(formattedMessage.toLegacyText()));
     }
 
     private static TextComponent getPotionEffects(List<PotionEffect> effects){

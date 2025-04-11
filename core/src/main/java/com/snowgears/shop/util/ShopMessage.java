@@ -135,8 +135,8 @@ public class ShopMessage {
      * @return The formatted message with all placeholders replaced
      */
     public static TextComponent format(String message, PlaceholderContext context) {
-        TextComponent formattedMessage = new TextComponent("");
-        if (message == null) { return formattedMessage; }
+        TextComponent formattedMessage = null;
+        if (message == null) { return new TextComponent(""); }
         plugin.getLogger().spam("[ShopMessage] pre-format: " + ChatColor.translateAlternateColorCodes('&', message), true);
 
         // Define the regex pattern
@@ -200,7 +200,10 @@ public class ShopMessage {
                     plugin.getLogger().hyper("[ShopMessage.format]     replacing placeholder... " + part);
                     partComponent = replacePlaceholder(part, context);
                     // Check if we set a color inside our part (for example [stock color])
-                    if (partComponent.getColor() != latestColor && partComponent.getColor() != null && partComponent.getColor() != ChatColor.WHITE) { latestColor = partComponent.getColor(); }
+                    if (partComponent.getColor() != latestColor && partComponent.getColor() != null && partComponent.getColor() != ChatColor.WHITE) { 
+                        plugin.getLogger().hyper("[ShopMessage.format]     getting latestColor from partComponent: " + partComponent.getColor().getName().toUpperCase());
+                        latestColor = partComponent.getColor(); 
+                    }
                 }
             }
 
@@ -214,13 +217,18 @@ public class ShopMessage {
             partComponent.setStrikethrough(isStrikethrough);
             partComponent.setUnderlined(isUnderlined);
             partComponent.setObfuscated(isObfuscated);
-            // Add the part of the string to the
-            formattedMessage.addExtra(partComponent);
+            if (formattedMessage == null) {
+                formattedMessage = partComponent;
+            } else {
+                // Add the part of the string to the
+                formattedMessage.addExtra(partComponent);
+            }
             addedText = true;
             plugin.getLogger().hyper("[ShopMessage.format] *** add part TextComponent to main message: " + partComponent);
         }
 
         // Handle if we are just a color code with an empty string
+        if (formattedMessage == null) formattedMessage = new TextComponent("");
         if (!addedText && latestColor != null) formattedMessage.setColor(latestColor);
 
         plugin.getLogger().spam("[ShopMessage] postFormat: " + formattedMessage.toLegacyText(), true);
@@ -517,7 +525,7 @@ public class ShopMessage {
 
     private static TextComponent embedItem(TextComponent message, ItemStack item) {
         if (item == null) { return null; }
-        BaseComponent msg = TextComponent.fromLegacy(message.toLegacyText());
+        BaseComponent msg = TextComponent.fromLegacy(UtilMethods.removeColorsIfOnlyWhite(message.toLegacyText()));
         HoverEvent event = getItemHoverEvent(item);
         if (event != null) { msg.setHoverEvent(event); }
         return (TextComponent) msg;
