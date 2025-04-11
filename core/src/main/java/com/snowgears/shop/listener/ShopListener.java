@@ -50,11 +50,9 @@ public class ShopListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event){
-        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-            public void run() {
-                recalculateShopPerms(event.getPlayer());
-            }
-        }, 5L);
+        plugin.getFoliaLib().getScheduler().runLater(() -> {
+            recalculateShopPerms(event.getPlayer());
+        }, 5);
     }
 
     public void recalculateShopPerms(Player player){
@@ -360,23 +358,21 @@ public class ShopListener implements Listener {
 
         //final Inventory inv = plugin.getEnderChestHandler().getInventory(player);
 
-        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-            public void run() {
-                if(plugin.getCurrencyType() == CurrencyType.EXPERIENCE) {
-                    PlayerExperience exp = PlayerExperience.loadFromFile(player);
-                    if(exp != null){
-                        exp.apply();
-                    }
+        plugin.getFoliaLib().getScheduler().runLater(() -> {
+            if(plugin.getCurrencyType() == CurrencyType.EXPERIENCE) {
+                PlayerExperience exp = PlayerExperience.loadFromFile(player);
+                if(exp != null){
+                    exp.apply();
                 }
+            }
 //                if(plugin.useEnderChests() && inv != null){
 //                    player.getEnderChest().setContents(inv.getContents());
 //                    plugin.getEnderChestHandler().saveInventory(player, inv);
 //                }
 
-                plugin.getShopHandler().clearShopDisplaysNearPlayer(player);
-                plugin.getShopHandler().processShopDisplaysNearPlayer(player);
-            }
-        }, 2L);
+            plugin.getShopHandler().clearShopDisplaysNearPlayer(player);
+            plugin.getShopHandler().processShopDisplaysNearPlayer(player);
+        }, 2);
 
 
         //setup a repeating task that checks if async sql calculations are still running, if they are done, send messages and cancel task
@@ -426,11 +422,9 @@ public class ShopListener implements Listener {
     public void onTeleport(PlayerTeleportEvent event){
         plugin.getShopHandler().processShopDisplaysNearPlayer(event.getPlayer());
         //if(!event.getTo().getWorld().getUID().equals(event.getFrom().getWorld().getUID())) {
-            plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-                public void run() {
-                    plugin.getShopHandler().processShopDisplaysNearPlayer(event.getPlayer());
-                }
-            }, 5L);
+            plugin.getFoliaLib().getScheduler().runLater(() -> {
+                plugin.getShopHandler().processShopDisplaysNearPlayer(event.getPlayer());
+            }, 5);
         //}
     }
 

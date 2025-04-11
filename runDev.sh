@@ -24,7 +24,7 @@ function resetVersion() {
 updateVersion
 # Build the plugin
 export MAVEN_OPTS="-Xms8g -Xmx16g"
-mvn clean compile package -T 8C -o
+mvn clean compile package -T 8C #-o
 # Reset the version in pom.xml
 resetVersion
 

@@ -10,7 +10,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.dynmap.DynmapAPI;
 import org.dynmap.markers.GenericMarker;
 import org.dynmap.markers.Marker;
@@ -42,12 +41,7 @@ public class DynmapHookListener implements Listener {
                 shopMarkerSet = api.getMarkerAPI().createMarkerSet("shop", markerName, null, false);
             }
 
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    updateMarkers();
-                }
-            }.runTaskTimer(plugin, 1, 20 * 120 * 60);
+            plugin.getFoliaLib().getScheduler().runTimer(() -> updateMarkers(), 1, 20 * 120 * 60);
         } catch(NullPointerException e){
             enabled = false;
             plugin.getLogger().warning("Dynmap marker api was null. Disabling DynMap integration.");
@@ -58,14 +52,14 @@ public class DynmapHookListener implements Listener {
     public void onShopRemoved(PlayerDestroyShopEvent event) {
         if(!enabled)
             return;
-        plugin.getServer().getScheduler().runTask(plugin, this::updateMarkers);
+        plugin.getFoliaLib().getScheduler().runNextTick(task -> updateMarkers());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onShopCreated(PlayerInitializeShopEvent event) {
         if(!enabled)
             return;
-        plugin.getServer().getScheduler().runTask(plugin, this::updateMarkers);
+        plugin.getFoliaLib().getScheduler().runNextTick(task -> updateMarkers());
     }
 
     private void updateMarkers() {

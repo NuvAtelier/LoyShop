@@ -9,7 +9,6 @@ import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.UUID;
 
@@ -42,21 +41,18 @@ public class GambleShop extends AbstractShop {
         setGambleItem();
         this.getDisplay().spawn(player);
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                setItemStack(Shop.getPlugin().getGambleDisplayItem());
-                if(initialDisplayType == null) {
-                    display.setType(Shop.getPlugin().getDisplayType(), false);
-                    getDisplay().spawn(player);
-                }
-                else {
-                    display.setType(initialDisplayType, false);
-                    getDisplay().spawn(player);
-                }
-                isPerformingTransaction = false;
+        Shop.getPlugin().getFoliaLib().getScheduler().runLater(() -> {
+            setItemStack(Shop.getPlugin().getGambleDisplayItem());
+            if(initialDisplayType == null) {
+                display.setType(Shop.getPlugin().getDisplayType(), false);
+                getDisplay().spawn(player);
             }
-        }.runTaskLater(Shop.getPlugin(), 20);
+            else {
+                display.setType(initialDisplayType, false);
+                getDisplay().spawn(player);
+            }
+            isPerformingTransaction = false;
+        }, 20);
     }
 
     public void setGambleItem(){

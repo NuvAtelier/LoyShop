@@ -29,6 +29,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import com.tcoded.folialib.FoliaLib;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +42,7 @@ public class Shop extends JavaPlugin {
     private static final Logger log = Logger.getLogger("Minecraft");
     private static Shop plugin;
     private ShopLogger logger = new ShopLogger(this, true);
+    private FoliaLib foliaLib;
 
     private ShopListener shopListener;
     private DisplayListener displayListener;
@@ -168,6 +170,9 @@ public class Shop extends JavaPlugin {
     @Override
     public void onEnable() {
         plugin = this;
+
+        // Initialize FoliaLib
+        foliaLib = new FoliaLib(this);
 
         File configFile = new File(getDataFolder(), "config.yml");
         if (!configFile.exists()) {
@@ -531,20 +536,17 @@ public class Shop extends JavaPlugin {
         if(getServer().getPluginManager().getPlugin("BlueMap") != null && bluemapEnabled){
             plugin.getLogger().notice("BlueMap is installed, starting BlueMap integration");
             // Wait for 2 minutes for BlueMap to become available/boot up, then initialize listener.
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    BlueMapAPI.getInstance().ifPresent(api -> {
-                        plugin.getLogger().debug("BlueMap is ready, creating BlueMap listener");
-                        bluemapHookListener = new BluemapHookListener(plugin);
-                        getServer().getPluginManager().registerEvents(bluemapHookListener, plugin);
-                        // Make sure we load the markers in case there are shops that BlueMap doesn't know about
-                        bluemapHookListener.reloadMarkers(shopHandler);
-                        // Mark the task as complete and cancel the timer
-                        cancel();
-                    });
-                }
-            }.runTaskTimer(plugin, 20, 20); // Check every second (20 ticks) until BlueMap is booted
+            foliaLib.getScheduler().runTimer(task -> {
+                BlueMapAPI.getInstance().ifPresent(api -> {
+                    plugin.getLogger().debug("BlueMap is ready, creating BlueMap listener");
+                    bluemapHookListener = new BluemapHookListener(plugin);
+                    getServer().getPluginManager().registerEvents(bluemapHookListener, plugin);
+                    // Make sure we load the markers in case there are shops that BlueMap doesn't know about
+                    bluemapHookListener.reloadMarkers(shopHandler);
+                    // Mark the task as complete and cancel the timer
+                    foliaLib.getScheduler().cancelTask(task);
+                });
+            }, 20, 20); // Check every second (20 ticks) until BlueMap is booted
         }
 
         if(getServer().getPluginManager().getPlugin("BentoBox") != null){
@@ -740,9 +742,12 @@ public class Shop extends JavaPlugin {
 
     @Override
     public void onDisable(){
-        displayListener.cancelRepeatingViewTask();
-
-        // Save all the shops that need to be updated
+        // Cancel all FoliaLib scheduled tasks
+        if (foliaLib != null) {
+            foliaLib.getScheduler().cancelAllTasks();
+        }
+        
+        //save any remaining shops (usually not required but just in case)
         shopHandler.saveAllShops();
 
         this.getLogger().info("Disabled Shop " + this.getDescription().getVersion());
@@ -1118,5 +1123,10 @@ public class Shop extends JavaPlugin {
 
     public LogHandler getLogHandler(){
         return logHandler;
+    }
+
+    // Getter for FoliaLib
+    public FoliaLib getFoliaLib() {
+        return foliaLib;
     }
 }

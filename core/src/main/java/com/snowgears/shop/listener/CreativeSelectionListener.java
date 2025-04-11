@@ -158,22 +158,20 @@ public class CreativeSelectionListener implements Listener {
             throw new RuntimeException(e);
         }
         //for some reason this event is also called now on PlayerQuitEvent. Check that player didnt quit
-        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-            public void run() {
-                Player player = plugin.getServer().getPlayer(event.getPlayer().getUniqueId());
-                if(player != null) {
-                    boolean removed = removePlayerFromCreativeSelection(player);
-                    if (removed) {
-                        player.updateInventory();
-                    }
-                    // Check if we have a chat shop creation in process, and cancel it
-                    ShopCreationProcess process = plugin.getMiscListener().getShopCreationProcess(player);
-                    // If we are in the ITEM/BARTER_ITEM selection stage, then cancel the shop chat creation process!
-                    if (process != null && (process.getStep() == ITEM || process.getStep() == BARTER_ITEM))
-                        plugin.getMiscListener().cancelShopCreationProcess(player);
+        plugin.getFoliaLib().getScheduler().runLater(() -> {
+            Player player = plugin.getServer().getPlayer(event.getPlayer().getUniqueId());
+            if(player != null) {
+                boolean removed = removePlayerFromCreativeSelection(player);
+                if (removed) {
+                    player.updateInventory();
                 }
+                // Check if we have a chat shop creation in process, and cancel it
+                ShopCreationProcess process = plugin.getMiscListener().getShopCreationProcess(player);
+                // If we are in the ITEM/BARTER_ITEM selection stage, then cancel the shop chat creation process!
+                if (process != null && (process.getStep() == ITEM || process.getStep() == BARTER_ITEM))
+                    plugin.getMiscListener().cancelShopCreationProcess(player);
             }
-        }, 10L); //0.5 second
+        }, 10); //0.5 second
     }
 
     @EventHandler
@@ -319,14 +317,11 @@ public class CreativeSelectionListener implements Listener {
     @EventHandler
     public void onLogin(PlayerLoginEvent event){
         final Player player = event.getPlayer();
-        Bukkit.getScheduler().scheduleSyncDelayedTask(Shop.getPlugin(), new Runnable() {
-            @Override
-            public void run() {
-                PlayerData data = PlayerData.loadFromFile(player);
-                if(data != null){
-                    playerDataMap.remove(player.getUniqueId());
-                    data.apply();
-                }
+        Shop.getPlugin().getFoliaLib().getScheduler().runLater(() -> {
+            PlayerData data = PlayerData.loadFromFile(player);
+            if(data != null){
+                playerDataMap.remove(player.getUniqueId());
+                data.apply();
             }
         }, 20);
     }

@@ -505,49 +505,48 @@ public abstract class AbstractShop {
 
         signLines = ShopMessage.getSignLines(this, this.type);
 
-        Shop.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(Shop.getPlugin(), new Runnable() {
-            public void run() {
-                // Update the GUI Icon since the sign needs an update.
-                refreshGuiIcon();
+        // Use the sign's location to ensure the update runs in the correct region in Folia
+        Shop.getPlugin().getFoliaLib().getScheduler().runAtLocationLater(signLocation, task -> {
+            // Update the GUI Icon since the sign needs an update.
+            refreshGuiIcon();
 
-                Sign signBlock;
-                try {
-                    signBlock = (Sign) signLocation.getBlock().getState();
-                } catch (ClassCastException e){
-                    Shop.getPlugin().getShopHandler().removeShop(AbstractShop.this);
-                    return;
-                }
-
-                String[] lines = signLines.clone();
-
-                if (!isInitialized()) {
-                    signBlock.setLine(0, ChatColor.RED + ChatColor.stripColor(lines[0]));
-                    signBlock.setLine(1, ChatColor.RED + ChatColor.stripColor(lines[1]));
-                    signBlock.setLine(2, ChatColor.RED + ChatColor.stripColor(lines[2]));
-                    signBlock.setLine(3, ChatColor.RED + ChatColor.stripColor(lines[3]));
-                } else {
-                    signBlock.setLine(0, lines[0]);
-                    signBlock.setLine(1, lines[1]);
-                    signBlock.setLine(2, lines[2]);
-                    signBlock.setLine(3, lines[3]);
-                }
-
-                if(isMCVersion17Plus()) {
-                    if (Shop.getPlugin().getGlowingSignText()) {
-                        signBlock.setGlowingText(true);
-                    }
-                    else{
-                        signBlock.setGlowingText(false);
-                    }
-                }
-
-                signBlock.update(true);
-                signLinesRequireRefresh = false;
-
-                // Update the floating holograms for anybody who currently has them open
-                display.updateDisplayTags();
+            Sign signBlock;
+            try {
+                signBlock = (Sign) signLocation.getBlock().getState();
+            } catch (ClassCastException e){
+                Shop.getPlugin().getShopHandler().removeShop(AbstractShop.this);
+                return;
             }
-        }, 2L);
+
+            String[] lines = signLines.clone();
+
+            if (!isInitialized()) {
+                signBlock.setLine(0, ChatColor.RED + ChatColor.stripColor(lines[0]));
+                signBlock.setLine(1, ChatColor.RED + ChatColor.stripColor(lines[1]));
+                signBlock.setLine(2, ChatColor.RED + ChatColor.stripColor(lines[2]));
+                signBlock.setLine(3, ChatColor.RED + ChatColor.stripColor(lines[3]));
+            } else {
+                signBlock.setLine(0, lines[0]);
+                signBlock.setLine(1, lines[1]);
+                signBlock.setLine(2, lines[2]);
+                signBlock.setLine(3, lines[3]);
+            }
+
+            if(isMCVersion17Plus()) {
+                if (Shop.getPlugin().getGlowingSignText()) {
+                    signBlock.setGlowingText(true);
+                }
+                else{
+                    signBlock.setGlowingText(false);
+                }
+            }
+
+            signBlock.update(true);
+            signLinesRequireRefresh = false;
+
+            // Update the floating holograms for anybody who currently has them open
+            display.updateDisplayTags();
+        }, 2);
     }
 
     public void delete() {

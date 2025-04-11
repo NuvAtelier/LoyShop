@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.tcoded.folialib.wrapper.task.WrappedTask;
+
 public class ShopCreationProcess {
 
     private ChatCreationStep step;
@@ -130,30 +132,28 @@ public class ShopCreationProcess {
 
     public void createShop(Player player){
         final ShopCreationProcess process = this;
-        Shop.getPlugin().getServer().getScheduler().runTask(Shop.getPlugin(), new Runnable() {
-            @Override
-            public void run() {
-                //TODO do some calculation here if clickedFace is filled with a block or UP / DOWN was clicked
-                Block signBlock = clickedChest.getRelative(clickedFace);
-                signBlock.setType(Material.OAK_WALL_SIGN);
+        // Run task at the chest block location to ensure it runs in the correct region in Folia
+        Shop.getPlugin().getFoliaLib().getScheduler().runAtLocation(clickedChest.getLocation(), task -> {
+            //TODO do some calculation here if clickedFace is filled with a block or UP / DOWN was clicked
+            Block signBlock = clickedChest.getRelative(clickedFace);
+            signBlock.setType(Material.OAK_WALL_SIGN);
 
-                if(signBlock.getBlockData() instanceof WallSign) {
-                    Directional wallSignData = (Directional) signBlock.getBlockData();
-                    wallSignData.setFacing(clickedFace);
-                    signBlock.setBlockData(wallSignData);
-                }
+            if(signBlock.getBlockData() instanceof WallSign) {
+                Directional wallSignData = (Directional) signBlock.getBlockData();
+                wallSignData.setFacing(clickedFace);
+                signBlock.setBlockData(wallSignData);
+            }
 
-                AbstractShop shop = Shop.getPlugin().getShopCreationUtil().createShop(Bukkit.getPlayer(playerUUID), clickedChest, signBlock, getPricePair(), getItemAmount(), isAdmin, shopType, clickedFace, true);
-                if(shop == null) {
-                    return;
-                }
+            AbstractShop shop = Shop.getPlugin().getShopCreationUtil().createShop(Bukkit.getPlayer(playerUUID), clickedChest, signBlock, getPricePair(), getItemAmount(), isAdmin, shopType, clickedFace, true);
+            if(shop == null) {
+                return;
+            }
 
-                boolean initializedShop = Shop.getPlugin().getShopCreationUtil().initializeShop(shop, player, itemStack, barterItemStack);
+            boolean initializedShop = Shop.getPlugin().getShopCreationUtil().initializeShop(shop, player, itemStack, barterItemStack);
 
-                if(initializedShop) {
-                    Shop.getPlugin().getShopCreationUtil().sendCreationSuccess(player, shop);
-                    Shop.getPlugin().getLogHandler().logAction(player, shop, ShopActionType.INIT);
-                }
+            if(initializedShop) {
+                Shop.getPlugin().getShopCreationUtil().sendCreationSuccess(player, shop);
+                Shop.getPlugin().getLogHandler().logAction(player, shop, ShopActionType.INIT);
             }
         });
     }

@@ -64,12 +64,9 @@ public class ShopHandler {
         initDisplayClass();
         initItemList();
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                loadShops();
-            }
-        }.runTaskLater(this.plugin, 10);
+        plugin.getFoliaLib().getScheduler().runLater(() -> {
+            loadShops();
+        }, 10);
     }
 
     private boolean initDisplayClass(){
@@ -294,34 +291,26 @@ public class ShopHandler {
     public void processUnloadedShopsInChunk(Chunk chunk){
         String key = getChunkKey(chunk);
         if(unloadedShopsByChunk.containsKey(key)){
-            //System.out.println("[Shop] chunk contained unloaded shops.");
             List<UUID> playerUUIDs = new ArrayList<>();
             List<Location> shopLocations = getUnloadedShopsByChunk(key);
             for(Location shopLocation : shopLocations) {
                 AbstractShop shop = getShop(shopLocation);
                 if(shop != null){
-                    boolean signExists = shop.load();
-                    if(signExists) {
-                        //System.out.println("[Shop] shop loaded. sign exists.");
-                        //shop.getDisplay().spawn(null); //no longer spawning displays in chunk load for all players
-                        if (!playerUUIDs.contains(shop.getOwnerUUID())) {
-                            playerUUIDs.add(shop.getOwnerUUID());
+                    // Run at the shop's location to ensure it works in the correct region in Folia
+                    plugin.getFoliaLib().getScheduler().runAtLocation(shopLocation, task -> {
+                        boolean signExists = shop.load();
+                        if(signExists) {
+                            if (!playerUUIDs.contains(shop.getOwnerUUID())) {
+                                playerUUIDs.add(shop.getOwnerUUID());
+                            }
                         }
-                    }
-                    else{
-                        //System.out.println("[Shop] shop deleted. sign did not exist.");
-                        //System.out.println("[Shop] location: "+UtilMethods.getCleanLocation(shop.getSignLocation(), true));
-                        this.removeShop(shop);
-                    }
+                        else{
+                            removeShop(shop);
+                        }
+                    });
                 }
             }
             unloadedShopsByChunk.remove(key);
-
-            // No need to save all the shops here anymore
-//            //resave all shops for the player with the facing variable missing
-//            for(UUID playerUUID : playerUUIDs){
-//                saveShops(playerUUID);
-//            }
         }
     }
 
@@ -451,52 +440,42 @@ public class ShopHandler {
 //    }
 
     public void processShopDisplaysNearPlayer(Player player){
-        //add the player to a logic gate for processing their displays
-        if(playersProcessingShopDisplays.contains(player.getUniqueId()))
+        // Process only one player's shop at a time
+        if (playersProcessingShopDisplays.contains(player.getUniqueId())) {
             return;
+        }
         playersProcessingShopDisplays.add(player.getUniqueId());
 
-        HashSet<Location> shopsNearPlayer = getShopLocationsNearLocation(player.getLocation());
-        if(playersWithActiveShopDisplays.containsKey(player.getUniqueId())){
-            HashSet<Location> oldShopsNearPlayer = playersWithActiveShopDisplays.get(player.getUniqueId());
-            Iterator<Location> iteratorOld = oldShopsNearPlayer.iterator();
-            while(iteratorOld.hasNext()) {
-                Location loc = iteratorOld.next();
-                if (!shopsNearPlayer.contains(loc)) {
-                    AbstractShop shop = this.getShop(loc);
-                    plugin.getServer().getScheduler().runTask(plugin, () -> {
-                        if(shop != null && player != null && player.isOnline())
-                            shop.getDisplay().remove(player);
-                    });
-                    iteratorOld.remove();
-                }
-            }
+        plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
+            try {
+                // Process each shop location near the player
+                for (Location shopLocation : getShopLocationsNearLocation(player.getLocation())) {
+                    AbstractShop shop = getShop(shopLocation);
+                    if (shop == null) continue;
 
-            Iterator<Location> iteratorNew = shopsNearPlayer.iterator();
-            while(iteratorNew.hasNext()) {
-                Location loc = iteratorNew.next();
-                if (!oldShopsNearPlayer.contains(loc)) {
-                    AbstractShop shop = this.getShop(loc);
-                    plugin.getServer().getScheduler().runTask(plugin, () -> {
-                        if(shop != null && player != null && player.isOnline() && shop.isInitialized())
-                            shop.getDisplay().spawn(player);
-                    });
-                }
-            }
-        }
-        else{
-            Iterator<Location> iteratorNew = shopsNearPlayer.iterator();
-            while(iteratorNew.hasNext()) {
-                Location loc = iteratorNew.next();
-                AbstractShop shop = this.getShop(loc);
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    if(shop != null && player != null && player.isOnline() && shop.isInitialized())
+                    // Use distance check to determine if display should be shown
+                    double distance = player.getLocation().distance(shop.getSignLocation());
+                    if (distance < 2) {
+                        // Very close to shop, always show
                         shop.getDisplay().spawn(player);
-                }, 5L); // Delay of 5 ticks to allow player to finish logging in, otherwise the item display doesn't appear!
+                        addActiveShopDisplay(player, shop.getSignLocation());
+                    } else if (distance < 10) {
+                        // Within reasonable distance
+                        shop.getDisplay().spawn(player);
+                        addActiveShopDisplay(player, shop.getSignLocation());
+                    } else {
+                        // Too far, remove display
+                        shop.getDisplay().remove(player);
+                        removeActiveShopDisplay(player, shop.getSignLocation());
+                    }
+                }
+            } catch (Exception e) {
+                plugin.getLogger().warning("Error processing shop displays for player " + player.getName());
+                e.printStackTrace();
+            } finally {
+                playersProcessingShopDisplays.remove(player.getUniqueId());
             }
-        }
-        playersWithActiveShopDisplays.put(player.getUniqueId(), shopsNearPlayer);
-        playersProcessingShopDisplays.remove(player.getUniqueId());
+        }, 0);
     }
 
     public void clearShopDisplaysNearPlayer(Player player){

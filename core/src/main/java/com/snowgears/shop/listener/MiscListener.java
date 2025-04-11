@@ -166,24 +166,22 @@ public class MiscListener implements Listener {
                 }
 
                 //give player a limited amount of time to finish creating the shop until it is deleted
-                plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-                    public void run() {
-                        //the shop has still not been initialized with an item from a player
-                        if (!shop.isInitialized()) {
-                            plugin.getShopHandler().removeShop(shop);
-                            if (b.getBlockData() instanceof WallSign) {
-                                String[] lines = ShopMessage.getTimeoutSignLines(shop);
-                                Sign sign = (Sign) b.getState();
-                                sign.setLine(0, lines[0]);
-                                sign.setLine(1, lines[1]);
-                                sign.setLine(2, lines[2]);
-                                sign.setLine(3, lines[3]);
-                                sign.update(true);
-                                cancelShopCreationProcess(player);
-                            }
+                plugin.getFoliaLib().getScheduler().runLater(() -> {
+                    //the shop has still not been initialized with an item from a player
+                    if (!shop.isInitialized()) {
+                        plugin.getShopHandler().removeShop(shop);
+                        if (b.getBlockData() instanceof WallSign) {
+                            String[] lines = ShopMessage.getTimeoutSignLines(shop);
+                            Sign sign = (Sign) b.getState();
+                            sign.setLine(0, lines[0]);
+                            sign.setLine(1, lines[1]);
+                            sign.setLine(2, lines[2]);
+                            sign.setLine(3, lines[3]);
+                            sign.update(true);
+                            cancelShopCreationProcess(player);
                         }
                     }
-                }, 30 * 20); //30 seconds * 20 ticks
+                }, 30 * 20); // 30 seconds * 20 ticks
             }
         }
     }
@@ -379,16 +377,14 @@ public class MiscListener implements Listener {
 
                 //give player a limited amount of time to finish creating the shop until it is deleted
                 final UUID originalProcessUUID = process.getUniqueID();
-                plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-                    public void run() {
-                        //the shop has still not been initialized with an item from a player
-                        ShopCreationProcess process = playerChatCreationSteps.get(player.getUniqueId());
-                        if (process != null && process.getUniqueID().equals(originalProcessUUID)) {
-                            process.cleanup();
-                            playerChatCreationSteps.remove(player.getUniqueId());
-                            plugin.getCreativeSelectionListener().removePlayerFromCreativeSelection(player);
-                            ShopMessage.sendMessage("interactionIssue", "createHitChestTimeout", process, player);
-                        }
+                plugin.getFoliaLib().getScheduler().runLater(() -> {
+                    //the shop has still not been initialized with an item from a player
+                    ShopCreationProcess currentProcess = playerChatCreationSteps.get(player.getUniqueId());
+                    if (currentProcess != null && currentProcess.getUniqueID().equals(originalProcessUUID)) {
+                        currentProcess.cleanup();
+                        playerChatCreationSteps.remove(player.getUniqueId());
+                        plugin.getCreativeSelectionListener().removePlayerFromCreativeSelection(player);
+                        ShopMessage.sendMessage("interactionIssue", "createHitChestTimeout", currentProcess, player);
                     }
                 }, 30 * 20); // 30 seconds * 20 ticks
             }

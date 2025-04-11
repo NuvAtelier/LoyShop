@@ -564,21 +564,18 @@ public abstract class AbstractDisplay {
 
     protected void removeDisplayTagsDelayedTask(Player player) {
         //remove all armor stand name tag entities after x seconds
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if(!displayTagsVisible(player)){
-                    removeDisplayEntities(player, true);
-                    return;
-                }
-                if (playerIsLookingTowardShop(player)) {
-                    removeDisplayTagsDelayedTask(player);
-                }
-                else {
-                    removeDisplayEntities(player, true);
-                }
+        Shop.getPlugin().getFoliaLib().getScheduler().runLater(() -> {
+            if(!displayTagsVisible(player)){
+                removeDisplayEntities(player, true);
+                return;
             }
-        }.runTaskLater(Shop.getPlugin(), 20);
+            if (playerIsLookingTowardShop(player)) {
+                removeDisplayTagsDelayedTask(player);
+            }
+            else {
+                removeDisplayEntities(player, true);
+            }
+        }, 20);
     }
 
     protected boolean displayTagsVisible(Player player){
