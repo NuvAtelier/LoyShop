@@ -178,6 +178,7 @@ public class ShopMessage {
                             isStrikethrough = false;
                             isUnderlined = false;
                             isObfuscated = false;
+                            formattedMessage.addExtra("§r");
                         } else {
                             latestColor = newColor;
                         }
