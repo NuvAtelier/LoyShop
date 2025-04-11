@@ -525,7 +525,7 @@ public class ShopMessage {
 
     private static HoverEvent getTransactionsHoverEvent(PlaceholderContext context) {
         try {
-            TextComponent hoverText = new TextComponent(context.getOfflineTransactions().getTransactionsLore());
+            BaseComponent hoverText = TextComponent.fromLegacy(context.getOfflineTransactions().getTransactionsLore());
             return new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{hoverText});
         } catch (Exception e) {}
         return null;
