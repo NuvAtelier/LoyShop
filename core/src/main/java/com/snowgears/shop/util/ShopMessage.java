@@ -242,8 +242,9 @@ public class ShopMessage {
     public static void sendMessage(String message, Player player, PlaceholderContext context) {
         TextComponent fancyMessage = format(message, context);
         // Verify we are not trying to send an empty string or null
-        if(!ChatColor.stripColor(fancyMessage.toLegacyText()).trim().isEmpty())
-            player.spigot().sendMessage(fancyMessage);
+        // if(!ChatColor.stripColor(fancyMessage.toLegacyText()).trim().isEmpty())
+        plugin.getLogger().debug("Sent msg to player " + player.getName() + ": " + fancyMessage.toLegacyText(), true);
+        player.spigot().sendMessage(fancyMessage);
     }
 
     /**
