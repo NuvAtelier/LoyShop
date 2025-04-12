@@ -129,6 +129,8 @@ public class Shop extends JavaPlugin {
         return plugin;
     }
 
+    public static boolean loggedDisplayDisabledWarning = false;
+
     // Return the custom ShopLogger so that we can log at higher levels.
     @Override
     public ShopLogger getLogger() { return logger; }

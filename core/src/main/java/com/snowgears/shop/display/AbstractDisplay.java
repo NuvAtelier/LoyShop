@@ -41,6 +41,8 @@ public abstract class AbstractDisplay {
         chunkZ = UtilMethods.floor(shopSignLocation.getBlockZ()) >> 4;
     }
 
+    public boolean isEnabled() { return true; }
+
     public boolean isInChunk(Chunk chunk){
         return chunk.getX() == chunkX && chunk.getZ() == chunkZ && chunk.getWorld().toString().equals(shopSignLocation.getWorld().toString());
     }

@@ -5,7 +5,11 @@
 # This runs a check and notifies operators on login that a new Shop version is available #
 checkUpdates: true
 
-# If you do not use a permissions plugin, you should set this to false #
+# Should Shop use Permissions to manage access to features?
+# * `true`  - Shop will check player permissions (https://github.com/snowgears/shopbugs/wiki/Permissions)
+#             Players will by default have no permissions and must be given specific permissions to use the plugin.
+# * `false` - Shop will allow players to create shops, buy/sell items, etc. without any permissions checks.
+#             Plugin management commands/tools are restricted to operators only. 
 usePermissions: true
 
 # This enables a graphical user interface to use all shop features without typing commands #

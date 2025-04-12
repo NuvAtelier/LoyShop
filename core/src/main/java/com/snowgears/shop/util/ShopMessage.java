@@ -782,8 +782,10 @@ public class ShopMessage {
     //      # [server name] : The name of the server #
     public static String[] getSignLines(AbstractShop shop, ShopType shopType){
 
-        DisplayType displayType = shop.getDisplay().getType();
-        if(displayType == null)
+        DisplayType displayType = null;
+        if (shop.getDisplay() != null)
+            displayType = shop.getDisplay().getType();
+        if (displayType == null)
             displayType = Shop.getPlugin().getDisplayType();
 
         String shopFormat;

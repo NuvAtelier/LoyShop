@@ -183,12 +183,15 @@ public class ShopLogger extends Logger {
     public void notice(String message) { logFilterLevel(NOTICE, addColor(INTENSE_CYAN, "[Notice] " + message)); }
     public void helpful(String message) { logFilterLevel(HELPFUL, addColor(CYAN, "[Helpful] " + message)); }
     public void debug(String message) { logFilterLevel(DEBUG, addColor(DIM_GREY, "[Debug] " + message)); }
-
+    public void debug(String message, boolean withChatColors) {
+        if (this.getLogLevel().intValue() > DEBUG.intValue()) { return; }
+        Bukkit.getConsoleSender().sendMessage(INTENSE_WHITE + "[" + plugin.getDescription().getName() + "] " + DIM_GREY + "[Debug] " + message + RESET);
+    }
     public void trace(String message) { logFilterLevel(TRACE, addColor(VERY_DIM_GREY, "[Trace] " + message)); }
     public void spam(String message) { logFilterLevel(SPAM, addColor(VERY_VERY_DIM_GREY, "[Spam] " + message)); }
     public void spam(String message, boolean withChatColors) {
-        if (this.getLogLevel().intValue() > DEBUG.intValue()) { return; }
-        Bukkit.getConsoleSender().sendMessage(INTENSE_WHITE + "[" + plugin.getDescription().getName() + "] " + DIM_GREY + "[Debug] " + message + RESET);
+        if (this.getLogLevel().intValue() > SPAM.intValue()) { return; }
+        Bukkit.getConsoleSender().sendMessage(INTENSE_WHITE + "[" + plugin.getDescription().getName() + "] " + DIM_GREY + "[Spam] " + message + RESET);
     }
     public void hyper(String message) { logFilterLevel(SPAM, addColor(ALMOST_BLACK, "[Hyper] " + message)); }
 

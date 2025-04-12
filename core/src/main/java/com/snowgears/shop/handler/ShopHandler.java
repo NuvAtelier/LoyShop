@@ -69,6 +69,20 @@ public class ShopHandler {
         }, 10);
     }
 
+    private void disableDisplayClass() {
+        try {
+            final Class<?> clazz = Class.forName("com.snowgears.shop.display.DisplayDisabled");
+            if (AbstractDisplay.class.isAssignableFrom(clazz))
+                this.displayClass = clazz;
+        } catch (final Exception e) {
+            Shop.getPlugin().getLogger().severe("Failed to load DisplayDisabled class.");
+            Shop.getPlugin().onDisable();
+        } catch (Error e) {
+            Shop.getPlugin().getLogger().severe("Failed to load DisplayDisabled class.");
+            Shop.getPlugin().onDisable();
+        }
+    }
+
     private boolean initDisplayClass(){
         String packageName = plugin.getServer().getClass().getPackage().getName();
 
@@ -85,6 +99,14 @@ public class ShopHandler {
                     return true;
                 }
             } catch (final Exception e) {
+                Shop.getPlugin().getLogger().severe("Error while loading 'com.snowgears.shop.display.Display'. " + e.getMessage());
+                e.printStackTrace();
+                disableDisplayClass();
+                return false;
+            } catch (Error e) {
+                Shop.getPlugin().getLogger().severe("Error while loading 'com.snowgears.shop.display.Display'. " + e.getMessage());
+                e.printStackTrace();
+                disableDisplayClass();
                 return false;
             }
             return false;
@@ -108,8 +130,19 @@ public class ShopHandler {
                     return true;
                 }
             } catch (final Exception e) {
+                Shop.getPlugin().getLogger().severe("Error while loading com.snowgears.shop.display.Display_" + nmsVersion + " " + e.getMessage());
+                e.printStackTrace();
+                disableDisplayClass();
+                return false;
+            } catch (Error e) {
+                Shop.getPlugin().getLogger().severe("Error while loading com.snowgears.shop.display.Display_" + nmsVersion + " " + e.getMessage());
+                e.printStackTrace();
+                disableDisplayClass();
                 return false;
             }
+            
+            Shop.getPlugin().getLogger().severe("Unknown issue hooking into Minecraft Packet Classes, disabling display features.");
+            disableDisplayClass();
             return false;
         }
     }
@@ -119,7 +152,8 @@ public class ShopHandler {
             AbstractDisplay display = (AbstractDisplay) displayClass.getConstructor(Location.class).newInstance(loc);
             return display;
         } catch (Exception e){
-            e.printStackTrace();
+            // e.printStackTrace();
+            plugin.getLogger().warning("Error creating display at | World: " + loc.getWorld().getName() + " at " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ());
         }
         return null;
     }
@@ -475,7 +509,7 @@ public class ShopHandler {
             } finally {
                 playersProcessingShopDisplays.remove(player.getUniqueId());
             }
-        }, 0);
+        }, 1);
     }
 
     public void clearShopDisplaysNearPlayer(Player player){
@@ -843,77 +877,74 @@ public class ShopHandler {
     }
 
     public void loadShops() {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
-            @Override
-            public void run() {
-                int numShopsLoaded = 0;
+        plugin.getFoliaLib().getScheduler().runAsync(task -> {
+            int numShopsLoaded = 0;
 
-                boolean convertLegacySaves = false;
-                File fileDirectory = new File(plugin.getDataFolder(), "Data");
-                if (!fileDirectory.exists())
-                    return;
+            boolean convertLegacySaves = false;
+            File fileDirectory = new File(plugin.getDataFolder(), "Data");
+            if (!fileDirectory.exists())
+                return;
 
-                // load all the yml files from the data directory
-                for (File file : fileDirectory.listFiles()) {
-                    Shop.getPlugin().getLogger().debug("Loading player shops from file: " + file.getName());
-                    try {
-                        if (file.isFile()) {
-                            if (file.getName().endsWith(".yml")
-                                    && !file.getName().contains("enderchests")
-                                    && !file.getName().contains("itemCurrency")
-                                    && !file.getName().contains("gambleDisplay")) {
-                                YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-                                boolean isLegacyConfig = false;
-                                UUID playerUUID = null;
-                                String fileNameNoExt = null;
-                                try {
-                                    int dotIndex = file.getName().lastIndexOf('.');
-                                    fileNameNoExt = file.getName().substring(0, dotIndex); //remove .yml
+            // load all the yml files from the data directory
+            for (File file : fileDirectory.listFiles()) {
+                Shop.getPlugin().getLogger().debug("Loading player shops from file: " + file.getName());
+                try {
+                    if (file.isFile()) {
+                        if (file.getName().endsWith(".yml")
+                                && !file.getName().contains("enderchests")
+                                && !file.getName().contains("itemCurrency")
+                                && !file.getName().contains("gambleDisplay")) {
+                            YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+                            boolean isLegacyConfig = false;
+                            UUID playerUUID = null;
+                            String fileNameNoExt = null;
+                            try {
+                                int dotIndex = file.getName().lastIndexOf('.');
+                                fileNameNoExt = file.getName().substring(0, dotIndex); //remove .yml
 
-                                    //all files are saved as UUID.yml except for admin shops which are admin.yml
-                                    if (!fileNameNoExt.equals("admin")) {
-                                        playerUUID = UUID.fromString(fileNameNoExt);
-                                        //file names are in UUID format. Load from new save files -> ownerUUID.yml
-                                    } else {
-                                        playerUUID = adminUUID;
-                                    }
-                                } catch (IllegalArgumentException iae) {
-                                    //file names are not in UUID format. Load from legacy save files -> ownerName + " (" + ownerUUID + ").yml
-                                    isLegacyConfig = true;
-                                    convertLegacySaves = true;
-                                    playerUUID = uidFromString(fileNameNoExt);
+                                //all files are saved as UUID.yml except for admin shops which are admin.yml
+                                if (!fileNameNoExt.equals("admin")) {
+                                    playerUUID = UUID.fromString(fileNameNoExt);
+                                    //file names are in UUID format. Load from new save files -> ownerUUID.yml
+                                } else {
+                                    playerUUID = adminUUID;
                                 }
-                                numShopsLoaded += loadShopsFromConfig(config, isLegacyConfig);
-                                if (isLegacyConfig) {
-                                    //save new file
-                                    saveShops(playerUUID, true);
-                                    //delete old file
-                                    file.delete();
-                                }
-                                if (plugin.getDebug_forceResaveAll()) {
-                                    saveShops(playerUUID, true);
-                                }
+                            } catch (IllegalArgumentException iae) {
+                                //file names are not in UUID format. Load from legacy save files -> ownerName + " (" + ownerUUID + ").yml
+                                isLegacyConfig = true;
+                                convertLegacySaves = true;
+                                playerUUID = uidFromString(fileNameNoExt);
+                            }
+                            numShopsLoaded += loadShopsFromConfig(config, isLegacyConfig);
+                            if (isLegacyConfig) {
+                                //save new file
+                                saveShops(playerUUID, true);
+                                //delete old file
+                                file.delete();
+                            }
+                            if (plugin.getDebug_forceResaveAll()) {
+                                saveShops(playerUUID, true);
                             }
                         }
                     }
-                    catch (Exception e) {
-                        Shop.getPlugin().getLogger().log(Level.SEVERE, "Error while loading Shop from player file (" + file.getName() + "), please report this error to the Shop developers: " + e.getMessage());
-                        e.printStackTrace();
-                    }
                 }
-                if(convertLegacySaves)
-                    convertLegacyShopSaves();
-
-                Shop.getPlugin().getLogger().log(Level.INFO, "Loaded " + numShopsLoaded + " Shops!");
-
-                //dont refresh displays at load time anymore. they are now loaded in client side on login
-//                new BukkitRunnable() {
-//                    @Override
-//                    public void run() {
-//                        refreshShopDisplays(null);
-//                    }
-//                }.runTaskLater(plugin, 20);
+                catch (Exception e) {
+                    Shop.getPlugin().getLogger().log(Level.SEVERE, "Error while loading Shop from player file (" + file.getName() + "), please report this error to the Shop developers: " + e.getMessage());
+                    e.printStackTrace();
+                }
             }
+            if(convertLegacySaves)
+                convertLegacyShopSaves();
+
+            Shop.getPlugin().getLogger().log(Level.INFO, "Loaded " + numShopsLoaded + " Shops!");
+
+            //dont refresh displays at load time anymore. they are now loaded in client side on login
+    //                new BukkitRunnable() {
+    //                    @Override
+    //                    public void run() {
+    //                        refreshShopDisplays(null);
+    //                    }
+    //                }.runTaskLater(plugin, 20);
         });
     }
 
@@ -1006,13 +1037,10 @@ public class ShopHandler {
                         //if chunk its in is already loaded, calculate it here
                         if(shop.getDisplay().isChunkLoaded()) {
                             //run this task synchronously
-                            Bukkit.getScheduler().runTask(plugin, new Runnable() {
-                                @Override
-                                public void run() {
-                                    boolean signDefined = shop.load();
-                                    if(signDefined)
-                                        addShop(shop);
-                                }
+                            plugin.getFoliaLib().getScheduler().runAtLocation(shop.getSignLocation(), task -> {
+                                boolean signDefined = shop.load();
+                                if(signDefined)
+                                    addShop(shop);
                             });
                         }
                         //if the chunk is not already loaded, add it to a list to calculate it at chunkloadevent later

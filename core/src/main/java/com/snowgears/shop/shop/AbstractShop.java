@@ -545,7 +545,7 @@ public abstract class AbstractShop {
             signLinesRequireRefresh = false;
 
             // Update the floating holograms for anybody who currently has them open
-            display.updateDisplayTags();
+            if (display != null) display.updateDisplayTags();
         }, 2);
     }
 

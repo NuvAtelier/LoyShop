@@ -55,7 +55,9 @@ public class ShopCreationProcess {
     }
 
     public void cleanup() {
-        this.display.removeDisplayEntities(player, true);
+        if (this.display.isEnabled()) {
+            this.display.removeDisplayEntities(player, true);
+        }
     }
 
     public Block getClickedChest() {
@@ -204,7 +206,7 @@ public class ShopCreationProcess {
 
     public void displayFloatingText(String key, String subkey) {
         // Check if feature is enabled or not.
-        if (!Shop.getPlugin().getConfig().getBoolean("displayFloatingCreateText")) {
+        if (!Shop.getPlugin().getConfig().getBoolean("displayFloatingCreateText") || !this.display.isEnabled()) {
             ShopMessage.sendMessage(key, subkey, this, player);
             return;
         }
@@ -218,7 +220,7 @@ public class ShopCreationProcess {
 
     public void displayFloatingTextList(String key, String subkey) {
         // Check if feature is enabled or not.
-        if (!Shop.getPlugin().getConfig().getBoolean("displayFloatingCreateText")) {
+        if (!Shop.getPlugin().getConfig().getBoolean("displayFloatingCreateText") || !this.display.isEnabled()) {
             for (String message : ShopMessage.getUnformattedMessageList(key, subkey)) {
                 if (message != null && !message.isEmpty())
                     ShopMessage.sendMessage(message, player);
@@ -238,6 +240,10 @@ public class ShopCreationProcess {
     }
 
     public void displayFloatingLines(List<String> lines) {
+        if (!this.display.isEnabled()) {
+            Shop.getPlugin().getLogger().warning("Unable to display floating text for player " + player.getName() + ", Display is disabled");
+            return;
+        }
         // Remove any existing text
         this.display.removeDisplayEntities(player, true);
 

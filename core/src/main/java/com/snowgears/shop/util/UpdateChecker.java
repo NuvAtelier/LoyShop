@@ -49,7 +49,7 @@ public class UpdateChecker {
     }
 
     public void checkForUpdate() {
-        new BukkitRunnable() {
+        plugin.getFoliaLib().getScheduler().runTimer(new BukkitRunnable() {
             @Override
             public void run() {
                 //The request is executed asynchronously as to not block the main thread.
@@ -62,7 +62,7 @@ public class UpdateChecker {
                     } catch (final IOException e) {
                         Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', ERR_MSG));
                         e.printStackTrace();
-                        cancel();
+                        // cancel();
                         return;
                     }
 
@@ -100,10 +100,10 @@ public class UpdateChecker {
                         }, plugin));
                     }
 
-                    cancel(); //Cancel the runnable as an update has been found.
+                    // cancel(); //Cancel the runnable as an update has been found.
                 });
             }
-        }.runTaskTimer(plugin, 0, CHECK_INTERVAL);
+        }, 1, CHECK_INTERVAL);
     }
 
     private String embedVersions(String msg, String runningVersion, String latestReleasedVersion) {

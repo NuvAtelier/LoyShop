@@ -53,10 +53,12 @@ public class DisplayListener implements Listener {
                             }
                         } catch (IllegalStateException e) {
                             //do nothing, the block iterator missed a block for a player
+                        } catch (Exception e) {
+                            //do nothing, the block iterator missed a block for a player
                         }
                     }
                 }
-            }, 0, 15);
+            }, 1, 15);
         }
 
         // Run shop displays processing every 100 ticks (5 seconds)
@@ -66,7 +68,7 @@ public class DisplayListener implements Listener {
                     plugin.getShopHandler().processShopDisplaysNearPlayer(player);
                 }
             }
-        }, 0, 20);
+        }, 1, 20);
     }
 
     public DisplayListener(Shop instance) {

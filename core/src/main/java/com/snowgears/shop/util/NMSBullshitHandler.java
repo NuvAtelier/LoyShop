@@ -30,11 +30,11 @@ public class NMSBullshitHandler {
 
     public void init() {
         String mcVersion = plugin.getServer().getClass().getPackage().getName();
-        Shop.getPlugin().getLogger().log(Level.FINE, "mcVersion: " + mcVersion);
+        Shop.getPlugin().getLogger().debug("mcVersion: " + mcVersion);
 
         // Check if we are on Paper 1.20.5 or later, it will not include the CB relocation version (i.e. "1_20_R3")
         if (!mcVersion.equals("org.bukkit.craftbukkit")) {
-            Shop.getPlugin().getLogger().log(Level.WARNING, "Minecraft version is old or Spigot, loaded version is: " + mcVersion);
+            Shop.getPlugin().getLogger().warning("Minecraft version is old or Spigot, loaded version is: " + mcVersion);
 
             String[] mcVersionSplit = mcVersion.replace(".", ",").split(",");
             // Convert mcVersion into a number like 120.4 (1_20_R4) or 121.1 (1_21_R1) so that we can use it later
@@ -42,8 +42,8 @@ public class NMSBullshitHandler {
         }
 
         // log the server version we are on, it will be 0 when we are on a Paper server
-        Shop.getPlugin().getLogger().log(Level.FINE, "Server Version: " + this.getServerVersion());
-        Shop.getPlugin().getLogger().log(Level.FINE, "Is Server Version over 117.0D: " + (Math.floor(this.getServerVersion()) >= 117.0D));
+        Shop.getPlugin().getLogger().debug("Server Version: " + this.getServerVersion());
+        Shop.getPlugin().getLogger().debug("Is Server Version over 117.0D: " + (Math.floor(this.getServerVersion()) >= 117.0D));
 
         try {
             this.craftItemStackClass = Class.forName(mcVersion + ".inventory.CraftItemStack");
@@ -55,13 +55,19 @@ public class NMSBullshitHandler {
 
                 // java.lang.ClassNotFoundException: net.minecraft.server.v1_17_R1.ItemStack
 
-                Shop.getPlugin().getLogger().spam("CraftItemStack: " + this.craftItemStackClass.toString());
-                Shop.getPlugin().getLogger().spam("CraftWorld: " + this.craftWorldClass.toString());
-                Shop.getPlugin().getLogger().spam("CraftPlayer: " + this.craftPlayerClass.toString());
+                Shop.getPlugin().getLogger().debug("CraftItemStack: " + this.craftItemStackClass.toString());
+                Shop.getPlugin().getLogger().debug("CraftWorld: " + this.craftWorldClass.toString());
+                Shop.getPlugin().getLogger().debug("CraftPlayer: " + this.craftPlayerClass.toString());
             }
         } catch (ClassNotFoundException e) {
+            Shop.getPlugin().getLogger().severe("Unable to retrieve a NMS class used for NBT data.");
             e.printStackTrace();
-            Shop.getPlugin().getLogger().log(Level.SEVERE, "Unable to retrieve a NMS class used for NBT data.");
+        } catch (Exception e) {
+            Shop.getPlugin().getLogger().severe("Unable to retrieve a NMS class used for NBT data.");
+            e.printStackTrace();
+        } catch (Error e) {
+            Shop.getPlugin().getLogger().severe("Unable to retrieve a NMS class used for NBT data.");
+            e.printStackTrace();
         }
     }
 

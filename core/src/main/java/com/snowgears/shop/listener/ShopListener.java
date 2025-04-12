@@ -31,6 +31,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.scheduler.BukkitRunnable;
+import com.tcoded.folialib.wrapper.task.WrappedTask;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -378,7 +379,7 @@ public class ShopListener implements Listener {
         //setup a repeating task that checks if async sql calculations are still running, if they are done, send messages and cancel task
         OfflineTransactions offlineTransactions = transactionsWhileOffline.get(player.getUniqueId());
         if(offlineTransactions != null) {
-            new BukkitRunnable() {
+            BukkitRunnable runnable = new BukkitRunnable() {
                 public void run() {
                     if (transactionsWhileOffline.containsKey(player.getUniqueId())) {
                         if (offlineTransactions != null && !offlineTransactions.isCalculating()) {
@@ -390,11 +391,15 @@ public class ShopListener implements Listener {
                                 }
                             }
                             transactionsWhileOffline.remove(player.getUniqueId());
-                            this.cancel();
                         }
                     }
                 }
-            }.runTaskTimer(plugin, 10L, 2L);
+            };
+            WrappedTask task = plugin.getFoliaLib().getScheduler().runTimer(runnable, 1, 20);
+            // Let it attempt to run for 5 seconds before cancelling
+            plugin.getFoliaLib().getScheduler().runLater(() -> {
+                plugin.getFoliaLib().getScheduler().cancelTask(task);
+            }, 100);
         }
     }
 
