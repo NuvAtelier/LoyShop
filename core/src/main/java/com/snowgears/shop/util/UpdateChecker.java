@@ -14,8 +14,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import com.tcoded.folialib.wrapper.task.WrappedTask;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedReader;
@@ -41,6 +41,7 @@ public class UpdateChecker {
     //PermissionDefault.TRUE == all OPs are notified regardless of having the permission.
     private static final Permission UPDATE_PERM = new Permission("shop.update", PermissionDefault.FALSE);
     private static final long CHECK_INTERVAL = 12_000; //In ticks.
+    private WrappedTask task;
 
 
     public UpdateChecker(final Shop plugin) {
@@ -49,7 +50,7 @@ public class UpdateChecker {
     }
 
     public void checkForUpdate() {
-        plugin.getFoliaLib().getScheduler().runTimer(new BukkitRunnable() {
+        task = plugin.getFoliaLib().getScheduler().runTimer(new BukkitRunnable() {
             @Override
             public void run() {
                 //The request is executed asynchronously as to not block the main thread.
@@ -62,7 +63,7 @@ public class UpdateChecker {
                     } catch (final IOException e) {
                         Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', ERR_MSG));
                         e.printStackTrace();
-                        // cancel();
+                        cancelTask();
                         return;
                     }
 
@@ -100,10 +101,14 @@ public class UpdateChecker {
                         }, plugin));
                     }
 
-                    // cancel(); //Cancel the runnable as an update has been found.
+                    cancelTask(); //Cancel the runnable as an update has been found.
                 });
             }
         }, 1, CHECK_INTERVAL);
+    }
+
+    public void cancelTask() {
+        plugin.getFoliaLib().getScheduler().cancelTask(task);
     }
 
     private String embedVersions(String msg, String runningVersion, String latestReleasedVersion) {

@@ -208,7 +208,7 @@ public class TransactionHandler {
         else{
             shopMessageCooldown.put(shop.getSignLocation(), shop.getOwnerUUID());
 
-            new BukkitRunnable() {
+            plugin.getFoliaLib().getScheduler().runLater(new BukkitRunnable() {
                 @Override
                 public void run() {
                     if(shop != null){
@@ -218,7 +218,7 @@ public class TransactionHandler {
                     }
                     //TODO if shop is null, should you clear the entire cooldown list so that that location isn't messed up?
                 }
-            }.runTaskLater(this.plugin, 2400); //make cooldown 2 minutes
+            }, 2400); //make cooldown 2 minutes
         }
         return true;
     }
