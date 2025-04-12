@@ -206,6 +206,9 @@ public abstract class AbstractDisplay {
                 }
             }
 
+            // Create a list to store tag data
+            List<Map.Entry<String, Location>> tagData = new ArrayList<>();
+
             double verticalAddition = 0;
             //iterate through list backwards to build from bottom -> up
             for (int i = displayTags.size() - 1; i >= 0; i--) {
@@ -222,9 +225,21 @@ public abstract class AbstractDisplay {
                 }
 
                 asTagLocation = asTagLocation.add(0, verticalAddition, 0);
+                
+                // Store the tag data instead of creating it immediately
+                tagData.add(new AbstractMap.SimpleEntry<>(tagLine, asTagLocation));
+                
+                verticalAddition += 0.3;
+            }
+            
+            // Now create the tags in reverse order (top to bottom)
+            for (int i = tagData.size() - 1; i >= 0; i--) {
+                Map.Entry<String, Location> entry = tagData.get(i);
+                String tagLine = entry.getKey();
+                Location asTagLocation = entry.getValue();
+                
                 Shop.getPlugin().getLogger().spam("[Display] Adding tag line: " + tagLine, true);
                 createTagEntity(player, tagLine, asTagLocation);
-                verticalAddition += 0.3;
             }
 
             Shop.getPlugin().getShopHandler().addActiveShopDisplayTag(player, this.shopSignLocation);
@@ -266,6 +281,7 @@ public abstract class AbstractDisplay {
     }
 
     public void createTagEntity(Player player, String text, Location location){
+        Shop.getPlugin().getLogger().debug("Spawning hologram for player " + player.getName() + " at " + location.getBlockX() + "/" + location.getBlockY() + "/" + location.getBlockZ() + ": " + text, true);
         ArmorStandData caseStandData = new ArmorStandData();
         caseStandData.setSmall(false);
         caseStandData.setLocation(location);

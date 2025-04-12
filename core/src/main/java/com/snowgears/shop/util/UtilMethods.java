@@ -798,7 +798,7 @@ public class UtilMethods {
             int potentialLength = ChatColor.stripColor(currentLine.toString()).length() + ChatColor.stripColor(word).length() + 1;
             Shop.getPlugin().getLogger().spam("[ShopMessage.format]     potentialLength: " + potentialLength + " maxLineLength: " + maxLineLength);
             if (word.matches(" ") && potentialLength > maxLineLength) {
-                Shop.getPlugin().getLogger().debug("[ShopMessage.format]     adding line: " + currentLine.toString().trim());
+                Shop.getPlugin().getLogger().spam("[ShopMessage.format]     adding line: " + currentLine.toString().trim(), true);
                 linesByColor.add(currentLine.toString());
                 currentLine = new StringBuilder(latestColors);
             } else {
@@ -808,7 +808,7 @@ public class UtilMethods {
 
         // Append the last line if there's any content left
         if (currentLine.length() > 0) {
-            Shop.getPlugin().getLogger().debug("[ShopMessage.format]     adding line: " + currentLine.toString().trim());
+            Shop.getPlugin().getLogger().spam("[ShopMessage.format]     adding line: " + currentLine.toString().trim(), true);
             linesByColor.add(currentLine.toString());
         }
 
