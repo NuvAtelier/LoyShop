@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.google.gson.JsonParseException;
 
 
 public class ShopMessage {
@@ -247,7 +248,22 @@ public class ShopMessage {
         // Verify we are not trying to send an empty string or null
         // if(!ChatColor.stripColor(fancyMessage.toLegacyText()).trim().isEmpty())
         plugin.getLogger().debug("Sent msg to player " + player.getName() + ": " + fancyMessage.toLegacyText(), true);
-        player.spigot().sendMessage(fancyMessage);
+        try {
+            player.spigot().sendMessage(fancyMessage);
+            return;
+        } catch (JsonParseException e) {
+            plugin.getNBTAdapter().handleException("Possible NBTAPI error while sending message to player, Item Hover events will now be disabled! Details: " + e.getMessage());
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error sending message to player: " + e.getMessage());
+        } catch (Error e) {
+            plugin.getLogger().warning("Error sending message to player: " + e.getMessage());
+        }
+
+        // If we get here, we have an error, we should at least try to send it as legacy text
+        try {
+            player.sendMessage(fancyMessage.toLegacyText());
+            plugin.getLogger().warning("Sent legacy text message to player as backup, removed hover/click events");
+        } catch (Exception e) {} catch (Error e) {}
     }
 
     /**
@@ -510,7 +526,6 @@ public class ShopMessage {
     private static HoverEvent getItemHoverEvent(ItemStack item) {
         if (item == null) { return null; }
         if (plugin.getNBTAdapter().haveErrorsOccured()) {
-            plugin.getLogger().warning("[ShopMessage] NBTAPI errors occurred, unable to show embedded Hover Text for item!");
             plugin.getNBTAdapter().handleException("NBTAPI errors occurred, unable to show embedded Hover Text for item!");
             return null; 
         }
@@ -529,6 +544,10 @@ public class ShopMessage {
     }
 
     private static TextComponent embedItem(TextComponent message, ItemStack item) {
+        // If we have any NBTAPI errors, don't try to embed the item hover text
+        if (plugin.getNBTAdapter().haveErrorsOccured()) {
+            return message;
+        }
         try {
             if (item == null) { return null; }
             BaseComponent msg = TextComponent.fromLegacy(UtilMethods.removeColorsIfOnlyWhite(message.toLegacyText()));
@@ -536,8 +555,10 @@ public class ShopMessage {
             if (event != null) { msg.setHoverEvent(event); }
             return (TextComponent) msg;
         } catch (Exception e) {
+            plugin.getNBTAdapter().handleException("Error embedding item hover text: " + e.getMessage());
             return message;
         } catch (Error e) {
+            plugin.getNBTAdapter().handleException("Error embedding item hover text: " + e.getMessage());
             return message;
         }
     }
