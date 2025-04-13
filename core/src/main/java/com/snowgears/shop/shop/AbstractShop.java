@@ -408,25 +408,35 @@ public abstract class AbstractShop {
     }
 
     public ItemStack removeZeroDamageMeta(ItemStack item) {
-        // In the past we used to explicitly set the durability of an item to be 0, this caused blocks/items to be saved
-        // with extra NBT data that we don't actually want. For example, dirt shouldn't have a damage of 0.
-        // Detect if we set it to 0, and if so, remove it from the ItemMeta!
-        if (item.getItemMeta() instanceof Damageable && ((Damageable) item.getItemMeta()).getDamage() == 0) {
-            String components = item.getItemMeta().getAsComponentString(); // example: "[minecraft:damage=53]"
+        try {
+            // In the past we used to explicitly set the durability of an item to be 0, this caused blocks/items to be saved
+            // with extra NBT data that we don't actually want. For example, dirt shouldn't have a damage of 0.
+            // Detect if we set it to 0, and if so, remove it from the ItemMeta!
+            if (item.getItemMeta() instanceof Damageable && ((Damageable) item.getItemMeta()).getDamage() == 0) {
+                String components = item.getItemMeta().getAsComponentString(); // example: "[minecraft:damage=53]"
 
-            // Remove it from the array
-            components = components.replace(",minecraft:damage=0", ""); // Middle of an array
-            components = components.replace("minecraft:damage=0,", ""); // Start of an array
-            components = components.replace("minecraft:damage=0", ""); // Only object in array
+                // Remove it from the array
+                components = components.replace(",minecraft:damage=0", ""); // Middle of an array
+                components = components.replace("minecraft:damage=0,", ""); // Start of an array
+                components = components.replace("minecraft:damage=0", ""); // Only object in array
 
-            // Convert it back into an item
-            String itemTypeKey = item.getType().getKey().toString(); // example: "minecraft:diamond_sword"
-            String itemAsString = itemTypeKey + components; // results in: "minecraft:diamond_sword[minecraft:damage=53]"
-            return Bukkit.getItemFactory().createItemStack(itemAsString);
+                // Convert it back into an item
+                String itemTypeKey = item.getType().getKey().toString(); // example: "minecraft:diamond_sword"
+                String itemAsString = itemTypeKey + components; // results in: "minecraft:diamond_sword[minecraft:damage=53]"
+                return Bukkit.getItemFactory().createItemStack(itemAsString);
+            }
+
+            // Default return original item
+            return item;
+        } catch (Exception e) {
+            Shop.getPlugin().getLogger().warning("Error removing zero damage meta from item: " + item);
+            Shop.getPlugin().getLogger().warning("checkItemDurability feature may be unsupported on your version of Paper/Spigot!");
+            return item;
+        } catch (Error e) {
+            Shop.getPlugin().getLogger().warning("Error removing zero damage meta from item: " + item);
+            Shop.getPlugin().getLogger().warning("checkItemDurability feature may be unsupported on your version of Paper/Spigot!");
+            return item;
         }
-
-        // Default return original item
-        return item;
     }
 
     public void setOwner(UUID newOwner){

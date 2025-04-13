@@ -426,8 +426,24 @@ public class Shop extends JavaPlugin {
             gambleDisplayFile.getParentFile().mkdirs();
             UtilMethods.copy(getResource("GAMBLE_DISPLAY.yml"), gambleDisplayFile);
         }
-        YamlConfiguration gambleItemConfig = YamlConfiguration.loadConfiguration(gambleDisplayFile);
-        gambleDisplayItem = gambleItemConfig.getItemStack("GAMBLE_DISPLAY");
+        try {
+            YamlConfiguration gambleItemConfig = YamlConfiguration.loadConfiguration(gambleDisplayFile);
+            gambleDisplayItem = gambleItemConfig.getItemStack("GAMBLE_DISPLAY");
+        } catch (IllegalArgumentException e) {
+            this.getLogger().severe("Error loading gamble display item from file: " + gambleDisplayFile.getAbsolutePath());
+            gambleDisplayItem = new ItemStack(Material.DIAMOND);
+        } catch (Exception e) {
+            this.getLogger().warning("Error loading gamble display item from file: " + gambleDisplayFile.getAbsolutePath());
+            gambleDisplayItem = new ItemStack(Material.DIAMOND);
+        } catch (Error e) {
+            this.getLogger().warning("Error loading gamble display item from file: " + gambleDisplayFile.getAbsolutePath());
+            gambleDisplayItem = new ItemStack(Material.DIAMOND);
+        }
+
+        if (gambleDisplayItem == null) {
+            this.getLogger().severe("Error loading gamble display item from file: " + gambleDisplayFile.getAbsolutePath());
+            gambleDisplayItem = new ItemStack(Material.DIAMOND);
+        }
 
         currencyName = config.getString("currency.name");
         currencyFormat = config.getString("currency.format");

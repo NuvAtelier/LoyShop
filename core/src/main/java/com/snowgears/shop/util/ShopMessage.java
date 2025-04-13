@@ -108,7 +108,10 @@ public class ShopMessage {
             } catch (Exception e) {
                 // Log the exception
                 Bukkit.getLogger().warning("Error replacing placeholder " + placeholder + ": " + e.getMessage());
-                e.printStackTrace();
+                // e.printStackTrace();
+            } catch (Error e) {
+                Bukkit.getLogger().warning("Error replacing placeholder " + placeholder + ": " + e.getMessage());
+                // e.printStackTrace();
             }
         }
         // If placeholder not found, remove the placeholder and just return an empty string
@@ -526,11 +529,17 @@ public class ShopMessage {
     }
 
     private static TextComponent embedItem(TextComponent message, ItemStack item) {
-        if (item == null) { return null; }
-        BaseComponent msg = TextComponent.fromLegacy(UtilMethods.removeColorsIfOnlyWhite(message.toLegacyText()));
-        HoverEvent event = getItemHoverEvent(item);
-        if (event != null) { msg.setHoverEvent(event); }
-        return (TextComponent) msg;
+        try {
+            if (item == null) { return null; }
+            BaseComponent msg = TextComponent.fromLegacy(UtilMethods.removeColorsIfOnlyWhite(message.toLegacyText()));
+            HoverEvent event = getItemHoverEvent(item);
+            if (event != null) { msg.setHoverEvent(event); }
+            return (TextComponent) msg;
+        } catch (Exception e) {
+            return message;
+        } catch (Error e) {
+            return message;
+        }
     }
 
     private static HoverEvent getTransactionsHoverEvent(PlaceholderContext context) {
