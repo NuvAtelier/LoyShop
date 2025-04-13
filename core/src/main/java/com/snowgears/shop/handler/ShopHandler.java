@@ -57,6 +57,15 @@ public class ShopHandler {
     private ArrayList<ItemStack> itemListItems = new ArrayList<>();
 
     private ArrayList<UUID> playersSavingShops = new ArrayList<>();
+    
+    // Map to track player last processed locations for movement-based display updates
+    private ConcurrentHashMap<UUID, Location> lastProcessedLocations = new ConcurrentHashMap<>();
+
+    // Default chunk radius for shop location searches and maximum display distance
+    // these values come from the Shop class configuration - see getShopSearchRadius() and getMaxShopDisplayDistance()
+    
+    // Very close distance for immediate shop display
+    private static final double CLOSE_SHOP_DISPLAY_DISTANCE = 2.0;
 
     public ShopHandler(Shop instance) {
         plugin = instance;
@@ -439,68 +448,222 @@ public class ShopHandler {
         return shopLocations;
     }
 
-    public HashSet<Location> getShopLocationsNearLocation(Location location){
-        int chunkX = UtilMethods.floor(location.getBlockX()) >> 4;
-        int chunkZ = UtilMethods.floor(location.getBlockZ()) >> 4;
+    /**
+     * Gets shop locations near a specific location within a default radius of 1 chunk
+     * (which covers a 3x3 chunk area)
+     * 
+     * @param location The center location to search around
+     * @return HashSet of shop locations in the surrounding chunks
+     */
+    public HashSet<Location> getShopLocationsNearLocation(Location location) {
+        return getShopLocationsNearLocation(location, plugin.getShopSearchRadius());
+    }
 
+    /**
+     * Gets shop locations near a specific location within a specified chunk radius
+     * 
+     * @param location The center location to search around
+     * @param chunkRadius The radius (in chunks) to search around the center location
+     *                    A radius of 1 means a 3x3 chunk area, 2 means 5x5, etc.
+     * @return HashSet of shop locations in the surrounding chunks
+     */
+    public HashSet<Location> getShopLocationsNearLocation(Location location, int chunkRadius) {
+        if (chunkRadius < 0) {
+            throw new IllegalArgumentException("Chunk radius cannot be negative");
+        }
+        
+        int chunkX = getChunkX(location);
+        int chunkZ = getChunkZ(location);
+        String worldName = location.getWorld().getName();
+        
         HashSet<Location> shopsNearLocation = new HashSet<>();
-        String chunkKey;
-        for(int x=-1; x<2; x++){
-            for(int z=-1; z<2; z++){
-                chunkKey = location.getWorld().getName()+"_"+(chunkX+x)+"_"+(chunkZ+z);
+        
+        // Loop through all chunks in the specified radius
+        for (int x = -chunkRadius; x <= chunkRadius; x++) {
+            for (int z = -chunkRadius; z <= chunkRadius; z++) {
+                String chunkKey = createChunkKey(worldName, chunkX + x, chunkZ + z);
                 List<Location> shopLocations = getShopLocations(chunkKey);
                 shopsNearLocation.addAll(shopLocations);
             }
         }
+        
         return shopsNearLocation;
     }
 
-//    public List<AbstractShop> getShopsNearLocation(Location location){
-//        int chunkX = UtilMethods.floor(location.getBlockX()) >> 4;
-//        int chunkZ = UtilMethods.floor(location.getBlockZ()) >> 4;
-//
-//        List<AbstractShop> shopsNearLocation = new ArrayList<>();
-//        String chunkKey;
-//        for(int x=-1; x<2; x++){
-//            for(int z=-1; z<2; z++){
-//                chunkKey = location.getWorld().getName()+"_"+(chunkX+x)+"_"+(chunkZ+z);
-//                List<Location> shopLocations = getShopLocations(chunkKey);
-//                for(Location loc : shopLocations){
-//                    shopsNearLocation.add(this.getShop(loc));
-//                }
-//            }
-//        }
-//        return shopsNearLocation;
-//    }
+    /**
+     * Gets actual shop objects near a specific location within the default radius
+     * 
+     * @param location The center location to search around
+     * @return List of shops in the surrounding chunks
+     */
+    public List<AbstractShop> getShopsNearLocation(Location location) {
+        return getShopsNearLocation(location, plugin.getShopSearchRadius());
+    }
+
+    /**
+     * Gets actual shop objects near a specific location within a specified chunk radius
+     * 
+     * @param location The center location to search around
+     * @param chunkRadius The radius (in chunks) to search around the center location
+     * @return List of shops in the surrounding chunks
+     */
+    public List<AbstractShop> getShopsNearLocation(Location location, int chunkRadius) {
+        List<AbstractShop> shopsNearLocation = new ArrayList<>();
+        
+        // Get shop locations in the specified radius
+        for (Location shopLocation : getShopLocationsNearLocation(location, chunkRadius)) {
+            AbstractShop shop = getShop(shopLocation);
+            if (shop != null) {
+                shopsNearLocation.add(shop);
+            }
+        }
+        
+        return shopsNearLocation;
+    }
+
+    /**
+     * Gets shop locations near a specific location within a specified chunk radius,
+     * filtered by maximum distance in blocks.
+     * 
+     * @param location The center location to search around
+     * @param chunkRadius The radius (in chunks) to search around the center location
+     * @param maxDistanceSquared The maximum squared distance (in blocks) to include shops
+     *                          Using squared distance avoids expensive square root calculations
+     * @return HashSet of shop locations within the distance limit
+     */
+    public HashSet<Location> getShopLocationsNearLocationWithinDistance(Location location, int chunkRadius, double maxDistanceSquared) {
+        HashSet<Location> nearbyLocations = getShopLocationsNearLocation(location, chunkRadius);
+        HashSet<Location> filteredLocations = new HashSet<>();
+        
+        // Filter by distance
+        for (Location shopLocation : nearbyLocations) {
+            // Using distanceSquared is more efficient than distance
+            if (location.distanceSquared(shopLocation) <= maxDistanceSquared) {
+                filteredLocations.add(shopLocation);
+            }
+        }
+        
+        return filteredLocations;
+    }
+
+    /**
+     * Gets actual shop objects near a specific location within a specified radius in blocks
+     * 
+     * @param location The center location to search around
+     * @param chunkRadius The radius (in chunks) to search around the center location
+     * @param maxDistance The maximum distance (in blocks) to include shops
+     * @return List of shops within the distance limit
+     */
+    public List<AbstractShop> getShopsNearLocationWithinDistance(Location location, int chunkRadius, double maxDistance) {
+        List<AbstractShop> shops = new ArrayList<>();
+        double maxDistanceSquared = maxDistance * maxDistance;
+        
+        for (Location shopLocation : getShopLocationsNearLocationWithinDistance(location, chunkRadius, maxDistanceSquared)) {
+            AbstractShop shop = getShop(shopLocation);
+            if (shop != null) {
+                shops.add(shop);
+            }
+        }
+        
+        return shops;
+    }
 
     public void processShopDisplaysNearPlayer(Player player){
-        // Process only one player's shop at a time
         if (playersProcessingShopDisplays.contains(player.getUniqueId())) {
             return;
         }
+        
+        // Get current player location
+        Location currentLocation = player.getLocation();
+        
+        // Check if player has moved enough to warrant processing
+        Location lastLocation = lastProcessedLocations.get(player.getUniqueId());
+        double movementThreshold = plugin.getDisplayMovementThreshold();
+        
+        // Skip processing if player hasn't moved enough and this isn't the first check
+        if (lastLocation != null && 
+            lastLocation.getWorld().equals(currentLocation.getWorld()) && 
+            lastLocation.distanceSquared(currentLocation) < (movementThreshold * movementThreshold)) {
+            return;
+        }
+        
+        // Player has moved enough or this is first check, proceed with processing
         playersProcessingShopDisplays.add(player.getUniqueId());
 
         plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
             try {
-                // Process each shop location near the player
-                for (Location shopLocation : getShopLocationsNearLocation(player.getLocation())) {
+                Location playerLocation = player.getLocation();
+                
+                // Get shop locations within the maximum display distance
+                // This is more efficient as it first filters by chunk and then by exact distance
+                HashSet<Location> nearbyShopLocations = getShopLocationsNearLocationWithinDistance(
+                    playerLocation, 
+                    plugin.getShopSearchRadius(), 
+                    plugin.getMaxShopDisplayDistance() * plugin.getMaxShopDisplayDistance()
+                );
+                
+                // Record that we're processing displays for this player
+                lastProcessedLocations.put(player.getUniqueId(), playerLocation.clone());
+                
+                // A small random offset added to each shop to stagger packet sending
+                // This helps prevent overwhelming the client with too many entity packets at once
+                int spawnDelay = 0;
+                int jitterInterval = 2; // Add 2 ticks between each shop (100ms)
+                
+                // Process each nearby shop location
+                for (Location shopLocation : nearbyShopLocations) {
                     AbstractShop shop = getShop(shopLocation);
                     if (shop == null) continue;
+                    
+                    // Use final variables for the lambda
+                    final int delay = spawnDelay;
+                    final AbstractShop finalShop = shop;
 
                     // Use distance check to determine if display should be shown
-                    double distance = player.getLocation().distance(shop.getSignLocation());
-                    if (distance < 2) {
-                        // Very close to shop, always show
-                        if (!hasActiveDisplay(player, shop.getSignLocation())) shop.getDisplay().spawn(player);
-                        addActiveShopDisplay(player, shop.getSignLocation());
-                    } else if (distance < 10) {
+                    double distance = playerLocation.distance(shop.getSignLocation());
+                    
+                    if (distance < CLOSE_SHOP_DISPLAY_DISTANCE) {
+                        // Very close to shop, always show (with slight delay to prevent client overload)
+                        if (!hasActiveDisplay(player, shop.getSignLocation())) {
+                            plugin.getFoliaLib().getScheduler().runLater(() -> {
+                                if (player.isOnline()) {
+                                    finalShop.getDisplay().spawn(player);
+                                    addActiveShopDisplay(player, finalShop.getSignLocation());
+                                }
+                            }, delay);
+                        }
+                    } else if (distance < plugin.getMaxShopDisplayDistance()) {
                         // Within reasonable distance
-                        if (!hasActiveDisplay(player, shop.getSignLocation())) shop.getDisplay().spawn(player);
-                        addActiveShopDisplay(player, shop.getSignLocation());
+                        if (!hasActiveDisplay(player, shop.getSignLocation())) {
+                            plugin.getFoliaLib().getScheduler().runLater(() -> {
+                                if (player.isOnline()) {
+                                    finalShop.getDisplay().spawn(player);
+                                    addActiveShopDisplay(player, finalShop.getSignLocation());
+                                }
+                            }, delay);
+                        }
                     } else {
                         // Too far, remove display
                         shop.getDisplay().remove(player);
                         removeActiveShopDisplay(player, shop.getSignLocation());
+                    }
+                    
+                    // Increase the delay for the next shop
+                    spawnDelay += jitterInterval;
+                }
+                
+                // Also check if we need to remove any displays that are no longer in range
+                if (playersWithActiveShopDisplays.containsKey(player.getUniqueId())) {
+                    HashSet<Location> activeDisplays = new HashSet<>(playersWithActiveShopDisplays.get(player.getUniqueId()));
+                    for (Location displayLocation : activeDisplays) {
+                        // If this active display is not in our nearby locations, remove it
+                        if (!nearbyShopLocations.contains(displayLocation)) {
+                            AbstractShop shop = getShop(displayLocation);
+                            if (shop != null) {
+                                shop.getDisplay().remove(player);
+                                removeActiveShopDisplay(player, displayLocation);
+                            }
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -515,6 +678,48 @@ public class ShopHandler {
     public void clearShopDisplaysNearPlayer(Player player){
         if(playersWithActiveShopDisplays.containsKey(player.getUniqueId()))
             playersWithActiveShopDisplays.remove(player.getUniqueId());
+        
+        // Also remove player from last processed locations
+        lastProcessedLocations.remove(player.getUniqueId());
+        
+        // Also remove from processing list to avoid any potential deadlocks
+        playersProcessingShopDisplays.remove(player.getUniqueId());
+    }
+
+    /**
+     * Force shop display processing for a player, ignoring movement threshold checks.
+     * This should be called after teleportation or world changes.
+     * 
+     * @param player The player to process shop displays for
+     */
+    public void forceProcessShopDisplaysNearPlayer(Player player) {
+        // Remove from processing list if somehow still in there
+        playersProcessingShopDisplays.remove(player.getUniqueId());
+        
+        // Remove any previous location tracking
+        lastProcessedLocations.remove(player.getUniqueId());
+        
+        // Check if player is already being processed - if so, clear all displays first
+        plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
+            if (player.isOnline()) {
+                // Clear all existing displays for this player to ensure a clean slate
+                if (playersWithActiveShopDisplays.containsKey(player.getUniqueId())) {
+                    HashSet<Location> displays = playersWithActiveShopDisplays.get(player.getUniqueId());
+                    if (displays != null) {
+                        for (Location displayLoc : new HashSet<>(displays)) {
+                            AbstractShop shop = getShop(displayLoc);
+                            if (shop != null) {
+                                shop.getDisplay().remove(player);
+                            }
+                        }
+                    }
+                    playersWithActiveShopDisplays.remove(player.getUniqueId());
+                }
+                
+                // Process displays normally (will pass movement check since lastLocation is null)
+                processShopDisplaysNearPlayer(player);
+            }
+        }, 1);
     }
 
     public boolean hasActiveDisplay(Player player, Location shopSignLocation) { 
@@ -653,14 +858,46 @@ public class ShopHandler {
 //    }
 
     private String getChunkKey(Location location){
-        int chunkX = UtilMethods.floor(location.getBlockX()) >> 4;
-        int chunkZ = UtilMethods.floor(location.getBlockZ()) >> 4;
+        int chunkX = getChunkX(location);
+        int chunkZ = getChunkZ(location);
         String worldName = location.getWorld() != null ? location.getWorld().getName() : "unknown_world";
-        return worldName+"_"+chunkX+"_"+chunkZ;
+        return createChunkKey(worldName, chunkX, chunkZ);
     }
 
     private String getChunkKey(Chunk chunk){
-        return chunk.getWorld().getName()+"_"+chunk.getX()+"_"+chunk.getZ();
+        return createChunkKey(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
+    }
+
+    /**
+     * Creates a chunk key from world name and chunk coordinates
+     * 
+     * @param worldName The name of the world
+     * @param chunkX The x-coordinate of the chunk
+     * @param chunkZ The z-coordinate of the chunk
+     * @return A string key uniquely identifying the chunk
+     */
+    private String createChunkKey(String worldName, int chunkX, int chunkZ) {
+        return worldName + "_" + chunkX + "_" + chunkZ;
+    }
+
+    /**
+     * Gets the chunk X coordinate for a location
+     * 
+     * @param location The location
+     * @return The chunk X coordinate
+     */
+    private int getChunkX(Location location) {
+        return UtilMethods.floor(location.getBlockX()) >> 4;
+    }
+
+    /**
+     * Gets the chunk Z coordinate for a location
+     * 
+     * @param location The location
+     * @return The chunk Z coordinate
+     */
+    private int getChunkZ(Location location) {
+        return UtilMethods.floor(location.getBlockZ()) >> 4;
     }
 
     public void removeAllDisplays(Player player) {
@@ -1209,6 +1446,82 @@ public class ShopHandler {
 
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Checks if a player is within the specified distance of a chunk
+     * 
+     * @param player The player to check
+     * @param chunk The chunk to check against
+     * @param maxDistance The maximum distance in blocks
+     * @return True if the player is near the chunk
+     */
+    private boolean isPlayerNearChunk(Player player, Chunk chunk, double maxDistance) {
+        if (!player.getWorld().equals(chunk.getWorld())) {
+            return false;
+        }
+        
+        // Get chunk boundaries
+        int minX = chunk.getX() << 4;
+        int minZ = chunk.getZ() << 4;
+        int maxX = minX + 15;
+        int maxZ = minZ + 15;
+        
+        // Get player location
+        Location playerLoc = player.getLocation();
+        int playerX = playerLoc.getBlockX();
+        int playerZ = playerLoc.getBlockZ();
+        
+        // Calculate minimum distance to chunk border
+        double distance;
+        
+        // Player is outside chunk on X axis
+        if (playerX < minX) {
+            distance = minX - playerX;
+        } else if (playerX > maxX) {
+            distance = playerX - maxX;
+        } else {
+            // Player is within chunk X range
+            distance = 0;
+        }
+        
+        // Player is outside chunk on Z axis
+        if (playerZ < minZ) {
+            double zDistance = minZ - playerZ;
+            distance = Math.sqrt(distance * distance + zDistance * zDistance);
+        } else if (playerZ > maxZ) {
+            double zDistance = playerZ - maxZ;
+            distance = Math.sqrt(distance * distance + zDistance * zDistance);
+        }
+        
+        return distance <= maxDistance;
+    }
+    
+    /**
+     * Rebuilds all shop displays in a chunk for nearby players
+     * Called after a chunk has been loaded to ensure displays are shown
+     * 
+     * @param chunk The chunk that was loaded
+     */
+    public void rebuildDisplaysInChunk(Chunk chunk) {
+        // Get shop locations in this chunk
+        String chunkKey = getChunkKey(chunk);
+        List<Location> shopLocations = getShopLocations(chunkKey);
+        
+        // Only proceed if this chunk has shops
+        if (shopLocations.isEmpty()) {
+            return;
+        }
+        
+        // Process for all players who might be able to see shops in this chunk
+        for (Player player : chunk.getWorld().getPlayers()) {
+            if (isPlayerNearChunk(player, chunk, plugin.getMaxShopDisplayDistance())) {
+                plugin.getLogger().debug("Rebuilding shop displays for " + player.getName() + " in chunk " + chunkKey);
+                
+                // Force a complete refresh for this player to ensure displays appear
+                forceProcessShopDisplaysNearPlayer(player);
+            }
         }
     }
 }

@@ -118,6 +118,12 @@ public class Shop extends JavaPlugin {
     private NamespacedKey signLocationNameSpacedKey;
     private NamespacedKey playerUUIDNameSpacedKey;
     private LogHandler logHandler;
+    
+    // Shop display optimization settings
+    private double displayProcessInterval;
+    private double displayMovementThreshold;
+    private double maxShopDisplayDistance;
+    private int shopSearchRadius;
 
     private YamlConfiguration config;
 
@@ -458,6 +464,12 @@ public class Shop extends JavaPlugin {
         clickTypeActionMap.put(ShopClickType.valueOf(config.getString("actionMappings.transactWithShopFullStack")), ShopAction.TRANSACT_FULLSTACK);
         clickTypeActionMap.put(ShopClickType.valueOf(config.getString("actionMappings.viewShopDetails")), ShopAction.VIEW_DETAILS);
         clickTypeActionMap.put(ShopClickType.valueOf(config.getString("actionMappings.cycleShopDisplay")), ShopAction.CYCLE_DISPLAY);
+        
+        // Load shop display optimization settings
+        displayProcessInterval = config.getDouble("displayProcessInterval");
+        displayMovementThreshold = config.getDouble("displayMovementThreshold");
+        maxShopDisplayDistance = config.getDouble("maxShopDisplayDistance");
+        shopSearchRadius = config.getInt("shopSearchRadius");
 
         // Check if we should load VAULT economy
         if (currencyType == CurrencyType.VAULT) {
@@ -1130,5 +1142,33 @@ public class Shop extends JavaPlugin {
     // Getter for FoliaLib
     public FoliaLib getFoliaLib() {
         return foliaLib;
+    }
+
+    public double getDisplayProcessInterval() {
+        return displayProcessInterval;
+    }
+    
+    public double getDisplayMovementThreshold() {
+        return displayMovementThreshold;
+    }
+
+    /**
+     * Gets the maximum distance at which shop displays will be shown to players.
+     * Higher values will show shops from further away but may cause client lag.
+     * 
+     * @return The maximum display distance in blocks
+     */
+    public double getMaxShopDisplayDistance() {
+        return maxShopDisplayDistance;
+    }
+
+    /**
+     * Gets the radius (in chunks) around a player to search for shops.
+     * Each increment searches exponentially more chunks (1=3x3 area, 2=5x5 area, 3=7x7 area).
+     * 
+     * @return The shop search radius in chunks
+     */
+    public int getShopSearchRadius() {
+        return shopSearchRadius;
     }
 }

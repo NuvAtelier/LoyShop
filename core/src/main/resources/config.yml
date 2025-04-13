@@ -1,4 +1,3 @@
-
 # =================================================================== #
 #                         GENERAL SETTINGS                            #
 # =================================================================== #
@@ -127,6 +126,7 @@ setGlowingItemFrame: false
 
 # This controls whether shop sign text should be glowing by default #
 # THIS CAN ONLY BE USED IN MINECRAFT 1.17 OR ABOVE #
+# Signs on Bedrock Edition might look dimmed out
 setGlowingSignText: false
 
 # =================================================================== #
@@ -289,6 +289,38 @@ bluemap-marker:
       </div>
    minDistance: 0
    maxDistance: 500
+
+# =================================================================== #
+#                   SHOP PERFORMANCE OPTIMIZATIONS                    #
+# =================================================================== #
+
+# You should not need to change these settings, we have tried to balance them for performance & experience. #
+# If you are experiencing performance issues however, you can try to tune them. #
+
+# How often (in seconds) to check for shop displays that need to be shown to players
+# Lower values make shop displays appear faster.
+# You can increase this if you are experiencing performance issues to reduce the number of checks.
+displayProcessInterval: 1
+
+# How far a player needs to move (in blocks) before shop display checks should be processed
+# This prevents unnecessary processing when players are standing still
+# Recommended range: 1-4, default: 1.0
+displayMovementThreshold: 1.0
+
+# Maximum distance (in blocks) at which shop displays will be shown to players.
+# Mainly affects player performance, not server performance.
+# Recommended range: 10-20, default: 16.0
+# For an extra smooth experience, you can set this higher to around 32 (radius 2), but this will also increase resource usage on the server.
+# NOTE: Default "Entity Render Distance" settings for the Minecraft client is 20 blocks,
+#       so setting this higher than 20 will only "preload" shop displays for players beyond this distance.
+maxShopDisplayDistance: 16.0
+
+# Radius (in chunks) around a player to search for shops
+# Each increment searches exponentially more chunks (1=3x3 area, 2=5x5 area, etc)
+# Recommended: 1, default: 1
+# You can set this higher, but unless you are going above 20, you should not see any difference.
+# The code is highly optimized, so you can set this higher, but you should not need to.
+shopSearchRadius: 1
 
 # =================================================================== #
 #                            DEBUG TOOLS                              #

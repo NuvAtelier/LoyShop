@@ -61,14 +61,24 @@ public class DisplayListener implements Listener {
             }, 1, 15);
         }
 
-        // Run shop displays processing every 100 ticks (5 seconds)
+        // Run shop displays processing using configurable interval from config
         repeatingDisplayTask = plugin.getFoliaLib().getScheduler().runTimerAsync(() -> {
-            for (Player player : plugin.getServer().getOnlinePlayers()) {
+            // Process players in a staggered fashion to avoid overwhelming the server or client
+            List<Player> onlinePlayers = new ArrayList<>(plugin.getServer().getOnlinePlayers());
+            
+            for (int i = 0; i < onlinePlayers.size(); i++) {
+                Player player = onlinePlayers.get(i);
                 if (player != null && player.isOnline()) {
-                    plugin.getShopHandler().processShopDisplaysNearPlayer(player);
+                    // Add a slight staggered delay for each player to distribute packet sending
+                    final int playerIndex = i;
+                    plugin.getFoliaLib().getScheduler().runLater(() -> {
+                        if (player.isOnline()) {
+                            plugin.getShopHandler().processShopDisplaysNearPlayer(player);
+                        }
+                    }, playerIndex); // Stagger by 1 tick per player
                 }
             }
-        }, 1, 20);
+        }, 1, (long)(plugin.getDisplayProcessInterval() * 20)); // Convert seconds to ticks
     }
 
     public DisplayListener(Shop instance) {

@@ -6,11 +6,6 @@ import com.snowgears.shop.hook.WorldGuardHook;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.*;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -28,14 +23,12 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.scheduler.BukkitRunnable;
 import com.tcoded.folialib.wrapper.task.WrappedTask;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 
 public class ShopListener implements Listener {
@@ -372,8 +365,9 @@ public class ShopListener implements Listener {
 //                }
 
             plugin.getShopHandler().clearShopDisplaysNearPlayer(player);
-            plugin.getShopHandler().processShopDisplaysNearPlayer(player);
-        }, 2);
+            // Force process shop displays on login - ignore movement threshold
+            plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
+        }, 20);
 
 
         //setup a repeating task that checks if async sql calculations are still running, if they are done, send messages and cancel task
@@ -425,17 +419,36 @@ public class ShopListener implements Listener {
 
     @EventHandler (ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event){
-        plugin.getShopHandler().processShopDisplaysNearPlayer(event.getPlayer());
-        //if(!event.getTo().getWorld().getUID().equals(event.getFrom().getWorld().getUID())) {
-            plugin.getFoliaLib().getScheduler().runLater(() -> {
-                plugin.getShopHandler().processShopDisplaysNearPlayer(event.getPlayer());
-            }, 5);
-        //}
+        final Player player = event.getPlayer();
+        
+        // Immediate attempt right after teleport
+        plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
+        
+        // Staggered display updates after teleport
+        // First delayed attempt - wait for chunks to load
+        plugin.getFoliaLib().getScheduler().runLater(() -> {
+            if (player.isOnline()) {
+                plugin.getLogger().debug("First display refresh for " + player.getName() + " after teleport");
+                plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
+            }
+        }, 5); // 5 ticks (250ms) delay
+        
+        // Second attempt - for completeness
+        plugin.getFoliaLib().getScheduler().runLater(() -> {
+            if (player.isOnline()) {
+                plugin.getLogger().debug("Second display refresh for " + player.getName() + " after teleport");
+                plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
+            }
+        }, 15); // 750ms delay
     }
 
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event){
         plugin.getShopHandler().processUnloadedShopsInChunk(event.getChunk());
+        
+        // Also rebuild shop displays for any players near this chunk
+        // This ensures displays reappear after chunk unload/load cycles
+        plugin.getShopHandler().rebuildDisplaysInChunk(event.getChunk());
     }
 
     public int getTeleportCooldownRemaining(Player player){
