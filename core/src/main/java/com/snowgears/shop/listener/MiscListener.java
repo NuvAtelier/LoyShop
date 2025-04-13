@@ -370,7 +370,9 @@ public class MiscListener implements Listener {
                 process.displayFloatingText("createHitChest", null);
                 List<String> autocomplete = new ArrayList<>();
                 Arrays.asList(ShopType.values()).forEach((shopType -> autocomplete.add(shopType.toString().toLowerCase())));
-                player.setCustomChatCompletions(autocomplete);
+                try {
+                    player.setCustomChatCompletions(autocomplete);
+                } catch (Error error) {} // Suppress error if autocomplete is not supported
                 if((!plugin.usePerms() && player.isOp()) || (plugin.usePerms() && player.hasPermission("shop.operator"))) {
                     ShopMessage.sendMessage("adminCreateHitChest", null, process, player);
                 }
