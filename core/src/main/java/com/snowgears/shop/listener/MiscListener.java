@@ -290,8 +290,10 @@ public class MiscListener implements Listener {
                                 return;
                             }
 
-                            if(!plugin.getShopCreationUtil().shopCanBeCreated(player, clicked))
+                            if(!plugin.getShopCreationUtil().shopCanBeCreated(player, clicked)){
+                                event.setCancelled(true);
                                 return;
+                            }
                             BlockFace signFacing = plugin.getShopCreationUtil().calculateBlockFaceForSign(player, clicked, event.getBlockFace());
                             if(signFacing == null) {
                                 event.setCancelled(true);
@@ -351,8 +353,10 @@ public class MiscListener implements Listener {
                     return;
                 }
 
-                if(!plugin.getShopCreationUtil().shopCanBeCreated(player, clicked))
+                if(!plugin.getShopCreationUtil().shopCanBeCreated(player, clicked)){
+                    event.setCancelled(true);
                     return;
+                }
 
                 event.setCancelled(true);
                 BlockFace signFacing = plugin.getShopCreationUtil().calculateBlockFaceForSign(player, clicked, event.getBlockFace());
