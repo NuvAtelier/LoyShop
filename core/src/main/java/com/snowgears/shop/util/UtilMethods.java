@@ -740,7 +740,9 @@ public class UtilMethods {
         final String HEX_COLOR_CODE_REGEX = "(§x§.§.§.§.§.§.)"; // Hex code format using mc color codes
         final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORa-fk-or])";
 
-        Matcher matcher = Pattern.compile(HEX_COLOR_CODE_REGEX + "|" + COLOR_CODE_REGEX + "| |[^&§\\s]+").matcher(text);
+        Matcher matcher = Pattern
+            .compile(HEX_COLOR_CODE_REGEX + "|" + COLOR_CODE_REGEX + "| |[^&§\\s]+")
+            .matcher(ChatColor.translateAlternateColorCodes('&', text));
         List<String> words = new ArrayList<>();
         while (matcher.find()) {
             words.add(matcher.group());
@@ -750,34 +752,50 @@ public class UtilMethods {
         List<String> linesByColor = new ArrayList<>();
 
         String latestColors = "";
-        ChatColor latestColor = ChatColor.WHITE;
+        String latestHexColor = ""; // For tracking hex colors
+        ChatColor latestColor = ChatColor.WHITE; // Initially white in case user provides no color codes
         boolean isBold = false;
         boolean isItalic = false;
         boolean isStrikethrough = false;
         boolean isUnderlined = false;
         boolean isObfuscated = false;
         for (String word : words) {
-            Shop.getPlugin().getLogger().hyper("[ShopMessage.format]     word: " + word);
-            if (word.matches(COLOR_CODE_REGEX)) {
-                ChatColor newColor = ChatColor.getByChar(word.charAt(1));
-                if (newColor == ChatColor.BOLD) isBold = true;
-                else if (newColor == ChatColor.ITALIC) isItalic = true;
-                else if (newColor == ChatColor.STRIKETHROUGH) isStrikethrough = true;
-                else if (newColor == ChatColor.UNDERLINE) isUnderlined = true;
-                else if (newColor == ChatColor.MAGIC) isObfuscated = true;
-                else if (newColor == ChatColor.RESET) {
-                    Shop.getPlugin().getLogger().hyper("[ShopMessage.format]     matched RESET color code: " + word);
-                    latestColor = ChatColor.WHITE;
-                    isBold = false;
-                    isItalic = false;
-                    isStrikethrough = false;
-                    isUnderlined = false;
-                    isObfuscated = false;
-                } else {
-                    latestColor = newColor;
+            if (Shop.getPlugin() != null) Shop.getPlugin().getLogger().hyper("[ShopMessage.format]     word: " + word);
+            
+            boolean isStandardColor = word.matches(COLOR_CODE_REGEX);
+            boolean isHexColor = word.matches(HEX_COLOR_CODE_REGEX);
+            if (isStandardColor || isHexColor) {
+                if (isStandardColor) {
+                    ChatColor newColor = ChatColor.getByChar(word.charAt(1));
+                    if (newColor == ChatColor.BOLD) isBold = true;
+                    else if (newColor == ChatColor.ITALIC) isItalic = true;
+                    else if (newColor == ChatColor.STRIKETHROUGH) isStrikethrough = true;
+                    else if (newColor == ChatColor.UNDERLINE) isUnderlined = true;
+                    else if (newColor == ChatColor.MAGIC) isObfuscated = true;
+                    else if (newColor == ChatColor.RESET) {
+                        if (Shop.getPlugin() != null) Shop.getPlugin().getLogger().hyper("[ShopMessage.format]     matched RESET color code: " + word);
+                        latestColor = ChatColor.WHITE;
+                        latestHexColor = ""; // Reset hex color when RESET code is found
+                        isBold = false;
+                        isItalic = false;
+                        isStrikethrough = false;
+                        isUnderlined = false;
+                        isObfuscated = false;
+                    } else {
+                        latestColor = newColor;
+                        latestHexColor = ""; // Clear hex color when a standard color is set
+                    }
+                } else if (isHexColor) {
+                    latestColor = null;
+                    latestHexColor = word;
                 }
 
-                String newColors = latestColor.toString();
+                String newColors = "";
+                // Follow vanilla behavior, add colors first, then formatting codes
+                // FIRST Add standard color OR hex color
+                if (latestColor != null) newColors += latestColor.toString();
+                else if (!latestHexColor.isEmpty()) newColors += latestHexColor;
+                // SECOND Add formatting codes
                 if (isBold) newColors += ChatColor.BOLD;
                 if (isItalic) newColors += ChatColor.ITALIC;
                 if (isStrikethrough) newColors += ChatColor.STRIKETHROUGH;
@@ -787,7 +805,10 @@ public class UtilMethods {
                 if (!latestColors.equals(newColors)) {
                     latestColors = newColors;
                     // New color, add the line and start a new line
-                    linesByColor.add(currentLine.toString());
+                    if (ChatColor.stripColor(currentLine.toString()).length() > 0) {
+                        linesByColor.add(currentLine.toString());
+                    }
+                    // Set the current line to the new color, ignore any old colors
                     currentLine = new StringBuilder(latestColors);
                 }
 
@@ -795,10 +816,13 @@ public class UtilMethods {
             }
 
             // Also split if the single color line is too long!
-            int potentialLength = ChatColor.stripColor(currentLine.toString()).length() + ChatColor.stripColor(word).length() + 1;
-            Shop.getPlugin().getLogger().spam("[ShopMessage.format]     potentialLength: " + potentialLength + " maxLineLength: " + maxLineLength);
+            int currentLineLength = ChatColor.stripColor(currentLine.toString()).length();
+            int nextWordLength = ChatColor.stripColor(word).length();
+            int potentialLength = currentLineLength + nextWordLength;
+            if (Shop.getPlugin() != null) Shop.getPlugin().getLogger().spam("[ShopMessage.format]     potentialLength: " + potentialLength + " maxLineLength: " + maxLineLength);
+            
             if (word.matches(" ") && potentialLength > maxLineLength) {
-                Shop.getPlugin().getLogger().spam("[ShopMessage.format]     adding line: " + currentLine.toString().trim(), true);
+                if (Shop.getPlugin() != null) Shop.getPlugin().getLogger().spam("[ShopMessage.format]     adding line: " + currentLine.toString().trim(), true);
                 linesByColor.add(currentLine.toString());
                 currentLine = new StringBuilder(latestColors);
             } else {
@@ -808,7 +832,7 @@ public class UtilMethods {
 
         // Append the last line if there's any content left
         if (currentLine.length() > 0) {
-            Shop.getPlugin().getLogger().spam("[ShopMessage.format]     adding line: " + currentLine.toString().trim(), true);
+            if (Shop.getPlugin() != null) Shop.getPlugin().getLogger().spam("[ShopMessage.format]     adding line: " + currentLine.toString().trim(), true);
             linesByColor.add(currentLine.toString());
         }
 
@@ -816,10 +840,16 @@ public class UtilMethods {
         List<String> result = new ArrayList<>();
         currentLine = new StringBuilder();
         for (String line : linesByColor) {
-            // Add it if we are less than the max line length or if the line is only a color
-            if (currentLine.length() + line.length() <= maxLineLength || ChatColor.stripColor(line).length() == 0) {
-                if (currentLine.toString().trim().length() == 0 || ChatColor.stripColor(line).trim().length() == 0) currentLine.append(line);
-                else currentLine.append(line);
+            int lineLengthNoColors = ChatColor.stripColor(line).length();
+            int currentLineLengthNoColors = ChatColor.stripColor(currentLine.toString()).length();
+            // If we are less than the max line length
+            // OR if the line/currentLine is empty add it
+            if (
+                currentLineLengthNoColors + lineLengthNoColors <= maxLineLength 
+                || lineLengthNoColors == 0
+                || currentLineLengthNoColors == 0
+            ) {
+                currentLine.append(line);
             } else {
                 result.add(currentLine.toString().trim()); // only trim on final add
                 currentLine = new StringBuilder(line);
