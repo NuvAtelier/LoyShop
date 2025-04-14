@@ -1,6 +1,11 @@
+#
+# WIKI PAGE: https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml) #
+#
+
 # =================================================================== #
 #                         GENERAL SETTINGS                            #
 # =================================================================== #
+# https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#general-settings
 # This runs a check and notifies operators on login that a new Shop version is available #
 checkUpdates: true
 
@@ -24,6 +29,7 @@ deletePlayerShopsAfterXHoursOffline: 0
 # =================================================================== #
 #                      CURRENCY AND ECONOMY                           #
 # =================================================================== #
+# https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#currency-and-economy-settings
 
 # type :
 # ITEM - shops will use a specified item as the currency (default is Emerald). To change this item in-game, run the
@@ -46,6 +52,7 @@ currency:
    format: "[price] [name]"
 
 # This allows shops to sell partial stacks for a calculated partial rate if the shop is low on stock #
+# https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#allowpartialsales #
 allowPartialSales: true
 # This will make it so shops will only complete transactions if the item durabilities are the same #
 checkItemDurability: true
@@ -93,6 +100,7 @@ priceSuffixes:
 # =================================================================== #
 #                           SHOP DISPLAY                              #
 # =================================================================== #
+# https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#shop-display
 
 # This will change the type of item display that shops will use by default above their chests #
 # The options are: NONE, ITEM, GLASS_CASE, LARGE_ITEM, ITEM_FRAME #
@@ -132,6 +140,7 @@ setGlowingSignText: false
 # =================================================================== #
 #                         SHOP INTERACTIONS                           #
 # =================================================================== #
+# https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#shop-interactions
 
 # Here you can map player actions on shops to specific controls
 #   - NONE
@@ -215,6 +224,7 @@ enabledContainers:
 #                    DATABASE LOGGING SETTINGS                        #
 #                  OFFLINE PURCHASE NOTIFICATIONS                     #
 # =================================================================== #
+# https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#database-logging--notifications
 
 # Database logging for player Shop Actions & Transactions #
 # Required for Offline Purchase Notifications to be sent, default enabled with FILE database #
@@ -240,6 +250,7 @@ logging:
       - "useSSL=false"
 
 # Logging must be enabled for purchase notifications to appear!
+# Check chatConfig.yml to customize the offline purchase notification message #
 offlinePurchaseNotifications:
    # Should offline purchases be shown to the user
    enabled: true
@@ -247,6 +258,7 @@ offlinePurchaseNotifications:
 # =================================================================== #
 #                    INTEGRATION HOOK SETTINGS                        #
 # =================================================================== #
+# https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#integrations
 
 # The following plugins are automatically integrated when detected (no configuration needed):
 # - LWC: Protects shops from being broken into by non-owners & allows player purchases
@@ -259,6 +271,7 @@ offlinePurchaseNotifications:
 # If WorldGuard is installed Shop will by default ALWAYS respect the WG flags 'passthrough', 'build', 'chest-access'. #
 # If you would like to ADDITIONALLY require Shops to be created in WorldGuard regions with a Shop flag set (flag=allow-shop), set `hookWorldGuard` to `true` #
 # WorldGuard plugin must be installed for this feature to work #
+# For more details: https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#hookWorldGuard #
 hookWorldGuard: false
 
 # Setting this to true will force all Shops to be created in Towny regions where the players are residents #
@@ -293,6 +306,7 @@ bluemap-marker:
 # =================================================================== #
 #                   SHOP PERFORMANCE OPTIMIZATIONS                    #
 # =================================================================== #
+# https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#shop-performance-optimizations
 
 # You should not need to change these settings, we have tried to balance them for performance & experience. #
 # If you are experiencing performance issues however, you can try to tune them. #
@@ -325,6 +339,7 @@ shopSearchRadius: 1
 # =================================================================== #
 #                            DEBUG TOOLS                              #
 # =================================================================== #
+# https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#debug-tools
 
 # Normally Developer Use only, but helpful if you are running into bugs and want more details!
 #

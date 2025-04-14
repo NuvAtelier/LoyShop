@@ -1,0 +1,68 @@
+To enable permission usage you must set `usePermissions` to `true` inside `config.yml`!
+
+If you have permissions enabled, then by default players have NO permissions, and permissions are only granted to OP's.
+
+**Available Permissions**
+``` yaml
+permissions:
+    shop.use:
+        description: Allows player to use all shops.
+        default: op
+    shop.use.sell:
+        description: Allows player to use selling shops.
+        default: op
+    shop.use.buy:
+        description: Allows player to use buying shops.
+        default: op
+    shop.use.barter:
+        description: Allows player to use barter shops.
+        default: op
+    shop.use.combo:
+        description: Allows player to use combo buy/sell shops.
+        default: op
+    shop.use.gamble:
+        description: Allows player to use gambling shops.
+        default: op
+
+    shop.create:
+        description: Allows player to create all shops.
+        default: op
+    shop.create.sell:
+        description: Allows player to create selling shops.
+        default: op
+    shop.create.buy:
+        description: Allows player to create buying shops.
+        default: op
+    shop.create.barter:
+        description: Allows player to create barter shops.
+        default: op
+    shop.create.combo:
+        description: Allows player to create combo shops that both buy and sell.
+        default: op
+    shop.create.gamble:
+        description: Allows player to create admin gamble shops. Only give this permission to Operators!
+        default: op
+
+    shop.destroy:
+        description: Allows player to destroy their own shops.
+        default: op
+    shop.destroy.other:
+        description: Allows player to destroy other player's shops.
+        default: op
+
+    shop.buildlimit.#:
+         description: Restricts the number of shops a player can create. For example shop.buildlimit.10 would limit players to creating 10 shops maximum.
+         default: op
+
+    shop.setdisplay:
+         description: Allows player to set the display type on their shop (allows shop display cycling, see actionMappings in config.yml).
+         default: op
+
+    shop.gui.teleport:
+         description: Allows player to use teleport to shops by using the gui.
+         default: op
+
+    shop.operator:
+        description: Allows access to operator actions like setting currency, setting the gamble item, reloading configs, creating gamble/admin shops, etc.
+        default: op
+```
