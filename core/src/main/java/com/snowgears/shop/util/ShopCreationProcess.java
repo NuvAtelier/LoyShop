@@ -213,7 +213,7 @@ public class ShopCreationProcess {
         // Build the lines
         String unformatted = ShopMessage.getUnformattedMessage(key, subkey);
         String formatted = ShopMessage.format(unformatted, this.placeholderContext).toLegacyText();
-        List<String> lines = UtilMethods.splitStringIntoLines(formatted, 40);
+        List<String> lines = UtilMethods.splitStringIntoLines(formatted, 35);
         // Display the lines
         displayFloatingLines(lines);
     }
@@ -232,7 +232,7 @@ public class ShopCreationProcess {
         for (String unformatted : ShopMessage.getUnformattedMessageList(key, subkey)) {
             if (unformatted != null && !unformatted.isEmpty()){
                 String formatted = ShopMessage.format(unformatted, this.placeholderContext).toLegacyText();
-                lines.addAll(UtilMethods.splitStringIntoLines(formatted, 40));
+                lines.addAll(UtilMethods.splitStringIntoLines(formatted, 35));
             }
         }
         // Display the lines
