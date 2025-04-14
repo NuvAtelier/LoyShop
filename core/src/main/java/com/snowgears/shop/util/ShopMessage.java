@@ -604,7 +604,10 @@ public class ShopMessage {
             Iterator<ShopType> typeIterator = typeList.iterator();
             while (typeIterator.hasNext()) {
                 ShopType type = typeIterator.next();
-                if (!player.hasPermission("shop.operator") && !player.hasPermission("shop.create." + type.toString())) {
+                if (
+                    !player.hasPermission("shop.operator") 
+                    && !player.hasPermission("shop.create." + type.toString()) 
+                    && !player.hasPermission("shop.create")) {
                     typeIterator.remove();
                 }
             }
