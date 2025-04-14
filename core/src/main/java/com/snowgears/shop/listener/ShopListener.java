@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 public class ShopListener implements Listener {
 
     private Shop plugin;
-    private HashMap<String, Integer> shopBuildLimits = new HashMap<String, Integer>();
+    private HashMap<UUID, Integer> shopBuildLimits = new HashMap<UUID, Integer>();
     private HashMap<UUID, OfflineTransactions> transactionsWhileOffline = new HashMap<>();
     private HashMap<UUID, Long> playerLastShopTeleport = new HashMap<>();
 
@@ -50,10 +50,11 @@ public class ShopListener implements Listener {
     }
 
     public void recalculateShopPerms(Player player){
+        int buildPermissionNumber = -1;
         if(plugin.usePerms()){
-            int buildPermissionNumber = -1;
+            Set<PermissionAttachmentInfo> permissions = player.getEffectivePermissions();
             //calculate base buildlimit permission first (highest number)
-            for(PermissionAttachmentInfo permInfo : player.getEffectivePermissions()){
+            for(PermissionAttachmentInfo permInfo : permissions){
                 if(permInfo.getPermission().contains("shop.buildlimit.")){
                     try {
                         int tempNum = Integer.parseInt(permInfo.getPermission().substring(permInfo.getPermission().lastIndexOf(".") + 1));
@@ -63,27 +64,30 @@ public class ShopListener implements Listener {
                     } catch (NumberFormatException e) {}
                 }
             }
-            //add all extra build limits next
-            for(PermissionAttachmentInfo permInfo : player.getEffectivePermissions()){
-                if(permInfo.getPermission().contains("shop.buildlimitextra.")){
-                    try {
-                        int extraNum = Integer.parseInt(permInfo.getPermission().substring(permInfo.getPermission().lastIndexOf(".") + 1));
-                        buildPermissionNumber += extraNum;
-                    } catch (NumberFormatException e) {}
-                }
-            }
-            if(buildPermissionNumber == -1)
-                shopBuildLimits.put(player.getName(), 10000);
-            else {
-                shopBuildLimits.put(player.getName(), buildPermissionNumber);
-            }
+        }
+        // Check if we had a matching permission
+        if(buildPermissionNumber == -1) {
+            shopBuildLimits.put(player.getUniqueId(), 10000);
+        } else {
+            shopBuildLimits.put(player.getUniqueId(), buildPermissionNumber);
         }
     }
 
     public int getBuildLimit(Player player){
-        if(shopBuildLimits.get(player.getName()) != null)
-            return shopBuildLimits.get(player.getName());
-        return Integer.MAX_VALUE;
+        boolean hasCachedBuildLimit = shopBuildLimits.containsKey(player.getUniqueId());
+        // Check if we need to calculate for the first time
+        // or if the players permissions have changed
+        if (!hasCachedBuildLimit) {
+            recalculateShopPerms(player);
+            return shopBuildLimits.get(player.getUniqueId());
+        }
+        int cachedBuildLimit = shopBuildLimits.get(player.getUniqueId());
+        if (!player.hasPermission("shop.buildlimit." + cachedBuildLimit)) {
+            recalculateShopPerms(player);
+            return shopBuildLimits.get(player.getUniqueId());
+        }
+        // We have the latest build limit permissions for the user
+        return cachedBuildLimit;
     }
 
     @EventHandler (ignoreCancelled = true, priority = EventPriority.LOW)
