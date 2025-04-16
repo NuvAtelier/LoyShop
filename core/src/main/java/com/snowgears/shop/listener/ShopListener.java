@@ -3,6 +3,7 @@ package com.snowgears.shop.listener;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.hook.WorldGuardHook;
+import com.snowgears.shop.listener.CreativeSelectionListener;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.*;
@@ -425,6 +426,13 @@ public class ShopListener implements Listener {
     public void onTeleport(PlayerTeleportEvent event){
         final Player player = event.getPlayer();
         
+        // Skip shop display processing if player is in creative selection mode
+        CreativeSelectionListener creativeModeListener = plugin.getCreativeSelectionListener();
+        if (creativeModeListener != null && creativeModeListener.isPlayerInCreativeSelection(player)) {
+            plugin.getLogger().debug("Skipping shop display refresh for " + player.getName() + " (in creative selection)");
+            return;
+        }
+        
         // Immediate attempt right after teleport
         plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
         
@@ -432,6 +440,11 @@ public class ShopListener implements Listener {
         // First delayed attempt - wait for chunks to load
         plugin.getFoliaLib().getScheduler().runLater(() -> {
             if (player.isOnline()) {
+                // Check again inside the delayed task in case player entered selection during the delay
+                if (creativeModeListener != null && creativeModeListener.isPlayerInCreativeSelection(player)) {
+                    plugin.getLogger().debug("Skipping delayed shop display refresh for " + player.getName() + " (in creative selection)");
+                    return;
+                }
                 plugin.getLogger().debug("First display refresh for " + player.getName() + " after teleport");
                 plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
             }
@@ -440,6 +453,11 @@ public class ShopListener implements Listener {
         // Second attempt - for completeness
         plugin.getFoliaLib().getScheduler().runLater(() -> {
             if (player.isOnline()) {
+                // Check again inside the delayed task in case player entered selection during the delay
+                if (creativeModeListener != null && creativeModeListener.isPlayerInCreativeSelection(player)) {
+                    plugin.getLogger().debug("Skipping delayed shop display refresh for " + player.getName() + " (in creative selection)");
+                    return;
+                }
                 plugin.getLogger().debug("Second display refresh for " + player.getName() + " after teleport");
                 plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
             }
