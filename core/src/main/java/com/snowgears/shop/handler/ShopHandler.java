@@ -605,10 +605,11 @@ public class ShopHandler {
                 // Record that we're processing displays for this player
                 lastProcessedLocations.put(player.getUniqueId(), playerLocation.clone());
                 
+                // TODO: Look at maybe adding this back in, but it creates such a huge delay at the moment!
                 // A small random offset added to each shop to stagger packet sending
                 // This helps prevent overwhelming the client with too many entity packets at once
-                int spawnDelay = 0;
-                int jitterInterval = 2; // Add 2 ticks between each shop (100ms)
+                // int spawnDelay = 0;
+                // int jitterInterval = 2; // Add 2 ticks between each shop (100ms)
                 
                 // Process each nearby shop location
                 for (Location shopLocation : nearbyShopLocations) {
@@ -616,7 +617,7 @@ public class ShopHandler {
                     if (shop == null) continue;
                     
                     // Use final variables for the lambda
-                    final int delay = spawnDelay;
+                    final int delay = 1;
                     final AbstractShop finalShop = shop;
 
                     // Use distance check to determine if display should be shown
@@ -649,7 +650,7 @@ public class ShopHandler {
                     }
                     
                     // Increase the delay for the next shop
-                    spawnDelay += jitterInterval;
+                    // spawnDelay += jitterInterval;
                 }
                 
                 // Also check if we need to remove any displays that are no longer in range
