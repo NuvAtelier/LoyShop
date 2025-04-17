@@ -323,16 +323,16 @@ displayMovementThreshold: 1.0
 
 # Maximum distance (in blocks) at which shop displays will be shown to players.
 # Mainly affects player performance, not server performance.
-# Recommended range: 10-20, default: 16.0
+# Recommended range: 16-32, default: 20.0
 # For an extra smooth experience, you can set this higher to around 32 (radius 2), but this will also increase resource usage on the server.
 # NOTE: Default "Entity Render Distance" settings for the Minecraft client is 20 blocks,
 #       so setting this higher than 20 will only "preload" shop displays for players beyond this distance.
-maxShopDisplayDistance: 16.0
+maxShopDisplayDistance: 20.0
 
 # Radius (in chunks) around a player to search for shops
 # Each increment searches exponentially more chunks (1=3x3 area, 2=5x5 area, etc)
 # Recommended: 1, default: 1
-# You can set this higher, but unless you are going above 20, you should not see any difference.
+# You can set this higher, but unless you are going above 24, you will not see any difference.
 # The code is highly optimized, so you can set this higher, but you should not need to.
 shopSearchRadius: 1
 

@@ -30,6 +30,8 @@ import org.bukkit.scheduler.BukkitScheduler;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -66,6 +68,11 @@ public class ShopHandler {
     
     // Very close distance for immediate shop display
     private static final double CLOSE_SHOP_DISPLAY_DISTANCE = 2.0;
+
+    // Teleport cooldown map to prevent multiple display updates during teleportation
+    private ConcurrentHashMap<UUID, Long> teleportCooldowns = new ConcurrentHashMap<>();
+    // Cooldown time in milliseconds (500ms = half a second)
+    private static final long TELEPORT_COOLDOWN_MS = 500;
 
     public ShopHandler(Shop instance) {
         plugin = instance;
@@ -569,6 +576,7 @@ public class ShopHandler {
     }
 
     public void processShopDisplaysNearPlayer(Player player){
+        // If the player is already being processed, don't start another process
         if (playersProcessingShopDisplays.contains(player.getUniqueId())) {
             return;
         }
@@ -587,93 +595,137 @@ public class ShopHandler {
             return;
         }
         
-        // Player has moved enough or this is first check, proceed with processing
+        // Mark player as being processed to prevent concurrent processing
         playersProcessingShopDisplays.add(player.getUniqueId());
-
+        
+        // Schedule display processing task at the player's entity
         plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
             try {
+                // Use a local variable for current location to avoid race conditions
                 Location playerLocation = player.getLocation();
                 
-                // Get shop locations within the maximum display distance
-                // This is more efficient as it first filters by chunk and then by exact distance
+                // Update the last processed location immediately to prevent multiple processings
+                lastProcessedLocations.put(player.getUniqueId(), playerLocation.clone());
+                
+                // Get all shop locations within the maximum display distance in one batch
                 HashSet<Location> nearbyShopLocations = getShopLocationsNearLocationWithinDistance(
                     playerLocation, 
                     plugin.getShopSearchRadius(), 
                     plugin.getMaxShopDisplayDistance() * plugin.getMaxShopDisplayDistance()
                 );
                 
-                // Record that we're processing displays for this player
-                lastProcessedLocations.put(player.getUniqueId(), playerLocation.clone());
+                // Create a batch operation for all displays to minimize interference
+                // This helps prevent the "bouncing" effect when displays are created one by one
+                processBatchDisplayUpdates(player, playerLocation, nearbyShopLocations);
                 
-                // TODO: Look at maybe adding this back in, but it creates such a huge delay at the moment!
-                // A small random offset added to each shop to stagger packet sending
-                // This helps prevent overwhelming the client with too many entity packets at once
-                // int spawnDelay = 0;
-                // int jitterInterval = 2; // Add 2 ticks between each shop (100ms)
-                
-                // Process each nearby shop location
-                for (Location shopLocation : nearbyShopLocations) {
-                    AbstractShop shop = getShop(shopLocation);
-                    if (shop == null) continue;
-                    
-                    // Use final variables for the lambda
-                    final int delay = 1;
-                    final AbstractShop finalShop = shop;
-
-                    // Use distance check to determine if display should be shown
-                    double distance = playerLocation.distance(shop.getSignLocation());
-                    
-                    if (distance < CLOSE_SHOP_DISPLAY_DISTANCE) {
-                        // Very close to shop, always show (with slight delay to prevent client overload)
-                        if (!hasActiveDisplay(player, shop.getSignLocation())) {
-                            plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                if (player.isOnline()) {
-                                    finalShop.getDisplay().spawn(player);
-                                    addActiveShopDisplay(player, finalShop.getSignLocation());
-                                }
-                            }, delay);
-                        }
-                    } else if (distance < plugin.getMaxShopDisplayDistance()) {
-                        // Within reasonable distance
-                        if (!hasActiveDisplay(player, shop.getSignLocation())) {
-                            plugin.getFoliaLib().getScheduler().runLater(() -> {
-                                if (player.isOnline()) {
-                                    finalShop.getDisplay().spawn(player);
-                                    addActiveShopDisplay(player, finalShop.getSignLocation());
-                                }
-                            }, delay);
-                        }
-                    } else {
-                        // Too far, remove display
-                        shop.getDisplay().remove(player);
-                        removeActiveShopDisplay(player, shop.getSignLocation());
-                    }
-                    
-                    // Increase the delay for the next shop
-                    // spawnDelay += jitterInterval;
-                }
-                
-                // Also check if we need to remove any displays that are no longer in range
-                if (playersWithActiveShopDisplays.containsKey(player.getUniqueId())) {
-                    HashSet<Location> activeDisplays = new HashSet<>(playersWithActiveShopDisplays.get(player.getUniqueId()));
-                    for (Location displayLocation : activeDisplays) {
-                        // If this active display is not in our nearby locations, remove it
-                        if (!nearbyShopLocations.contains(displayLocation)) {
-                            AbstractShop shop = getShop(displayLocation);
-                            if (shop != null) {
-                                shop.getDisplay().remove(player);
-                                removeActiveShopDisplay(player, displayLocation);
-                            }
-                        }
-                    }
-                }
             } catch (Exception e) {
                 plugin.getLogger().warning("Error processing shop displays for player " + player.getName());
                 e.printStackTrace();
             } finally {
+                // Always ensure player is removed from processing list
                 playersProcessingShopDisplays.remove(player.getUniqueId());
             }
         }, 1);
+    }
+
+    /**
+     * Process all shop displays in a single coordinated batch to minimize visual artifacts
+     * @param player The player to update displays for
+     * @param playerLocation The player's current location
+     * @param shopLocations Set of shop locations to process
+     */
+    private void processBatchDisplayUpdates(Player player, Location playerLocation, HashSet<Location> shopLocations) {
+        if (!player.isOnline()) return;
+        
+        // Log the processing if in debug mode
+        plugin.getLogger().debug("Processing batch display update for " + player.getName() + 
+            " at " + playerLocation.getWorld().getName() + 
+            " [" + playerLocation.getBlockX() + "," + playerLocation.getBlockY() + "," + playerLocation.getBlockZ() + "]" +
+            " with " + shopLocations.size() + " nearby shops");
+        
+        // First, collect all displays that need to be shown and those that need to be removed
+        HashSet<Location> displaysToShow = new HashSet<>();
+        HashSet<Location> displaysToRemove = new HashSet<>();
+        
+        // Determine which displays to show and which to remove
+        for (Location shopLocation : shopLocations) {
+            AbstractShop shop = getShop(shopLocation);
+            if (shop == null) continue;
+            
+            double distance = playerLocation.distance(shop.getSignLocation());
+            
+            if (distance < plugin.getMaxShopDisplayDistance()) {
+                // Within display distance, should be shown
+                displaysToShow.add(shopLocation);
+            } else {
+                // Too far, should be removed
+                displaysToRemove.add(shopLocation);
+            }
+        }
+        
+        // Also identify any current displays that are no longer in range
+        if (playersWithActiveShopDisplays.containsKey(player.getUniqueId())) {
+            HashSet<Location> activeDisplays = new HashSet<>(playersWithActiveShopDisplays.get(player.getUniqueId()));
+            for (Location displayLocation : activeDisplays) {
+                if (!shopLocations.contains(displayLocation)) {
+                    displaysToRemove.add(displayLocation);
+                }
+            }
+        }
+        
+        // Process removals first to prevent interference with new spawns
+        for (Location locationToRemove : displaysToRemove) {
+            AbstractShop shop = getShop(locationToRemove);
+            if (shop != null) {
+                shop.getDisplay().remove(player);
+                removeActiveShopDisplay(player, locationToRemove);
+            }
+        }
+        
+        // Short delay before processing additions to ensure removals are complete
+        // This helps prevent the visual "refresh" effect
+        plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
+            // Now process additions in priority order (closest first)
+            List<Map.Entry<Location, Double>> sortedLocations = new ArrayList<>();
+            
+            for (Location locationToShow : displaysToShow) {
+                if (!hasActiveDisplay(player, locationToShow)) {
+                    double distance = playerLocation.distance(locationToShow);
+                    sortedLocations.add(new SimpleEntry<>(locationToShow, distance));
+                }
+            }
+            
+            // Sort by distance (closest first)
+            sortedLocations.sort(Comparator.comparing(Map.Entry::getValue));
+            
+            // Process in distance order with small delays between batches to reduce visual clutter
+            int batchSize = 10; // Process 10 displays at a time
+            int totalBatches = (sortedLocations.size() + batchSize - 1) / batchSize;
+            
+            plugin.getLogger().debug("Creating " + sortedLocations.size() + " displays in " + totalBatches + " batches for " + player.getName());
+            
+            for (int batch = 0; batch < totalBatches; batch++) {
+                final int currentBatch = batch;
+                
+                // Add a small delay between batches
+                plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
+                    if (!player.isOnline()) return;
+                    
+                    int startIndex = currentBatch * batchSize;
+                    int endIndex = Math.min(startIndex + batchSize, sortedLocations.size());
+                    
+                    for (int i = startIndex; i < endIndex; i++) {
+                        Location locationToShow = sortedLocations.get(i).getKey();
+                        AbstractShop shop = getShop(locationToShow);
+                        
+                        if (shop != null && player.isOnline()) {
+                            shop.getDisplay().spawn(player);
+                            addActiveShopDisplay(player, locationToShow);
+                        }
+                    }
+                }, batch * 2); // 2 tick delay between batches
+            }
+        }, 2); // 2 tick delay after removals
     }
 
     public void clearShopDisplaysNearPlayer(Player player){
@@ -685,6 +737,9 @@ public class ShopHandler {
         
         // Also remove from processing list to avoid any potential deadlocks
         playersProcessingShopDisplays.remove(player.getUniqueId());
+        
+        // Clear teleport cooldown as well
+        teleportCooldowns.remove(player.getUniqueId());
     }
 
     /**
@@ -694,19 +749,34 @@ public class ShopHandler {
      * @param player The player to process shop displays for
      */
     public void forceProcessShopDisplaysNearPlayer(Player player) {
+        // Check if player is on teleport cooldown
+        Long lastTeleport = teleportCooldowns.get(player.getUniqueId());
+        long currentTime = System.currentTimeMillis();
+        
+        // If player is on cooldown, skip this update
+        if (lastTeleport != null && currentTime - lastTeleport < TELEPORT_COOLDOWN_MS) {
+            plugin.getLogger().debug("Skipping display update for " + player.getName() + " - on teleport cooldown");
+            return;
+        }
+        
+        // Set teleport cooldown
+        teleportCooldowns.put(player.getUniqueId(), currentTime);
+        
         // Remove from processing list if somehow still in there
         playersProcessingShopDisplays.remove(player.getUniqueId());
         
         // Remove any previous location tracking
         lastProcessedLocations.remove(player.getUniqueId());
         
-        // Check if player is already being processed - if so, clear all displays first
+        plugin.getLogger().debug("Force processing shop displays for " + player.getName() + " after teleport");
+        
+        // Clear all existing displays for this player to ensure a clean slate
         plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
             if (player.isOnline()) {
-                // Clear all existing displays for this player to ensure a clean slate
                 if (playersWithActiveShopDisplays.containsKey(player.getUniqueId())) {
                     HashSet<Location> displays = playersWithActiveShopDisplays.get(player.getUniqueId());
                     if (displays != null) {
+                        plugin.getLogger().debug("Removing " + displays.size() + " existing displays for " + player.getName());
                         for (Location displayLoc : new HashSet<>(displays)) {
                             AbstractShop shop = getShop(displayLoc);
                             if (shop != null) {
@@ -717,8 +787,12 @@ public class ShopHandler {
                     playersWithActiveShopDisplays.remove(player.getUniqueId());
                 }
                 
-                // Process displays normally (will pass movement check since lastLocation is null)
-                processShopDisplaysNearPlayer(player);
+                // Process displays after a short delay to ensure all removals are complete
+                plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
+                    if (player.isOnline()) {
+                        processShopDisplaysNearPlayer(player);
+                    }
+                }, 10); // Increased from 5 to 10 ticks to ensure all chunks are loaded
             }
         }, 1);
     }
@@ -752,19 +826,29 @@ public class ShopHandler {
         playersWithActiveShopDisplays.put(player.getUniqueId(), shops);
     }
 
-    public void addActiveShopDisplayTag(Player player, Location shopSignLocation){
-
-        if(playersActiveShopDisplayTag.containsKey(player.getUniqueId())){
+    public void addActiveShopDisplayTag(Player player, Location shopSignLocation) {
+        if (playersActiveShopDisplayTag.containsKey(player.getUniqueId())) {
             Location oldShopSignLocation = playersActiveShopDisplayTag.get(player.getUniqueId());
 
-            if(!oldShopSignLocation.equals(shopSignLocation)) {
+            if (!oldShopSignLocation.equals(shopSignLocation)) {
                 AbstractShop oldShop = getShop(oldShopSignLocation);
                 if (oldShop != null && oldShop.getDisplay() != null) {
-                    oldShop.getDisplay().removeDisplayEntities(player, true);
+                    // Use a separate task to remove the old display to avoid interference
+                    plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
+                        if (player.isOnline()) {
+                            oldShop.getDisplay().removeDisplayEntities(player, true);
+                        }
+                    }, 1);
                 }
             }
         }
-        playersActiveShopDisplayTag.put(player.getUniqueId(), shopSignLocation);
+        
+        // Only update after a short delay to prevent visual glitches
+        plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
+            if (player.isOnline()) {
+                playersActiveShopDisplayTag.put(player.getUniqueId(), shopSignLocation);
+            }
+        }, 2);
     }
 
 //    public boolean shopDisplayTagIsActive(Player player, Location shopSignLocation){
@@ -1517,11 +1601,18 @@ public class ShopHandler {
         
         // Process for all players who might be able to see shops in this chunk
         for (Player player : chunk.getWorld().getPlayers()) {
+            // Skip players who recently teleported
+            Long lastTeleport = teleportCooldowns.get(player.getUniqueId());
+            if (lastTeleport != null && System.currentTimeMillis() - lastTeleport < TELEPORT_COOLDOWN_MS) {
+                plugin.getLogger().debug("Skipping chunk display update for " + player.getName() + " - on teleport cooldown");
+                continue;
+            }
+            
             if (isPlayerNearChunk(player, chunk, plugin.getMaxShopDisplayDistance())) {
                 plugin.getLogger().debug("Rebuilding shop displays for " + player.getName() + " in chunk " + chunkKey);
                 
-                // Force a complete refresh for this player to ensure displays appear
-                forceProcessShopDisplaysNearPlayer(player);
+                // Don't force a refresh - just run the normal process which respects all the checks
+                processShopDisplaysNearPlayer(player);
             }
         }
     }
