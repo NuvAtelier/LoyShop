@@ -496,6 +496,24 @@ public class UtilMethods {
             else if(itemType.equals("FIVE")) { formattedMessage.addExtra(" [Song: 5]"); }
             else if(itemType.equals("RELIC")) { formattedMessage.addExtra(" [Song: Relic]"); }
             
+            // Add support for displaying goat horn sounds
+            else if(itemType.equals("GOAT_HORN")) {
+                // Try to get the instrument type from item data if available
+                try {
+                    org.bukkit.inventory.meta.MusicInstrumentMeta instrumentMeta = (org.bukkit.inventory.meta.MusicInstrumentMeta) item.getItemMeta();
+                    if (instrumentMeta != null && instrumentMeta.getInstrument() != null) {
+                        String instrumentKey = instrumentMeta.getInstrument().getKey().getKey();
+                        // Format the instrument key properly (e.g., "ponder_goat_horn" -> "Ponder")
+                        String soundType = instrumentKey.replace("_goat_horn", "");
+                        formattedMessage.addExtra(" [Sound: " + capitalize(soundType) + "]");
+                    } else {
+                        formattedMessage.addExtra(" [Sound: Unknown]");
+                    }
+                } catch (Exception e) {
+                    // Fallback for older versions or if the meta is not available
+                    formattedMessage.addExtra(" [Sound: Unknown]");
+                }
+            }
         }
 
         // Add custom potion formatting
