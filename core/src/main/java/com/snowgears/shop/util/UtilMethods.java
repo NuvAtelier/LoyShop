@@ -804,9 +804,21 @@ public class UtilMethods {
 
                 if (!latestColors.equals(newColors)) {
                     latestColors = newColors;
-                    // New color, add the line and start a new line
-                    if (ChatColor.stripColor(currentLine.toString()).length() > 0) {
-                        linesByColor.add(currentLine.toString());
+                    if (currentLine.toString().contains(" ")) {
+                        // New color, add the line and start a new line
+                        if (ChatColor.stripColor(currentLine.toString()).length() > 0) {
+                            linesByColor.add(currentLine.toString());
+                        }
+                        // Set the current line to the new color, ignore any old colors
+                        currentLine = new StringBuilder(latestColors);
+                    } else {
+                        // If our current line has text other than color codes, add the latest color code.
+                        if (ChatColor.stripColor(currentLine.toString()).length() > 0) {
+                            currentLine.append(word);
+                        } else {
+                            // We are just useless colors, wipe them and start the line again with our current colors.
+                            currentLine = new StringBuilder(latestColors);
+                        }
                     }
                     // Set the current line to the new color, ignore any old colors
                     currentLine = new StringBuilder(latestColors);

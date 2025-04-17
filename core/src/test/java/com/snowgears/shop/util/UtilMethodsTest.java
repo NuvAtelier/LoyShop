@@ -224,17 +224,106 @@ public class UtilMethodsTest {
         Assertions.assertEquals("§7(sell, buy, barter, gamble, combo)", result.get(3));
         Assertions.assertEquals(4, result.size());
     }
+
+    @Test
+    public void testGradientWordIsKeptIntact() {
+        // From log: "§eEnter in chat what to do with §a§ct§x§F§E§5§9§3§Fe§x§F§E§7§3§3§Fs§x§F§E§8§D§3§Et§x§F§E§A§7§3§Fi§x§F§E§C§1§3§Fn§x§F§E§D§B§3§Fg §x§F§E§F§5§3§Fa §x§E§C§F§E§3§Fr§x§D§2§F§E§3§Fa§x§B§8§F§E§3§Fi§x§9§E§F§E§3§Fn§x§8§4§F§E§3§Fb§x§6§A§F§E§3§Fo§x§5§0§F§E§3§Fw §x§3§F§F§5§4§7m§x§3§F§D§B§6§1e§x§3§F§C§1§7§Bs§x§3§F§A§7§9§5s§x§3§F§8§D§A§Fa§x§3§F§7§3§C§9g§x§3§F§5§9§E§3e§9!§a(s)"
+        String input = "&eEnter in chat what to do with &a&ct§x§F§E§5§9§3§Fe§x§F§E§7§3§3§Fs§x§F§E§8§D§3§Et§x§F§E§A§7§3§Fi§x§F§E§C§1§3§Fn§x§F§E§D§B§3§Fg §x§F§E§F§5§3§Fa §x§E§C§F§E§3§Fr§x§D§2§F§E§3§Fa§x§B§8§F§E§3§Fi§x§9§E§F§E§3§Fn§x§8§4§F§E§3§Fb§x§6§A§F§E§3§Fo§x§5§0§F§E§3§Fw §x§3§F§F§5§4§7m§x§3§F§D§B§6§1e§x§3§F§C§1§7§Bs§x§3§F§A§7§9§5s§x§3§F§8§D§A§Fa§x§3§F§7§3§C§9g§x§3§F§5§9§E§3e§9!&a(s)";
+        List<String> result = UtilMethods.splitStringIntoLines(input, 35);
+        
+        // The first line should break after "what to do with"
+        Assertions.assertEquals("§eEnter in chat what to do with", result.get(0));
+        
+        // The gradient word "testing" should be kept intact in one line, not split across lines
+        String secondLine = result.get(1);
+        Assertions.assertTrue(secondLine.contains("§ct§x§F§E§5§9§3§Fe§x§F§E§7§3§3§Fs§x§F§E§8§D§3§Et§x§F§E§A§7§3§Fi§x§F§E§C§1§3§Fn§x§F§E§D§B§3§Fg"));
+        
+        // The gradient word "rainbow" should be kept intact
+        Assertions.assertTrue(secondLine.contains("§x§E§C§F§E§3§Fr§x§D§2§F§E§3§Fa§x§B§8§F§E§3§Fi§x§9§E§F§E§3§Fn§x§8§4§F§E§3§Fb§x§6§A§F§E§3§Fo§x§5§0§F§E§3§Fw"));
+        
+        // The gradient word "message" should be kept intact
+        Assertions.assertTrue(secondLine.contains("§x§3§F§F§5§4§7m§x§3§F§D§B§6§1e§x§3§F§C§1§7§Bs§x§3§F§A§7§9§5s§x§3§F§8§D§A§Fa§x§3§F§7§3§C§9g§x§3§F§5§9§E§3e"));
+        
+    }
+    
+    @Test
+    public void testGradientNonAsciiWordIsKeptIntact() {
+        // From log: "§eEnter in chat what to do with §a§x§F§6§C§9§2§8V§x§F§3§C§3§2§5o§x§F§0§B§C§2§3t§x§E§D§B§6§2§0e§x§E§A§B§0§1§EB§x§E§7§A§A§1§Bo§x§E§4§A§3§1§8x §x§E§1§9§D§1§6k§x§D§E§9§7§1§3ľ§x§D§B§9§0§1§1ú§x§D§8§8§A§0§Eč§a(s)"
+        String input = "&eEnter in chat what to do with &a§x§F§6§C§9§2§8V§x§F§3§C§3§2§5o§x§F§0§B§C§2§3t§x§E§D§B§6§2§0e§x§E§A§B§0§1§EB§x§E§7§A§A§1§Bo§x§E§4§A§3§1§8x §x§E§1§9§D§1§6k§x§D§E§9§7§1§3ľ§x§D§B§9§0§1§1ú§x§D§8§8§A§0§Eč&a(s)";
+        List<String> result = UtilMethods.splitStringIntoLines(input, 35);
+        
+        // The first line should break after "what to do with"
+        Assertions.assertEquals("§eEnter in chat what to do with", result.get(0));
+        
+        // The gradient word "VoteBox" should be kept intact in one line
+        String secondLine = result.get(1);
+        Assertions.assertTrue(secondLine.contains("§x§F§6§C§9§2§8V§x§F§3§C§3§2§5o§x§F§0§B§C§2§3t§x§E§D§B§6§2§0e§x§E§A§B§0§1§EB§x§E§7§A§A§1§Bo§x§E§4§A§3§1§8x"));
+        
+        // The gradient word with non-ASCII chars "klúč" should be kept intact
+        Assertions.assertTrue(secondLine.contains("§x§E§1§9§D§1§6k§x§D§E§9§7§1§3ľ§x§D§B§9§0§1§1ú§x§D§8§8§A§0§Eč"));
+    }
+
+    @Test
+    public void testCompleteGradientMessageSplitting() {
+        // Complete test for the first gradient example
+        String input = "&eEnter in chat what to do with &a&ct§x§F§E§5§9§3§Fe§x§F§E§7§3§3§Fs§x§F§E§8§D§3§Et§x§F§E§A§7§3§Fi§x§F§E§C§1§3§Fn§x§F§E§D§B§3§Fg §x§F§E§F§5§3§Fa §x§E§C§F§E§3§Fr§x§D§2§F§E§3§Fa§x§B§8§F§E§3§Fi§x§9§E§F§E§3§Fn§x§8§4§F§E§3§Fb§x§6§A§F§E§3§Fo§x§5§0§F§E§3§Fw §x§3§F§F§5§4§7m§x§3§F§D§B§6§1e§x§3§F§C§1§7§Bs§x§3§F§A§7§9§5s§x§3§F§8§D§A§Fa§x§3§F§7§3§C§9g§x§3§F§5§9§E§3e§9!&a(s)&b&b&b &7(&7sell, buy, barter, gamble, combo&7)";
+        List<String> result = UtilMethods.splitStringIntoLines(input, 35);
+        
+        // Verify there are 3 lines as shown in the log
+        Assertions.assertEquals(3, result.size());
+        
+        // Verify the content of each line
+        Assertions.assertEquals("§eEnter in chat what to do with", result.get(0));
+        
+        // The second line contains the complex gradient text and should keep all gradient words intact
+        String gradientLine = result.get(1);
+        Assertions.assertTrue(gradientLine.contains("§ct§x§F§E§5§9§3§Fe§x§F§E§7§3§3§Fs§x§F§E§8§D§3§Et§x§F§E§A§7§3§Fi§x§F§E§C§1§3§Fn§x§F§E§D§B§3§Fg"));
+        Assertions.assertTrue(gradientLine.contains("§x§F§E§F§5§3§Fa"));
+        Assertions.assertTrue(gradientLine.contains("§x§E§C§F§E§3§Fr§x§D§2§F§E§3§Fa§x§B§8§F§E§3§Fi§x§9§E§F§E§3§Fn§x§8§4§F§E§3§Fb§x§6§A§F§E§3§Fo§x§5§0§F§E§3§Fw"));
+        Assertions.assertTrue(gradientLine.contains("§x§3§F§F§5§4§7m§x§3§F§D§B§6§1e§x§3§F§C§1§7§Bs§x§3§F§A§7§9§5s§x§3§F§8§D§A§Fa§x§3§F§7§3§C§9g§x§3§F§5§9§E§3e"));
+        Assertions.assertTrue(gradientLine.contains("§a(s)"));
+        
+        // The third line should be the options text
+        Assertions.assertEquals("§7(sell, buy, barter, gamble, combo)", result.get(2));
+    }
+    
+    @Test
+    public void testVoteBoxGradientMessageSplitting() {
+        // Complete test for the second gradient example with VoteBox
+        String input = "&eEnter in chat what to do with &a§x§F§6§C§9§2§8V§x§F§3§C§3§2§5o§x§F§0§B§C§2§3t§x§E§D§B§6§2§0e§x§E§A§B§0§1§EB§x§E§7§A§A§1§Bo§x§E§4§A§3§1§8x §x§E§1§9§D§1§6k§x§D§E§9§7§1§3ľ§x§D§B§9§0§1§1ú§x§D§8§8§A§0§Eč&a(s)&b&b&b &7(&7sell, buy, barter, gamble, combo&7)";
+        List<String> result = UtilMethods.splitStringIntoLines(input, 35);
+        
+        // Verify there are 3 lines as shown in the log
+        Assertions.assertEquals(3, result.size());
+        
+        // Verify the content of each line
+        Assertions.assertEquals("§eEnter in chat what to do with", result.get(0));
+        
+        // The second line contains the complex gradient text for VoteBox klúč
+        String gradientLine = result.get(1);
+        Assertions.assertTrue(gradientLine.contains("§x§F§6§C§9§2§8V§x§F§3§C§3§2§5o§x§F§0§B§C§2§3t§x§E§D§B§6§2§0e§x§E§A§B§0§1§EB§x§E§7§A§A§1§Bo§x§E§4§A§3§1§8x"));
+        Assertions.assertTrue(gradientLine.contains(" §x§E§1§9§D§1§6k§x§D§E§9§7§1§3ľ§x§D§B§9§0§1§1ú§x§D§8§8§A§0§Eč"));
+        Assertions.assertTrue(gradientLine.contains("§a(s)"));
+        
+        // The third line should be the options text
+        Assertions.assertEquals("§7(sell, buy, barter, gamble, combo)", result.get(2));
+    }
 }
 
 /**
 
 
-// Test overflow of a line with only a hex color code
-[15:35:17 INFO]: [Shop] [Debug] [ShopMessage] postFormat: §x§3§d§0§0§3§dEnter in chat what to do with except have a really long line with overflow §a§aBirch Log§a(s)§b§b§b §7(§7sell, buy, barter, gamble, combo§7)
-[15:35:17 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2112/66/2046: 
-[15:35:17 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2112/66/2046: §x§3§d§0§0§3§dEnter in chat what to do with except have
-[15:35:17 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2112/66/2046: §x§3§d§0§0§3§da really long line with overflow
-[15:35:17 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2112/66/2046: §aBirch Log(s)§b
-[15:35:17 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2112/65/2046: §7(sell, buy, barter, gamble, combo)
+// Verify we keep gradient words in one piece instead of splitting them in the middle of a word
+[23:47:05 INFO]: [Shop] [Debug] [ShopMessage] postFormat: §eEnter in chat what to do with §a§ct§x§F§E§5§9§3§Fe§x§F§E§7§3§3§Fs§x§F§E§8§D§3§Et§x§F§E§A§7§3§Fi§x§F§E§C§1§3§Fn§x§F§E§D§B§3§Fg §x§F§E§F§5§3§Fa §x§E§C§F§E§3§Fr§x§D§2§F§E§3§Fa§x§B§8§F§E§3§Fi§x§9§E§F§E§3§Fn§x§8§4§F§E§3§Fb§x§6§A§F§E§3§Fo§x§5§0§F§E§3§Fw §x§3§F§F§5§4§7m§x§3§F§D§B§6§1e§x§3§F§C§1§7§Bs§x§3§F§A§7§9§5s§x§3§F§8§D§A§Fa§x§3§F§7§3§C§9g§x§3§F§5§9§E§3e§9!§a(s)§b§b§b §7(§7sell, buy, barter, gamble, combo§7)
+[23:47:05 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2113/68/2026: §eEnter in chat what to do with
+[23:47:05 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2113/68/2026: §ct§x§F§E§5§9§3§Fe§x§F§E§7§3§3§Fs§x§F§E§8§D§3§Et§x§F§E§A§7§3§Fi§x§F§E§C§1§3§Fn§x§F§E§D§B§3§Fg §x§F§E§F§5§3§Fa §x§E§C§F§E§3§Fr§x§D§2§F§E§3§Fa§x§B§8§F§E§3§Fi§x§9§E§F§E§3§Fn§x§8§4§F§E§3§Fb§x§6§A§F§E§3§Fo§x§5§0§F§E§3§Fw §x§3§F§F§5§4§7m§x§3§F§D§B§6§1e§x§3§F§C§1§7§Bs§x§3§F§A§7§9§5s§x§3§F§8§D§A§Fa§x§3§F§7§3§C§9g§x§3§F§5§9§E§3e§9!§a(s)§b
+[23:47:05 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2113/67/2026: §7(sell, buy, barter, gamble, combo)
+
+// Second example
+[23:48:40 INFO]: [Shop] [Debug] [ShopMessage] postFormat: §eEnter in chat what to do with §a§x§F§6§C§9§2§8V§x§F§3§C§3§2§5o§x§F§0§B§C§2§3t§x§E§D§B§6§2§0e§x§E§A§B§0§1§EB§x§E§7§A§A§1§Bo§x§E§4§A§3§1§8x §x§E§1§9§D§1§6k§x§D§E§9§7§1§3ľ§x§D§B§9§0§1§1ú§x§D§8§8§A§0§Eč§a(s)§b§b§b §7(§7sell, buy, barter, gamble, combo§7)
+[23:48:40 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2112/68/2026: §eEnter in chat what to do with
+[23:48:40 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2112/68/2026: §x§F§6§C§9§2§8V§x§F§3§C§3§2§5o§x§F§0§B§C§2§3t§x§E§D§B§6§2§0e§x§E§A§B§0§1§EB§x§E§7§A§A§1§Bo§x§E§4§A§3§1§8x §x§E§1§9§D§1§6k§x§D§E§9§7§1§3ľ§x§D§B§9§0§1§1ú§x§D§8§8§A§0§Eč§a(s)§b
+[23:48:40 INFO]: [Shop] [Debug] Spawning hologram for player spaceGurlSky at -2112/67/2026: §7(sell, buy, barter, gamble, combo)
+
 
  */
