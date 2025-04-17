@@ -514,6 +514,42 @@ public class UtilMethods {
                     formattedMessage.addExtra(" [Sound: Unknown]");
                 }
             }
+            
+            // Add support for displaying bee hive/nest information
+            else if(itemType.equals("BEE_NEST") || itemType.equals("BEEHIVE")) {
+                try {
+                    if(item.getItemMeta() instanceof org.bukkit.inventory.meta.BlockStateMeta) {
+                        org.bukkit.inventory.meta.BlockStateMeta blockStateMeta = (org.bukkit.inventory.meta.BlockStateMeta) item.getItemMeta();
+                        
+                        if(blockStateMeta.hasBlockState() && blockStateMeta.getBlockState() instanceof org.bukkit.block.Beehive) {
+                            org.bukkit.block.Beehive beehive = (org.bukkit.block.Beehive) blockStateMeta.getBlockState();
+                            
+                            int honeyLevel = 0;
+                            int beeCount = 0;
+                            
+                            // Get honey level (this is from BlockData)
+                            try {
+                                org.bukkit.block.data.type.Beehive beehiveData = (org.bukkit.block.data.type.Beehive) beehive.getBlockData();
+                                honeyLevel = beehiveData.getHoneyLevel();
+                            } catch (Exception e) { }
+                            // Get bee count (this is from the entity storage)
+                            try { beeCount = beehive.getEntityCount(); } catch (Exception e) {}
+                            
+                            // Format the message
+                            if(honeyLevel > 0 || beeCount > 0) {
+                                StringBuilder beeInfo = new StringBuilder(" [");
+                                if(honeyLevel > 0) {
+                                    beeInfo.append("Honey: ").append(honeyLevel).append("/5");
+                                    if(beeCount > 0) { beeInfo.append(", "); }
+                                }
+                                if(beeCount > 0) { beeInfo.append("Bees: ").append(beeCount); }
+                                beeInfo.append("]");
+                                formattedMessage.addExtra(beeInfo.toString());
+                            }
+                        }
+                    }
+                } catch (Exception e) { /* Silently handle any exceptions for backward compatibility */ }
+            }
         }
 
         // Add custom potion formatting
