@@ -478,6 +478,25 @@ public class UtilMethods {
                 formattedMessage.addExtra(" (" + material.replace(" Material", "") + ")]");
             }
         }
+        
+        // Add support for displaying music disc information and goat horn sounds
+        if(item.getItemMeta() != null) {
+            String itemType = item.getType().name();
+            
+            // Add support for displaying music disc information
+            if(itemType.startsWith("MUSIC_DISC_")) {
+                String trackName = itemType.replace("MUSIC_DISC_", "");
+                String formattedName = capitalize(trackName.toLowerCase().replace("_", " "));
+                formattedMessage.addExtra(" [Song: " + formattedName + "]");
+            }
+            // Handle legacy music disc naming that doesn't follow the MUSIC_DISC_ prefix pattern
+            else if(itemType.equals("MUSIC_DISC")) { formattedMessage.addExtra(" [Song: Unknown]"); }
+            else if(itemType.equals("PIGSTEP")) { formattedMessage.addExtra(" [Song: Pigstep]"); }
+            else if(itemType.equals("OTHERSIDE")) { formattedMessage.addExtra(" [Song: Otherside]"); }
+            else if(itemType.equals("FIVE")) { formattedMessage.addExtra(" [Song: 5]"); }
+            else if(itemType.equals("RELIC")) { formattedMessage.addExtra(" [Song: Relic]"); }
+            
+        }
 
         // Add custom potion formatting
         if(item.getItemMeta() != null && item.getItemMeta() instanceof PotionMeta){
@@ -820,8 +839,6 @@ public class UtilMethods {
                             currentLine = new StringBuilder(latestColors);
                         }
                     }
-                    // Set the current line to the new color, ignore any old colors
-                    currentLine = new StringBuilder(latestColors);
                 }
 
                 continue;
