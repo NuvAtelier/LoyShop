@@ -98,6 +98,12 @@ public class Transaction {
     public void negotiatePurchase(int desiredAmount) {
         // Don't perform this processing if we are a gamble shop!
         if (shop.getType() == ShopType.GAMBLE) { return; }
+        // Handle free transactions
+        if (shop.getPrice() == 0) {
+            this.price = 0;
+            this.amountBeingSold = this.shop.getAmount();
+            return;
+        }
 
         PriceNegotiator negotiator = new PriceNegotiator(
             TX_DEBUG_LOGGING, 
