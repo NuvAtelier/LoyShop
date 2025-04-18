@@ -1122,6 +1122,47 @@ This integration is particularly useful for servers with complex region manageme
 - WorldGuard plugin must be installed on your server
 - The setting has no effect if WorldGuard is not present
 
+### Example WorldGuard Commands
+
+Here are practical examples of WorldGuard commands for configuring regions with different shop permissions:
+
+```bash
+# Create a default region (by default, has no passthrough permission)
+# (Shop creation will be denied)
+/rg define default_region
+
+# Create a region with passthrough permission
+# (Shop creation will be allowed if using default `hookWorldGuard: false`)
+/rg define region_with_passthrough
+/rg flag region_with_passthrough passthrough allow
+
+# Create a region with both build and chest access
+# (Shop creation will be allowed if using default `hookWorldGuard: false`)
+/rg define region_with_build_and_chest_access
+/rg flag region_with_build_and_chest_access build allow
+/rg flag region_with_build_and_chest_access chest-access allow
+
+# Create a region with the custom allow-shop flag
+# (Shop creation will be allowed if `hookWorldGuard: true` is configured)
+/rg define my_shop_region
+/rg flag my_shop_region build allow
+/rg flag my_shop_region chest-access allow
+/rg flag my_shop_region allow-shop allow
+
+# Create a region with chest access but no build access
+# (Shop creation will be denied always - both permissions are required)
+/rg define region_with_chest_access
+/rg flag region_with_chest_access build deny
+/rg flag region_with_chest_access chest-access allow
+
+# Create a region with build access but no chest access
+# (Shop creation will be denied always - both permissions are required)
+/rg define region_with_build_access
+/rg flag region_with_build_access build allow
+/rg flag region_with_build_access chest-access deny
+
+```
+
 ## hookTowny
 Controls whether the Shop plugin integrates with Towny for town-based shop protection.
 ```yaml
