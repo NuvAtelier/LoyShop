@@ -495,11 +495,13 @@ public class Shop extends JavaPlugin {
                 this.getLogger().severe("Unable to connect to Vault! Is the plugin installed?");
                 this.getLogger().severe("Plugin Disabled: Invalid configuration value `economy.type` config.yml. If you do not wish to use Vault with Shop, make sure to set `economy.type` in the config file to `ITEM`.");
                 getServer().getPluginManager().disablePlugin(plugin);
+                return;
             }
         } else {
             if (itemCurrency == null) {
                 this.getLogger().severe("Plugin Disabled: Invalid value for `itemCurrencyID` in `config.yml`");
                 getServer().getPluginManager().disablePlugin(plugin);
+                return;
             }
             this.getLogger().info("Shops will use " + itemNameUtil.getName(itemCurrency).toPlainText() + "(s) as the currency on the server.");
         }
@@ -778,7 +780,7 @@ public class Shop extends JavaPlugin {
         }
         
         //save any remaining shops (usually not required but just in case)
-        shopHandler.saveAllShops();
+        if (shopHandler != null) shopHandler.saveAllShops();
 
         this.getLogger().info("Disabled Shop " + this.getDescription().getVersion());
     }
