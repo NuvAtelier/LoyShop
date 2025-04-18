@@ -259,7 +259,7 @@ The partial sales system is particularly useful for servers with item-based econ
 ### Technical Details
 - For partial purchases, the price per item is calculated as: `originalPrice ÷ originalAmount`
 - For items selling below 1 currency unit each (like 64 items for 10 emeralds), the system calculates `itemsPerPrice = 1 ÷ pricePerItem`
-- The system always rounds in favor of the item seller, so they never lose value in partial transactions
+- The system always rounds slightly in favor of the item seller
 
 ## checkItemDurability
 This will make it so shops will only complete transactions if the item durabilities are the same.

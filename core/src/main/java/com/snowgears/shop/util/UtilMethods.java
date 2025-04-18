@@ -563,11 +563,39 @@ public class UtilMethods {
             }
         }
 
-        if(item.getItemMeta() != null && item.getItemMeta() instanceof FireworkMeta){
-            FireworkMeta fireworkMeta = (FireworkMeta) item.getItemMeta();
-            int power = fireworkMeta.getPower();
-            if (power == 0) power = 1;
-            formattedMessage.addExtra(" [Duration " + power + "]");
+        // Add detailed firework effect information
+        if(item.getItemMeta() != null) {
+            // Handle Firework Stars
+            if(item.getItemMeta() instanceof org.bukkit.inventory.meta.FireworkEffectMeta) {
+                org.bukkit.inventory.meta.FireworkEffectMeta fireworkMeta = (org.bukkit.inventory.meta.FireworkEffectMeta) item.getItemMeta();
+                if(fireworkMeta.hasEffect()) {
+                    formattedMessage.addExtra(getFormattedFireworkEffect(fireworkMeta.getEffect(), true));
+                }
+            }
+            // Handle Fireworks
+            else if(item.getItemMeta() instanceof FireworkMeta) {
+                FireworkMeta fireworkMeta = (FireworkMeta) item.getItemMeta();
+                int power = fireworkMeta.getPower();
+                
+                // Display duration
+                if (power == 0) power = 1;
+                formattedMessage.addExtra(" [Duration " + power + "]");
+                
+                // Display effects
+                List<org.bukkit.FireworkEffect> effects = fireworkMeta.getEffects();
+                if(effects != null && !effects.isEmpty()) {
+                    int effectCount = effects.size();
+                    if(effectCount <= 2) {
+                        // If there's only one-two effects, show their details
+                        for (org.bukkit.FireworkEffect effect : effects) {
+                            formattedMessage.addExtra(getFormattedFireworkEffect(effect, false));
+                        }
+                    } else {
+                        // If there are multiple effects, just show the count
+                        formattedMessage.addExtra(" [" + effectCount + " Effects]");
+                    }
+                }
+            }
         }
 
         return new TextComponent(ChatColor.stripColor(formattedMessage.toLegacyText()));
@@ -603,6 +631,149 @@ public class UtilMethods {
         }
         formattedEffects.addExtra(")");
         return formattedEffects;
+    }
+
+    /**
+     * Formats a firework effect into a readable string
+     * @param effect The firework effect to format
+     * @param isFireworkStar Whether this is for a firework star (true) or a firework (false)
+     * @return Formatted text component with firework effect information
+     */
+    private static TextComponent getFormattedFireworkEffect(org.bukkit.FireworkEffect effect, boolean isFireworkStar) {
+        TextComponent formattedEffect = new TextComponent("");
+        
+        if(effect == null) return formattedEffect;
+        
+        StringBuilder sb = new StringBuilder();
+        
+        // Start the formatted string
+        sb.append(" [");
+        
+        // Add the shape
+        String shapeName = formatFireworkShape(effect.getType());
+        sb.append(shapeName);
+        
+        // Add special effects
+        List<String> specialEffects = new ArrayList<>();
+        if(effect.hasTrail()) specialEffects.add("Trail");
+        if(effect.hasFlicker()) specialEffects.add("Twinkle");
+        
+        if(!specialEffects.isEmpty()) {
+            sb.append(" (");
+            sb.append(String.join(", ", specialEffects));
+            sb.append(")");
+        }
+        
+        // Add color information if we have it
+        List<org.bukkit.Color> colors = effect.getColors();
+        if(colors != null && !colors.isEmpty()) {
+            if(colors.size() == 1) {
+                // If there's just one color, add it directly
+                sb.append(" ").append(formatFireworkColor(colors.get(0)));
+            } else if(colors.size() <= 3) {
+                // If there are 2-3 colors, list them
+                sb.append(" ");
+                for(int i = 0; i < colors.size(); i++) {
+                    sb.append(formatFireworkColor(colors.get(i)));
+                    if(i < colors.size() - 1) sb.append(", ");
+                }
+            } else {
+                // If there are many colors, just show the count
+                sb.append(" ").append(colors.size()).append(" Colors");
+            }
+        }
+        
+        // Add fade information if available
+        List<org.bukkit.Color> fadeColors = effect.getFadeColors();
+        if(fadeColors != null && !fadeColors.isEmpty()) {
+            if(fadeColors.size() == 1) {
+                // If there's just one fade color, add it directly
+                sb.append("→").append(formatFireworkColor(fadeColors.get(0)));
+            } else if(fadeColors.size() <= 2) {
+                // If there are 2 fade colors, list them
+                sb.append("→");
+                for(int i = 0; i < fadeColors.size(); i++) {
+                    sb.append(formatFireworkColor(fadeColors.get(i)));
+                    if(i < fadeColors.size() - 1) sb.append(", ");
+                }
+            } else {
+                // If there are many fade colors, just show the count
+                sb.append(" → ").append(fadeColors.size()).append(" Fade Colors");
+            }
+        }
+        
+        sb.append("]");
+        
+        formattedEffect.addExtra(sb.toString());
+        return formattedEffect;
+    }
+    
+    /**
+     * Formats a firework shape into a readable string
+     * @param type The firework effect type
+     * @return Formatted shape name
+     */
+    private static String formatFireworkShape(org.bukkit.FireworkEffect.Type type) {
+        switch(type) {
+            case BALL:
+                return "Small";
+            case BALL_LARGE:
+                return "Large";
+            case STAR:
+                return "Star";
+            case BURST:
+                return "Burst";
+            case CREEPER:
+                return "Creeper";
+            default:
+                return capitalize(type.toString().toLowerCase().replace("_", " "));
+        }
+    }
+    
+    /**
+     * Formats a color into a readable string
+     * @param color The color to format
+     * @return Formatted color name
+     */
+    private static String formatFireworkColor(org.bukkit.Color color) {
+        Shop.getPlugin().getLogger().debug("[formatFireworkColor]     color: " + color.toString());
+
+        // Map common RGB values to color names
+        if(color.equals(org.bukkit.Color.WHITE)) return "White";
+        if(color.equals(org.bukkit.Color.SILVER)) return "Silver";
+        if(color.equals(org.bukkit.Color.GRAY)) return "Gray";
+        if(color.equals(org.bukkit.Color.BLACK)) return "Black";
+        if(color.equals(org.bukkit.Color.RED)) return "Red";
+        if(color.equals(org.bukkit.Color.MAROON)) return "Maroon";
+        if(color.equals(org.bukkit.Color.YELLOW)) return "Yellow";
+        if(color.equals(org.bukkit.Color.OLIVE)) return "Olive";
+        if(color.equals(org.bukkit.Color.LIME)) return "Lime";
+        if(color.equals(org.bukkit.Color.GREEN)) return "Green";
+        if(color.equals(org.bukkit.Color.AQUA)) return "Aqua";
+        if(color.equals(org.bukkit.Color.TEAL)) return "Teal";
+        if(color.equals(org.bukkit.Color.BLUE)) return "Blue";
+        if(color.equals(org.bukkit.Color.NAVY)) return "Navy";
+        if(color.equals(org.bukkit.Color.FUCHSIA)) return "Fuchsia";
+        if(color.equals(org.bukkit.Color.PURPLE)) return "Purple";
+        if(color.equals(org.bukkit.Color.ORANGE)) return "Orange";
+
+        
+        // For dye colors (Minecraft 1.8+)
+        try {
+            for(org.bukkit.DyeColor dyeColor : org.bukkit.DyeColor.values()) {
+                if(dyeColor.getColor().equals(color)) {
+                    return capitalize(dyeColor.toString().toLowerCase().replace("_", " "));
+                }
+                if(dyeColor.getFireworkColor().equals(color)) {
+                    return capitalize(dyeColor.toString().toLowerCase().replace("_", " "));
+                }
+            }
+        } catch(NoSuchMethodError e) {
+            // Fallback for older versions that might not have getFireworkColor()
+        }
+        
+        // If no match is found, return a generic "Custom"
+        return "Custom";
     }
 
     private static void initializeNonIntrusiveMaterials(){
@@ -801,6 +972,10 @@ public class UtilMethods {
     public static String itemStackToBase64(ItemStack item) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
+
+        // Set max item stack size to 64 if its higher than 64
+        // Otherwise the serialization complains...
+        if (item.getAmount() > 64) { item.setAmount(64); }
 
         // Write the ItemStack to the ObjectOutputStream
         dataOutput.writeObject(item);
