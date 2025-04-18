@@ -302,7 +302,7 @@ public class PriceNegotiator {
         double minQty = Math.min(buyerMaxQtyPurchase, sellerMaxQtySale);
         
         // Special case for fractional payments: don't floor to zero if there's a valid partial purchase
-        if (supportsFractionalPayments && minQty > 0 && minQty < 1) {
+        if (supportsFractionalPayments && minQty > 0) {
             return minQty; // Keep the fractional quantity when fractional payments are enabled
         }
         
