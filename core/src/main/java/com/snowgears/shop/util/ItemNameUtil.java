@@ -67,6 +67,17 @@ public class ItemNameUtil {
             }
         }
 
+        // Add custom potion formatting
+        if(item.getItemMeta() != null && item.getItemMeta() instanceof PotionMeta){
+            PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
+            if (potionMeta.getBasePotionType() != null) {
+                String formattedName = UtilMethods.capitalize(item.getType().name().replace("_", " ").toLowerCase());
+                formattedName += " of ";
+                formattedName += UtilMethods.capitalize(potionMeta.getBasePotionType().toString().replace("_", " ").toLowerCase());
+                return new TextComponent(formattedName);
+            }
+        }
+
         // Fallback to the material name
         return getNameTranslatable(item.getType());
     }

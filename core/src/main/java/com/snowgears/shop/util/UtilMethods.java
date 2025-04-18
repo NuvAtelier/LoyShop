@@ -555,10 +555,7 @@ public class UtilMethods {
         // Add custom potion formatting
         if(item.getItemMeta() != null && item.getItemMeta() instanceof PotionMeta){
             PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
-            String formattedName = "";
             if (potionMeta.getBasePotionType() != null) {
-                formattedName = UtilMethods.capitalize(potionMeta.getBasePotionType().toString().replace("_", " ").toLowerCase());
-                formattedMessage.addExtra(" [" + formattedName + "]");
                 formattedMessage.addExtra(getPotionEffects(potionMeta.getBasePotionType().getPotionEffects()));
             }
             if (potionMeta.getCustomEffects().size() > 0) {
@@ -584,8 +581,22 @@ public class UtilMethods {
         for (int i = 0; i < numEffects; i++) {
             PotionEffect effect = effects.get(i);
             formattedEffects.addExtra(new TranslatableComponent(effect.getType().getTranslationKey()));
-            if(effect.getAmplifier() > 0) formattedEffects.addExtra(formatRomanNumerals(effect.getAmplifier()));
-            if(effect.getDuration() > 0) formattedEffects.addExtra(formatTickTime(effect.getDuration()));
+            
+            // Show level for all potions, not just those with amplifier > 0
+            // For potions with amplifier 0, we don't add any suffix (it's the base level)
+            if(effect.getAmplifier() > 0) {
+                formattedEffects.addExtra(formatRomanNumerals(effect.getAmplifier() + 1)); // +1 because amplifier is 0-based
+            }
+            
+            // Only add duration for non-instant effects
+            // Instant effects like Instant Health and Instant Damage shouldn't show duration
+            boolean isInstantEffect = effect.getType().equals(org.bukkit.potion.PotionEffectType.INSTANT_HEALTH) || 
+                                     effect.getType().equals(org.bukkit.potion.PotionEffectType.INSTANT_DAMAGE);
+            
+            if(effect.getDuration() > 0 && !isInstantEffect) {
+                formattedEffects.addExtra(formatTickTime(effect.getDuration()));
+            }
+            
             // if we have more than one effect, add a comma, dont add a comma after the last effect
             if(i < numEffects - 1)
                 formattedEffects.addExtra(", ");
