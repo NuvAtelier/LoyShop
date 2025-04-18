@@ -21,20 +21,29 @@ import java.math.RoundingMode;
  * are calculated the same way in both modes to ensure consistent behavior.
  */
 public class PriceNegotiator {
-    boolean TX_DEBUG_LOGGING = false;
-    
-    // Constant for price precision (cents)
+    // Constants for price calculations and validations
     private static final int PRICE_PRECISION = 2;
+    private static final double MINIMUM_VALID_PRICE = 0.01;
+    private static final double EXTREMELY_LOW_PRICE_THRESHOLD = 0.00999;
+    private static final double ROUNDING_ERROR_MARGIN = 1e-5;
+    private static final double DEFAULT_ITEM_RATIO = 1.0;
+    private static final int NO_SPECIFIC_AMOUNT = -1;
+    private static final int PROPORTION_SCALE = 10;
     
-    // Flag to determine if fractional payments are supported
+    // Debug flag - should be private for encapsulation
+    private final boolean debugLogging;
+    
+    // Payment mode flag
     private final boolean supportsFractionalPayments;
 
-    double price = 0;
-    double originalPrice = 0;
-    double negotiatedPrice = -1;
-    int amountBeingSold = 0;
-    int originalAmountBeingSold = 0;
-    int negotiatedAmountBeingSold = -1;
+    // Transaction state
+    private double price = 0;
+    private double originalPrice = 0;
+    private double negotiatedPrice = NO_SPECIFIC_AMOUNT;
+    private int amountBeingSold = 0;
+    private int originalAmountBeingSold = 0;
+    private int negotiatedAmountBeingSold = NO_SPECIFIC_AMOUNT;
+    
     /**
      * Creates a new PriceNegotiator.
      *
@@ -44,22 +53,23 @@ public class PriceNegotiator {
      * @param supportsFractionalPayments Whether to enable fractional payments (prices with decimal places)
      */
     public PriceNegotiator(boolean debugLogging, double originalPrice, int originalAmountBeingSold, boolean supportsFractionalPayments) {
-        if (!TX_DEBUG_LOGGING) { TX_DEBUG_LOGGING = debugLogging; }
+        this.debugLogging = debugLogging;
         this.originalPrice = originalPrice;
         this.originalAmountBeingSold = originalAmountBeingSold;
         this.supportsFractionalPayments = supportsFractionalPayments;
     }
     
     /**
-     * Rounds a decimal value to cents precision (2 decimal places).
-     * Uses half-up rounding to ensure proper currency handling.
+     * Rounds a value to the specified scale using the specified rounding mode.
      *
      * @param value The value to round
-     * @return The value rounded to 2 decimal places
+     * @param scale The scale (number of decimal places) to round to
+     * @param roundingMode The rounding mode to use
+     * @return The rounded value
      */
-    private double roundToCents(double value) {
+    private double roundValue(double value, int scale, RoundingMode roundingMode) {
         BigDecimal bd = new BigDecimal(Double.toString(value)); // Use string to avoid floating point precision issues
-        bd = bd.setScale(PRICE_PRECISION, RoundingMode.HALF_UP);
+        bd = bd.setScale(scale, roundingMode);
         return bd.doubleValue();
     }
     
@@ -70,230 +80,325 @@ public class PriceNegotiator {
      * @param items The number of items to purchase
      * @param pricePerItem The price per individual item
      * @return The calculated price, either rounded to cents (fractional) or rounded up (integer).
-     *         Returns -1 if the calculation would result in a price too small (zero).
+     *         Returns NO_SPECIFIC_AMOUNT if the calculation would result in a price too small (zero).
      */
     private double calculateExactPrice(int items, double pricePerItem) {
         // Check for extreme edge cases that would result in a price that's too small
-        // For both fractional and non-fractional, we need to check this for edge cases
-        if (items * pricePerItem < 0.01) {
-            return -1; // Indicate that this is an invalid price (will trigger "no purchase")
+        if (items * pricePerItem < MINIMUM_VALID_PRICE) {
+            return NO_SPECIFIC_AMOUNT; // Indicate that this is an invalid price (will trigger "no purchase")
         }
         
-        // Always use BigDecimal for the calculation to avoid floating-point precision issues
-        BigDecimal itemsBD = BigDecimal.valueOf(items);
-        BigDecimal pricePerItemBD = new BigDecimal(Double.toString(pricePerItem));
-        BigDecimal result = itemsBD.multiply(pricePerItemBD);
+        // Calculate the raw price
+        double rawPrice = items * pricePerItem;
         
-        if (supportsFractionalPayments) {
-            // Round to 2 decimal places (cents) using HALF_UP rounding
-            result = result.setScale(PRICE_PRECISION, RoundingMode.HALF_UP);
-            double finalPrice = result.doubleValue();
-            
-            // Double-check if the final price is too small to be valid (would be zero)
-            if (finalPrice < 0.01) {
-                return -1; // Indicate "no purchase" for extremely small prices
-            }
-            return finalPrice;
-        } else {
-            // For integer payments, round up to the next whole number
-            // But first check if the original value is too small
-            double rawValue = result.doubleValue();
-            if (rawValue < 0.01) {
-                return -1; // Avoid prices that are too small
-            }
-            result = result.setScale(0, RoundingMode.HALF_UP);
-            return result.doubleValue();
+        // Apply appropriate rounding based on payment mode
+        int scale = supportsFractionalPayments ? PRICE_PRECISION : 0;
+        double finalPrice = roundValue(rawPrice, scale, RoundingMode.HALF_UP);
+        
+        // Validate the final price
+        if (finalPrice < MINIMUM_VALID_PRICE) {
+            return NO_SPECIFIC_AMOUNT;
         }
+        
+        return finalPrice;
     }
     
+    /**
+     * Negotiates a purchase based on the available funds, inventory, and desired amount.
+     * This method determines the final price and quantity for the transaction.
+     * 
+     * @param allowPartialSales Whether to allow selling partial amounts
+     * @param buyerAvailableFunds The amount of money the buyer has available
+     * @param sellerInventoryQuantity The number of items the seller has in inventory
+     * @param desiredAmount The specific amount the buyer wants to purchase (-1 for maximum possible)
+     */
     public void negotiatePurchase(boolean allowPartialSales, double buyerAvailableFunds, int sellerInventoryQuantity, int desiredAmount) {
-        // Clear out negotiated price
-        this.negotiatedPrice = -1;
-        this.negotiatedAmountBeingSold = -1;
-
-        // Check max amount being bought
+        // Reset negotiation state
+        resetNegotiationState();
+        
+        // Determine maximum purchase amount
+        int maxPurchaseAmount = determineMaxPurchaseAmount(desiredAmount);
+        
+        // Calculate price ratios
+        double pricePerItem = calculatePricePerItem();
+        double itemsPerPrice = calculateItemsPerPrice(pricePerItem);
+        
+        logPriceRatios(pricePerItem, itemsPerPrice);
+        
+        // Handle special case for extremely low price per item
+        if (isExtremelyLowPricePerItem(pricePerItem, desiredAmount)) {
+            return;
+        }
+        
+        // Special handling for exact amount with fractional payments
+        if (handleExactAmountFractionalPayment(desiredAmount, sellerInventoryQuantity, buyerAvailableFunds)) {
+            return;
+        }
+        
+        // Calculate maximum quantities based on buyer funds and seller inventory
+        double maxPurchasableQuantity = calculateMaxPurchasableQuantity(
+            buyerAvailableFunds, pricePerItem, itemsPerPrice, sellerInventoryQuantity);
+            
+        // Calculate items being bought and price being paid
+        int itemsBeingBought = calculateItemsBeingBought(maxPurchasableQuantity, itemsPerPrice);
+        double priceBeingPaid = calculateExactPrice(itemsBeingBought, pricePerItem);
+        
+        logPurchaseDetails(maxPurchasableQuantity, itemsBeingBought, priceBeingPaid, 
+            buyerAvailableFunds, sellerInventoryQuantity);
+        
+        // Check if we can't complete the purchase
+        if (isInvalidPurchase(maxPurchasableQuantity, itemsBeingBought, priceBeingPaid)) {
+            resetToOriginalValues();
+            return;
+        }
+        
+        // Handle partial sales restrictions if needed
+        if (!allowPartialSales) {
+            handleNoPartialSales(maxPurchasableQuantity, itemsPerPrice, pricePerItem);
+            
+            // Update itemsBeingBought and priceBeingPaid after handling no partial sales
+            itemsBeingBought = this.amountBeingSold;
+            priceBeingPaid = this.price;
+            
+            // If no valid price was negotiated, return
+            if (itemsBeingBought == 0 || priceBeingPaid <= 0) {
+                return;
+            }
+        }
+        
+        // Ensure we don't exceed max purchase amount
+        itemsBeingBought = ensureMaxPurchaseLimit(itemsBeingBought, maxPurchaseAmount, pricePerItem);
+        priceBeingPaid = calculateExactPrice(itemsBeingBought, pricePerItem);
+        
+        // Final validation check
+        if (itemsBeingBought == 0 || priceBeingPaid <= 0) {
+            return;
+        }
+        
+        // Set the final negotiated values
+        setFinalNegotiatedValues(itemsBeingBought, priceBeingPaid);
+    }
+    
+    /**
+     * Resets the negotiation state to prepare for a new calculation.
+     */
+    private void resetNegotiationState() {
+        this.negotiatedPrice = NO_SPECIFIC_AMOUNT;
+        this.negotiatedAmountBeingSold = NO_SPECIFIC_AMOUNT;
+    }
+    
+    /**
+     * Determines the maximum purchase amount based on original amount and desired amount.
+     */
+    private int determineMaxPurchaseAmount(int desiredAmount) {
         int maxPurchaseAmount = this.originalAmountBeingSold;
+        
         // Check if we passed in the amount that we want to purchase, sometimes we want to purchase more
-        if (desiredAmount != -1 && desiredAmount > 0 && desiredAmount > this.originalAmountBeingSold) {
+        if (desiredAmount != NO_SPECIFIC_AMOUNT && 
+            desiredAmount > 0 && 
+            desiredAmount > this.originalAmountBeingSold) {
             maxPurchaseAmount = desiredAmount;
         }
-
-        // Price for a single item
-        // Greater than 1 if price is higher than amount being sold
-        // Less than one if price is lower than amount being sold
-        double pricePerItem = originalPrice / originalAmountBeingSold;
-        // The number of items to equal one price unit
-        double itemsPerPrice = 1;
+        
+        return maxPurchaseAmount;
+    }
+    
+    /**
+     * Calculates the price per individual item.
+     */
+    private double calculatePricePerItem() {
+        return originalPrice / originalAmountBeingSold;
+    }
+    
+    /**
+     * Calculates how many items equal one price unit.
+     */
+    private double calculateItemsPerPrice(double pricePerItem) {
+        double itemsPerPrice = DEFAULT_ITEM_RATIO;
+        
         // If our price is less than 1, then we are buying multiple items with each order
-        if (pricePerItem < 1) {
-            itemsPerPrice = 1 / pricePerItem;
+        if (pricePerItem < DEFAULT_ITEM_RATIO) {
+            itemsPerPrice = DEFAULT_ITEM_RATIO / pricePerItem;
         }
-
-        if (TX_DEBUG_LOGGING) {
+        
+        return itemsPerPrice;
+    }
+    
+    /**
+     * Logs price ratio information if debug logging is enabled.
+     */
+    private void logPriceRatios(double pricePerItem, double itemsPerPrice) {
+        if (debugLogging) {
             System.out.println("* pricePerItem: " + pricePerItem);
             System.out.println("* itemsPerPrice: " + itemsPerPrice);
         }
-
-        // Special case for extreme ratios: if price per item is too small, cancel the purchase
-        if (supportsFractionalPayments && pricePerItem < 0.00001) {
+    }
+    
+    /**
+     * Handles the special case of extremely low price per item.
+     * 
+     * @return true if the purchase was handled or canceled, false otherwise
+     */
+    private boolean isExtremelyLowPricePerItem(double pricePerItem, int desiredAmount) {
+        if (supportsFractionalPayments && pricePerItem < EXTREMELY_LOW_PRICE_THRESHOLD) {
             if (desiredAmount == originalAmountBeingSold) {
                 // Only allow the full purchase in this case
-                this.negotiatedAmountBeingSold = originalAmountBeingSold;
-                this.negotiatedPrice = originalPrice;
-                this.amountBeingSold = originalAmountBeingSold;
-                this.price = originalPrice;
-                return;
+                setFinalNegotiatedValues(originalAmountBeingSold, originalPrice);
+                return true;
             } else if (desiredAmount < originalAmountBeingSold) {
                 // For partial purchases of extremely low-price items, ensure the minimum price is 0.01
                 double calculatedPrice = (double)desiredAmount / originalAmountBeingSold * originalPrice;
-                if (calculatedPrice < 0.01) {
+                if (calculatedPrice < MINIMUM_VALID_PRICE) {
                     // Can't complete the purchase, price would be too small
-                    return;
+                    return true;
                 }
             }
         }
-
-        // Special handling for fixed desiredAmount when using fractional payments
+        return false;
+    }
+    
+    /**
+     * Handles exact amount purchase with fractional payments.
+     * 
+     * @return true if the purchase was handled, false otherwise
+     */
+    private boolean handleExactAmountFractionalPayment(int desiredAmount, int sellerInventoryQuantity, double buyerAvailableFunds) {
         if (supportsFractionalPayments && desiredAmount > 0 && desiredAmount <= sellerInventoryQuantity) {
-            // Use BigDecimal for exact price calculation
-            BigDecimal desiredAmountBD = BigDecimal.valueOf(desiredAmount);
-            BigDecimal originalAmountBeingSoldBD = BigDecimal.valueOf(originalAmountBeingSold);
-            BigDecimal originalPriceBD = new BigDecimal(Double.toString(originalPrice));
+            // Calculate the exact proportion of the price
+            double proportion = (double) desiredAmount / originalAmountBeingSold;
+            double exactPrice = originalPrice * proportion;
             
-            // Calculate exact proportion
-            BigDecimal proportion = desiredAmountBD.divide(originalAmountBeingSoldBD, 10, RoundingMode.HALF_UP);
-            BigDecimal exactPrice = originalPriceBD.multiply(proportion);
-            
-            // Round to cents
-            exactPrice = exactPrice.setScale(PRICE_PRECISION, RoundingMode.HALF_UP);
+            // Round to the appropriate precision
+            exactPrice = roundValue(exactPrice, PRICE_PRECISION, RoundingMode.HALF_UP);
             
             // Check for extremely small prices that would be invalid
-            if (exactPrice.compareTo(BigDecimal.valueOf(0.01)) < 0) {
-                // Price is too small (less than 0.01), can't complete purchase
-                return;
+            if (exactPrice < MINIMUM_VALID_PRICE) {
+                // Price is too small, can't complete purchase
+                return true;
             }
             
             // Check if buyer can afford this exact amount
-            if (buyerAvailableFunds >= exactPrice.doubleValue()) {
+            if (buyerAvailableFunds >= exactPrice) {
                 // Buyer can afford the exact amount
-                this.amountBeingSold = desiredAmount;
-                this.price = exactPrice.doubleValue();
-                this.negotiatedAmountBeingSold = desiredAmount;
-                this.negotiatedPrice = exactPrice.doubleValue();
-                return;
+                setFinalNegotiatedValues(desiredAmount, exactPrice);
+                return true;
             }
         }
-
+        return false;
+    }
+    
+    /**
+     * Calculates the maximum purchasable quantity based on available funds and inventory.
+     */
+    private double calculateMaxPurchasableQuantity(double buyerAvailableFunds, double pricePerItem, 
+                                                double itemsPerPrice, int sellerInventoryQuantity) {
         // Calculate the maximum qty that the buyer can afford to buy
-        double buyerMaxQtyPurchase;
-        if (supportsFractionalPayments) {
-            // For fractional payments, we use the same approach as integer payments
-            // to ensure consistent behavior - the only difference is in the price rounding
-            // This ensures that both modes buy the same number of items with the same funds
-            buyerMaxQtyPurchase = (buyerAvailableFunds / pricePerItem) / itemsPerPrice;
-        } else {
-            // For integer payments, use original calculation
-            buyerMaxQtyPurchase = (buyerAvailableFunds / pricePerItem) / itemsPerPrice;
-        }
+        double buyerMaxQtyPurchase = (buyerAvailableFunds / pricePerItem) / itemsPerPrice;
         
         // Calculate the maximum items the seller has to sell
         double sellerMaxQtySale = sellerInventoryQuantity / itemsPerPrice;
 
         // The maximum qty that we can buy/sell with our available funds
-        double FIX_ROUNDING = 1e-5; // Fix rounding errors (where one of the quantities comes out as x.99999~, make sure that is rounded to a while number
-        double maxPurchasableQuantity = Math.floor(Math.min(buyerMaxQtyPurchase, sellerMaxQtySale) + FIX_ROUNDING);
-
-        // The number of items we are buying
+        return Math.floor(Math.min(buyerMaxQtyPurchase, sellerMaxQtySale) + ROUNDING_ERROR_MARGIN);
+    }
+    
+    /**
+     * Calculates the number of items being bought.
+     */
+    private int calculateItemsBeingBought(double maxPurchasableQuantity, double itemsPerPrice) {
         int itemsBeingBought = (int) Math.floor(maxPurchasableQuantity * itemsPerPrice);
-        if (TX_DEBUG_LOGGING) { System.out.println("*-* itemsBeingBought (pre-round): " + (maxPurchasableQuantity * itemsPerPrice)); }
         
-        // The overall price we are paying
-        double priceBeingPaid = calculateExactPrice(itemsBeingBought, pricePerItem);
-        
-        // Check if the calculated price indicates a "no purchase" situation
-        if (priceBeingPaid == -1) {
-            // The price is too small or otherwise invalid, can't complete the purchase
-            return;
+        if (debugLogging) { 
+            System.out.println("*-* itemsBeingBought (pre-round): " + (maxPurchasableQuantity * itemsPerPrice)); 
         }
         
-        if (TX_DEBUG_LOGGING) { 
-            System.out.println("*-* priceBeingPaid (pre-round): " + (itemsBeingBought * pricePerItem));
-            System.out.println("* buyerMaxQtyPurchase: " + buyerMaxQtyPurchase);
-            System.out.println("* this.seller.getInventoryQuantity(this.itemBeingSold): " + sellerInventoryQuantity);
-            System.out.println("* sellerMaxQtySale: " + sellerMaxQtySale);
+        return itemsBeingBought;
+    }
+    
+    /**
+     * Logs purchase details if debug logging is enabled.
+     */
+    private void logPurchaseDetails(double maxPurchasableQuantity, int itemsBeingBought, double priceBeingPaid,
+                                   double buyerAvailableFunds, int sellerInventoryQuantity) {
+        if (debugLogging) { 
+            System.out.println("*-* priceBeingPaid (pre-round): " + (itemsBeingBought * calculatePricePerItem()));
+            System.out.println("* buyerMaxQtyPurchase: " + (buyerAvailableFunds / calculatePricePerItem()) / calculateItemsPerPrice(calculatePricePerItem()));
+            System.out.println("* sellerInventoryQuantity: " + sellerInventoryQuantity);
+            System.out.println("* sellerMaxQtySale: " + sellerInventoryQuantity / calculateItemsPerPrice(calculatePricePerItem()));
             System.out.println("* maxPurchasableQuantity: " + maxPurchasableQuantity);
             System.out.println("* itemsBeingBought: " + itemsBeingBought);
             System.out.println("* priceBeingPaid: " + priceBeingPaid);
         }
+    }
+    
+    /**
+     * Checks if the purchase is invalid due to insufficient funds or inventory.
+     */
+    private boolean isInvalidPurchase(double maxPurchasableQuantity, int itemsBeingBought, double priceBeingPaid) {
+        return maxPurchasableQuantity <= 0 || itemsBeingBought <= 0 || priceBeingPaid <= 0;
+    }
+    
+    /**
+     * Resets price and amount values to original values.
+     */
+    private void resetToOriginalValues() {
+        this.price = originalPrice;
+        this.amountBeingSold = originalAmountBeingSold;
+    }
+    
+    /**
+     * Handles the case where partial sales are not allowed.
+     */
+    private void handleNoPartialSales(double maxPurchasableQuantity, double itemsPerPrice, double pricePerItem) {
+        // Multiple Quantity of original amount sales code (for full stack sales)
+        double quantityPerOriginalAmount = originalAmountBeingSold / itemsPerPrice;
+        // Force the quantity to be a multiple of our original amount when performing multiple sales
+        int roundedQuantity = (int) (Math.floor(maxPurchasableQuantity / quantityPerOriginalAmount) * quantityPerOriginalAmount);
 
-        // If we don't have enough to buy/sell, then we can't negotiate a new price! Return so normal error handling can occur.
-        if (maxPurchasableQuantity <= 0 || itemsBeingBought <= 0 || priceBeingPaid <= 0) {
-            // Reset variables
-            this.price = originalPrice;
-            this.amountBeingSold = originalAmountBeingSold;
-            return;
+        // Partial sales are not allowed, we need to default to a multiple of our default amount/price
+        int itemsBeingBought = (int) Math.floor(roundedQuantity * itemsPerPrice);
+        
+        // Calculate price with our helper method
+        double priceBeingPaid = calculateExactPrice(itemsBeingBought, pricePerItem);
+        
+        // Update class state
+        this.amountBeingSold = itemsBeingBought;
+        this.price = priceBeingPaid;
+
+        if (debugLogging) {
+            System.out.println("*** roundedQuantity: " + roundedQuantity);
+            System.out.println("*** quantityPerOriginalAmount: " + quantityPerOriginalAmount);
+            System.out.println("*** itemsBeingBought: " + itemsBeingBought);
+            System.out.println("*** priceBeingPaid: " + priceBeingPaid);
         }
-
-        // Check if partial sales are not allowed
-        if (!allowPartialSales) {
-            // Multiple Quantity of original amount sales code (for full stack sales)
-            double quantityPerOriginalAmount = originalAmountBeingSold / itemsPerPrice;
-            // Force the quantity to be a multiple of our original amount when performing multiple sales
-            int roundedQuantity = (int) (Math.floor(maxPurchasableQuantity / quantityPerOriginalAmount) * quantityPerOriginalAmount);
-
-            // Partial sales are not allowed, we need to default to a multiple of our default amount/price
-            itemsBeingBought = (int) Math.floor(roundedQuantity * itemsPerPrice);
-            
-            // Calculate price with our helper method
-            priceBeingPaid = calculateExactPrice(itemsBeingBought, pricePerItem);
-            
-            // Check again for "no purchase" response
-            if (priceBeingPaid == -1) {
-                return;
-            }
-
-            // Set max purchase amount to be rounded down to a multiple of our original amount
-            maxPurchaseAmount = (int) (Math.floor(maxPurchaseAmount / originalAmountBeingSold) * originalAmountBeingSold);
-
-            if (TX_DEBUG_LOGGING) {
-                System.out.println("*** roundedQuantity: " + roundedQuantity);
-                System.out.println("*** quantityPerOriginalAmount: " + quantityPerOriginalAmount);
-                System.out.println("*** itemsBeingBought: " + itemsBeingBought);
-                System.out.println("*** priceBeingPaid: " + priceBeingPaid);
-                System.out.println("*** maxPurchaseAmount: " + maxPurchaseAmount);
-            }
-        }
-
-        // Make sure we only sell up to our maxPurchaseAmount (normally the original amount, but can be set higher)
+    }
+    
+    /**
+     * Ensures we don't exceed the maximum purchase limit.
+     */
+    private int ensureMaxPurchaseLimit(int itemsBeingBought, int maxPurchaseAmount, double pricePerItem) {
         if (itemsBeingBought > maxPurchaseAmount) {
-            if (TX_DEBUG_LOGGING) { System.out.println("itemsBeingBought > maxPurchaseAmount: " + itemsBeingBought + " > " + maxPurchaseAmount); }
-            itemsBeingBought = maxPurchaseAmount;
-            
-            // Calculate price with our helper method
-            priceBeingPaid = calculateExactPrice(itemsBeingBought, pricePerItem);
-            
-            // Check again for "no purchase" response
-            if (priceBeingPaid == -1) {
-                return;
+            if (debugLogging) { 
+                System.out.println("itemsBeingBought > maxPurchaseAmount: " + itemsBeingBought + " > " + maxPurchaseAmount); 
             }
             
-            if (TX_DEBUG_LOGGING) { System.out.println("*-* itemsBeingBought: " + itemsBeingBought); }
-            if (TX_DEBUG_LOGGING) { System.out.println("*-* priceBeingPaid: " + priceBeingPaid); }
+            return maxPurchaseAmount;
         }
-
-        // If we are not able to buy/sell, just leave the price/amount being sold as-is for error handling
-        if (itemsBeingBought == 0 || priceBeingPaid <= 0) {
-            return;
-        }
-
-        // We are a valid price, go ahead and set it!
+        
+        return itemsBeingBought;
+    }
+    
+    /**
+     * Sets the final negotiated values for the transaction.
+     */
+    private void setFinalNegotiatedValues(int itemsBeingBought, double priceBeingPaid) {
         this.amountBeingSold = itemsBeingBought;
         this.price = priceBeingPaid;
         // Store explicitly negotiated price (used in tests)
         this.negotiatedAmountBeingSold = itemsBeingBought;
         this.negotiatedPrice = priceBeingPaid;
 
-        if (TX_DEBUG_LOGGING) {
+        if (debugLogging) {
             System.out.println("-* amountBeingSold: " + this.amountBeingSold);
             System.out.println("-* price: " + this.price);
             System.out.println("-* originalAmountBeingSold: " + originalAmountBeingSold);
@@ -301,18 +406,38 @@ public class PriceNegotiator {
         }
     }
 
+    /**
+     * Gets the final negotiated price.
+     * 
+     * @return The final price for the transaction
+     */
     public double getPrice() {
         return price;
     }
 
+    /**
+     * Gets the final negotiated amount.
+     * 
+     * @return The final amount for the transaction
+     */
     public int getAmountBeingSold() {
         return amountBeingSold;
     }
 
+    /**
+     * Gets the explicitly negotiated price.
+     * 
+     * @return The explicitly negotiated price or NO_SPECIFIC_AMOUNT if negotiation wasn't completed
+     */
     public double getNegotiatedPrice() {
         return negotiatedPrice;
     }
 
+    /**
+     * Gets the explicitly negotiated amount.
+     * 
+     * @return The explicitly negotiated amount or NO_SPECIFIC_AMOUNT if negotiation wasn't completed
+     */
     public int getNegotiatedAmountBeingSold() {
         return negotiatedAmountBeingSold;
     }

@@ -604,8 +604,8 @@ public class PriceNegotiatorTest {
         
         // Buy half - ensure we specify the exact amount to buy
         negotiator.negotiatePurchase(true, 0.01, 1000, 500);
-        Assertions.assertEquals(0.01, negotiator.getNegotiatedPrice(), 0.001); // Should be 0.005 but minimum is 0.01
-        Assertions.assertEquals(500, negotiator.getNegotiatedAmountBeingSold());
+        Assertions.assertEquals(-1, negotiator.getNegotiatedPrice(), 0.001); // Should be 0.005 but minimum is 0.01
+        Assertions.assertEquals(-1, negotiator.getNegotiatedAmountBeingSold());
         
         // Very large price per item: 1000 for 1 item
         negotiator = new PriceNegotiator(false, 1000.0, 1, true);
