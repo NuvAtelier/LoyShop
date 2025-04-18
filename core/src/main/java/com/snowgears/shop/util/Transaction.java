@@ -99,7 +99,12 @@ public class Transaction {
         // Don't perform this processing if we are a gamble shop!
         if (shop.getType() == ShopType.GAMBLE) { return; }
 
-        PriceNegotiator negotiator = new PriceNegotiator(TX_DEBUG_LOGGING, this.originalPrice, this.originalAmountBeingSold);
+        PriceNegotiator negotiator = new PriceNegotiator(
+            TX_DEBUG_LOGGING, 
+            this.originalPrice, 
+            this.originalAmountBeingSold, 
+            Shop.getPlugin().getCurrencyType() == CurrencyType.VAULT
+        );
 
         negotiator.negotiatePurchase(
                 Shop.getPlugin().getAllowPartialSales(),
