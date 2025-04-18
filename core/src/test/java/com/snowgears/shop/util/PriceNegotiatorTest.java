@@ -287,6 +287,11 @@ public class PriceNegotiatorTest {
         negotiator.negotiatePurchase(true, 1.72, 1000, -1);
         Assertions.assertEquals(1.72, negotiator.getNegotiatedPrice(), 0.001);
         Assertions.assertEquals(172, negotiator.getNegotiatedAmountBeingSold());
+
+        negotiator = new PriceNegotiator(true, 1.5, 1, true);
+        negotiator.negotiatePurchase(true, 3, 1000, -1);
+        Assertions.assertEquals(1.5, negotiator.getNegotiatedPrice(), 0.001);
+        Assertions.assertEquals(1, negotiator.getNegotiatedAmountBeingSold());
     }
 
     @Test

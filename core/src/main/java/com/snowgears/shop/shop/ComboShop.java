@@ -39,6 +39,10 @@ public class ComboShop extends AbstractShop {
         return Shop.getPlugin().getPriceComboString(this.price, this.priceSell, false);
     }
 
+    public double getPriceBuy(){
+        return priceBuy;
+    }
+
     public double getPriceSell(){
         return priceSell;
     }
