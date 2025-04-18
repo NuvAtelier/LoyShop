@@ -187,7 +187,7 @@ public class LogHandler {
         plugin.getLogger().helpful(
             "Shop " + shop.getType().name().toUpperCase() + " from/to " + player.getName() + ": "
                 + ChatColor.stripColor(new ItemNameUtil().getName(shop.getItemStack()).toPlainText()) + "(x" + amount + ")" + " for " + plugin.getPriceString(price, true)
-                + " | Shop owned by " + plugin.getServer().getOfflinePlayer(shop.getOwnerUUID()).getName() + " at (x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ() + ")"
+                + " | Shop owned by " + shop.getOwnerName() + " at (x: " + shop.getChestLocation().getBlockX() + " y: " + shop.getChestLocation().getBlockY() + " z: " + shop.getChestLocation().getBlockZ() + ")"
         );
 
         try {
