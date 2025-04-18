@@ -51,6 +51,10 @@ currency:
    name: "Emerald(s)"
    format: "[price] [name]"
 
+# Does your currency support fractional units?
+# false (default) - Only allow whole currency units
+# true - Allow fractional units down to 0.01 (Vault Required!)
+allowFractionalCurrency: false
 # This allows shops to sell partial stacks for a calculated partial rate if the shop is low on stock #
 # https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#allowpartialsales #
 allowPartialSales: true

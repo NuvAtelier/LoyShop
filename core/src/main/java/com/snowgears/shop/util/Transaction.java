@@ -109,7 +109,7 @@ public class Transaction {
             TX_DEBUG_LOGGING, 
             this.originalPrice, 
             this.originalAmountBeingSold, 
-            Shop.getPlugin().getCurrencyType() == CurrencyType.VAULT
+            Shop.getPlugin().getAllowFractionalCurrency()
         );
 
         negotiator.negotiatePurchase(

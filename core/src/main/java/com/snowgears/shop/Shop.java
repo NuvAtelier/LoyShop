@@ -101,6 +101,7 @@ public class Shop extends JavaPlugin {
     private CurrencyType currencyType;
     private String currencyName = "";
     private String currencyFormat = "";
+    private boolean allowFractionalCurrency = false;
     private Economy econ = null;
     private List<Material> enabledContainers;
     private boolean inverseComboShops;
@@ -375,6 +376,10 @@ public class Shop extends JavaPlugin {
             currencyType = CurrencyType.valueOf(config.getString("currency.type"));
         } catch(Exception e){
             currencyType = CurrencyType.ITEM;
+        }
+
+        if (currencyType == CurrencyType.VAULT) {
+            allowFractionalCurrency = config.getBoolean("allowFractionalCurrency");
         }
 
         offlinePurchaseNotificationsEnabled = config.getBoolean("offlinePurchaseNotifications.enabled");
@@ -1074,6 +1079,10 @@ public class Shop extends JavaPlugin {
         }
 
         return econ;
+    }
+
+    public boolean getAllowFractionalCurrency() { 
+        return allowFractionalCurrency;
     }
 
     public List<Material> getEnabledContainers(){

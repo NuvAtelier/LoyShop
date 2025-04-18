@@ -281,6 +281,12 @@ public class PriceNegotiatorTest {
         negotiator.negotiatePurchase(true, 1.72, 1000, -1);
         Assertions.assertEquals(1, negotiator.getNegotiatedPrice(), 0.001);
         Assertions.assertEquals(100, negotiator.getNegotiatedAmountBeingSold());
+
+        // Simulate a partial purchase for fractions of 1.72
+        negotiator = new PriceNegotiator(true, 10, 1000, true);
+        negotiator.negotiatePurchase(true, 1.72, 1000, -1);
+        Assertions.assertEquals(1.72, negotiator.getNegotiatedPrice(), 0.001);
+        Assertions.assertEquals(172, negotiator.getNegotiatedAmountBeingSold());
     }
 
     @Test

@@ -7,6 +7,7 @@
     * [deletePlayerShopsAfterXHoursOffline](https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#deletePlayerShopsAfterXHoursOffline)
 * **Currency and Economy**
     * [currency](https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#currency)
+    * [allowFractionalCurrency](https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#allowFractionalCurrency)
     * [allowPartialSales](https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#allowPartialSales)
     * [checkItemDurability](https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#checkItemDurability)
     * [ignoreItemRepairCost](https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#ignoreItemRepairCost)
@@ -229,6 +230,35 @@ Controls how prices are displayed on signs and in messages:
 For large numbers, the plugin can apply suffixes based on your `priceSuffixes` configuration (like 5k for 5,000).
 
 The currency system is integral to all shop transactions, determining how players interact with the economy of your server. Most servers will want to align this with their overall economy approach - either item-based (common for survival/RPG servers) or Vault-based (common for established economy servers).
+
+## allowFractionalCurrency
+This setting determines whether your currency supports fractional (decimal) units instead of only whole numbers.
+```yaml
+allowFractionalCurrency: false
+```
+
+This setting controls whether shops can process transactions with fractional (decimal) currency values, enabling more precise pricing and partial purchases.
+
+When set to `true`:
+- Currency values can use decimals (down to 0.01 precision)
+- Shop prices can be set with cent-level precision (e.g., 1.50, 0.75, 3.99)
+- Players can make partial purchases even when they have less than a full unit of currency
+- Perfect for servers using Vault economy plugins that support fractional currency
+- Prices are automatically rounded to the nearest cent (0.01) for display and calculations
+- Allows for more nuanced economy with fine-grained price differentiation
+- **Note: This feature requires Vault and an economy plugin that supports decimal currencies!**
+
+When set to `false` (default):
+- Currency values are always whole numbers (integers only)
+- All prices are rounded HALF_UP to the nearest whole number (preference to seller)
+- Partial purchases requiring fractional currency are rejected
+- Compatible with item-based economies where splitting items isn't possible
+- Simplifies the economy by enforcing whole-number transactions
+- Better for traditional Minecraft servers using physical items as currency
+
+This setting is particularly important for servers using Vault with economy plugins that support decimal currency (like EssentialsX Economy, CMI, etc.). It enables more realistic pricing models similar to real-world economies.
+
+For most servers using Vault economies, enabling this option provides a better player experience with more flexible purchasing options.
 
 ## allowPartialSales
 This allows shops to sell partial stacks for a calculated partial rate if the shop is low on stock, or if the player only has partial funds. By default only the defined amount/price is allowed for a transaction, to allow partial sales you must changes this to `true`
