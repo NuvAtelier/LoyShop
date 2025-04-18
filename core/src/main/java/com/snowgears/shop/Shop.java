@@ -492,7 +492,7 @@ public class Shop extends JavaPlugin {
             if (setupEconomy()) {
                 this.getLogger().info("Shops will use the Vault economy (" + currencyName + ") as currency on the server.");
             } else {
-                this.getLogger().severe("Unable to connect to Vault! Is the plugin installed?");
+                this.getLogger().severe("Unable to connect to Vault Economy! Are both Vault AND an Economy plugin installed?");
                 this.getLogger().severe("Plugin Disabled: Invalid configuration value `economy.type` config.yml. If you do not wish to use Vault with Shop, make sure to set `economy.type` in the config file to `ITEM`.");
                 getServer().getPluginManager().disablePlugin(plugin);
                 return;

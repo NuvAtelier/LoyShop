@@ -241,6 +241,49 @@ public class PriceNegotiatorTest {
     }
 
     @Test
+    public void partialPurchaseWithFractionalPrice() {
+        // Simulate a FRACTIONAL currency partial purchase of 0.5
+        PriceNegotiator negotiator = new PriceNegotiator(true, 1.5, 3, true);        
+        negotiator.negotiatePurchase(true, 0.5, 128, -1);
+        Assertions.assertEquals(0.5, negotiator.getNegotiatedPrice(), 0.001);
+        Assertions.assertEquals(1, negotiator.getNegotiatedAmountBeingSold());
+        // Simulate an INTEGER currency partial purchase of 0.5
+        negotiator = new PriceNegotiator(true, 1.5, 3, false);        
+        negotiator.negotiatePurchase(true, 0.5, 128, -1);
+        Assertions.assertEquals(-1, negotiator.getNegotiatedPrice(), 0.001);
+        Assertions.assertEquals(-1, negotiator.getNegotiatedAmountBeingSold());
+
+
+        // Simulate a partial purchase for fractions of 0.01
+        negotiator = new PriceNegotiator(true, 1, 100, true);
+        negotiator.negotiatePurchase(true, 0.01, 1000, -1);
+        Assertions.assertEquals(0.01, negotiator.getNegotiatedPrice(), 0.001);
+        Assertions.assertEquals(1, negotiator.getNegotiatedAmountBeingSold());
+
+        // Simulate a full stack purchase (64 items)
+        negotiator.negotiatePurchase(true, 0.03, 1000, -1);
+        Assertions.assertEquals(0.03, negotiator.getNegotiatedPrice(), 0.001);
+        Assertions.assertEquals(3, negotiator.getNegotiatedAmountBeingSold());
+
+        // Simulate a partial purchase for fractions of 0.48
+        negotiator.negotiatePurchase(true, 0.48, 1000, -1);
+        Assertions.assertEquals(0.48, negotiator.getNegotiatedPrice(), 0.001);
+        Assertions.assertEquals(48, negotiator.getNegotiatedAmountBeingSold());
+
+
+        // Simulate a partial purchase for fractions of 1.72
+        negotiator = new PriceNegotiator(true, 2, 200, true);
+        negotiator.negotiatePurchase(true, 1.72, 1000, -1);
+        Assertions.assertEquals(1.72, negotiator.getNegotiatedPrice(), 0.001);
+        Assertions.assertEquals(172, negotiator.getNegotiatedAmountBeingSold());
+        // INTEGER currency partial purchase of 1.72
+        negotiator = new PriceNegotiator(true, 2, 200, false);
+        negotiator.negotiatePurchase(true, 1.72, 1000, -1);
+        Assertions.assertEquals(1, negotiator.getNegotiatedPrice(), 0.001);
+        Assertions.assertEquals(100, negotiator.getNegotiatedAmountBeingSold());
+    }
+
+    @Test
     public void fullStackPurchaseTest() {
         // Test case 1: Shop sells 32 items for 10 currency
         // Full stack purchase (64 items) should cost 20 currency (proportionally calculated)

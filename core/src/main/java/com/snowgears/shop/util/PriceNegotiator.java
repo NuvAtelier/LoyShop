@@ -299,7 +299,14 @@ public class PriceNegotiator {
         double sellerMaxQtySale = sellerInventoryQuantity / itemsPerPrice;
 
         // The maximum qty that we can buy/sell with our available funds
-        return Math.floor(Math.min(buyerMaxQtyPurchase, sellerMaxQtySale) + ROUNDING_ERROR_MARGIN);
+        double minQty = Math.min(buyerMaxQtyPurchase, sellerMaxQtySale);
+        
+        // Special case for fractional payments: don't floor to zero if there's a valid partial purchase
+        if (supportsFractionalPayments && minQty > 0 && minQty < 1) {
+            return minQty; // Keep the fractional quantity when fractional payments are enabled
+        }
+        
+        return Math.floor(minQty + ROUNDING_ERROR_MARGIN);
     }
     
     /**
