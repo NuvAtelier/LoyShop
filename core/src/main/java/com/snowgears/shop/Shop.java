@@ -633,7 +633,7 @@ public class Shop extends JavaPlugin {
         }));
         metrics.addCustomChart(new AdvancedPie("shop_containers", () -> shopHandler.getShopContainerCounts()));
         metrics.addCustomChart(new SimplePie("economy_type", () -> { return currencyType.toString(); }));
-        
+        metrics.addCustomChart(new SimplePie("fractional_currency", () -> { return String.valueOf(allowFractionalCurrency); }));
         // Add metrics for more configuration options
         metrics.addCustomChart(new SimplePie("use_permissions", () -> String.valueOf(usePerms)));
         metrics.addCustomChart(new SimplePie("allow_partial_sales", () -> String.valueOf(allowPartialSales)));
@@ -762,6 +762,11 @@ public class Shop extends JavaPlugin {
             }
             return "NOT_SET";
         }));
+
+        metrics.addCustomChart(new SimplePie("display_processing_interval", () -> String.valueOf(displayProcessInterval)));
+        metrics.addCustomChart(new SimplePie("display_movement_threshold", () -> String.valueOf(displayMovementThreshold)));
+        metrics.addCustomChart(new SimplePie("display_max_shop_distance", () -> String.valueOf(maxShopDisplayDistance)));
+        metrics.addCustomChart(new SimplePie("display_shop_search_radius", () -> String.valueOf(shopSearchRadius)));
 
         debug_allowUseOwnShop = config.getBoolean("debug.allowUseOwnShop");
         debug_transactionDebugLogs = config.getBoolean("debug.transactionDebugLogs");
