@@ -7,6 +7,8 @@ import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import net.md_5.bungee.api.chat.*;
+import net.md_5.bungee.api.chat.hover.content.Item;
+
 import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
@@ -534,6 +536,14 @@ public class ShopMessage {
             hoverItem.setAmount(1);
             BaseComponent[] component = new BaseComponent[]{new TextComponent(plugin.getNBTAdapter().getNBTforItem(hoverItem))};
             return new HoverEvent(HoverEvent.Action.SHOW_ITEM, component);
+            // 1.21.5 Paper - hover event is borked: https://github.com/PaperMC/Paper/issues/12289
+
+            // In theory in the future we could remove the NBTAPI dependency and do:
+            // String itemId = item.getType().getKey().toString();
+            // String nbt = item.getItemMeta().getAsString(); // Special Bukkit function to get the NBT as a string built for HoverEvents!
+            // ItemTag tag = ItemTag.ofNbt(nbt);
+            // Item itemContent = new Item(itemId, item.getAmount(), tag);
+            // return new HoverEvent(HoverEvent.Action.SHOW_ITEM, itemContent);
         } catch (Exception e) {
             return null;
         }
