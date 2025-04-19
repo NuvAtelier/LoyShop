@@ -147,6 +147,10 @@ public class ShopLogger extends Logger {
         setLevel(Level.ALL);
     }
 
+    public boolean isLevelEnabled(Level level) {
+        return this.getLogLevel().intValue() <= level.intValue();
+    }
+
     @Override
     public void log(@NotNull Level level, @NotNull String message) {
 

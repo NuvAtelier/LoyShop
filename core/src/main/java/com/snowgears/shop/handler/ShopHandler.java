@@ -8,6 +8,7 @@ import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.DisplayUtil;
 import com.snowgears.shop.util.ItemListType;
+import com.snowgears.shop.util.ShopLogger;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -1151,7 +1152,12 @@ public class ShopHandler {
                     shopNumber++;
                 }
             }
-            plugin.getLogger().spam("    built config to save... \n" + config.saveToString());
+            
+            // Only generate the stringified config for logging if spam logging is enabled
+            if (plugin.getLogger().isLevelEnabled(ShopLogger.SPAM)) {
+                plugin.getLogger().spam("    built config to save... \n" + config.saveToString());
+            }
+            
             config.save(currentFile);
             plugin.getLogger().helpful("Saved " + shopNumber + " Shops for Player " + playerName + " to file: " + currentFile);
             return shopNumber;
