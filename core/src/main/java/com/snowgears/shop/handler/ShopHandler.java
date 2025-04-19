@@ -63,6 +63,9 @@ public class ShopHandler {
     // Map to track player last processed locations for movement-based display updates
     private ConcurrentHashMap<UUID, Location> lastProcessedLocations = new ConcurrentHashMap<>();
 
+    // Cache for player connections to avoid expensive reflection calls
+    private ConcurrentHashMap<UUID, Object> playerConnectionCache = new ConcurrentHashMap<>();
+
     // Default chunk radius for shop location searches and maximum display distance
     // these values come from the Shop class configuration - see getShopSearchRadius() and getMaxShopDisplayDistance()
     
@@ -740,6 +743,9 @@ public class ShopHandler {
         
         // Clear teleport cooldown as well
         teleportCooldowns.remove(player.getUniqueId());
+
+        // Clear the cached connection when displays are removed
+        removeCachedPlayerConnection(player);
     }
 
     /**
@@ -1615,5 +1621,40 @@ public class ShopHandler {
                 processShopDisplaysNearPlayer(player);
             }
         }
+    }
+
+    /**
+     * Gets the cached player connection for packet sending
+     * @param player The player to get connection for
+     * @return The player's network connection object
+     */
+    public Object getCachedPlayerConnection(Player player) {
+        UUID playerId = player.getUniqueId();
+        // Check if we have a cached connection
+        Object connection = playerConnectionCache.get(playerId);
+        if (connection == null) {
+            // If not cached, get it and store it
+            connection = plugin.getNmsBullshitHandler().getPlayerConnection(player);
+            if (connection != null) {
+                playerConnectionCache.put(playerId, connection);
+            }
+        }
+        return connection;
+    }
+
+    /**
+     * Removes the cached player connection
+     * @param player The player whose connection to remove
+     */
+    public void removeCachedPlayerConnection(Player player) {
+        playerConnectionCache.remove(player.getUniqueId());
+    }
+
+    /**
+     * Removes the cached player connection by UUID
+     * @param playerId UUID of the player whose connection to remove
+     */
+    public void removeCachedPlayerConnection(UUID playerId) {
+        playerConnectionCache.remove(playerId);
     }
 }

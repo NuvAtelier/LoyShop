@@ -416,9 +416,14 @@ public class ShopListener implements Listener {
 
     @EventHandler
     public void onLogout(PlayerQuitEvent event){
+        Player player = event.getPlayer();
+        
+        // Clear shop displays and connection cache for this player
+        plugin.getShopHandler().clearShopDisplaysNearPlayer(player);
+        
         if(plugin.getCurrencyType() == CurrencyType.EXPERIENCE) {
             //this automatically saves to file
-            new PlayerExperience(event.getPlayer());
+            new PlayerExperience(player);
         }
     }
 
