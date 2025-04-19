@@ -552,14 +552,26 @@ public class UtilMethods {
             }
         }
 
+        // Add Ominous Bottle support (Bad Omen level)
+        try {
+            if(item.getItemMeta() != null && item.getItemMeta() instanceof org.bukkit.inventory.meta.OminousBottleMeta) {
+                org.bukkit.inventory.meta.OminousBottleMeta ominousMeta = (org.bukkit.inventory.meta.OminousBottleMeta) item.getItemMeta();
+                int level = ominousMeta.hasAmplifier() ? ominousMeta.getAmplifier() + 1 : 1; // zero based
+                formattedMessage.addExtra(" [Bad Omen" + formatRomanNumerals(level) + "]");
+            }
+        } catch (Error e) {} catch (Exception e) {  /* This might happen on older versions where OminousBottleMeta isn't available */ }
+
         // Add custom potion formatting
         if(item.getItemMeta() != null && item.getItemMeta() instanceof PotionMeta){
             PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
             if (potionMeta.getBasePotionType() != null) {
                 formattedMessage.addExtra(getPotionEffects(potionMeta.getBasePotionType().getPotionEffects()));
             }
-            if (potionMeta.getCustomEffects().size() > 0) {
-                formattedMessage.addExtra(getPotionEffects(potionMeta.getCustomEffects()));
+            
+            // Check for custom effects
+            List<PotionEffect> customEffects = potionMeta.getCustomEffects();
+            if(!customEffects.isEmpty()) {
+                formattedMessage.addExtra(getPotionEffects(customEffects));
             }
         }
 

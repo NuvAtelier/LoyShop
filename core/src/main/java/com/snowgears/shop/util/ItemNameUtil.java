@@ -78,6 +78,15 @@ public class ItemNameUtil {
             }
         }
 
+        try {
+            // Ominous Bottle's are Yellow *shrug*
+            if (item.getItemMeta() != null && item.getItemMeta() instanceof org.bukkit.inventory.meta.OminousBottleMeta) {
+                TextComponent name = getNameTranslatable(item.getType());
+                name.setColor(net.md_5.bungee.api.ChatColor.YELLOW);
+                return name;
+            }
+        } catch (Exception e) {} catch (Error e) {} // Backwards compatibility
+
         // Fallback to the material name
         return getNameTranslatable(item.getType());
     }
