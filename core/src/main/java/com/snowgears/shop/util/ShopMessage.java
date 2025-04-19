@@ -57,7 +57,7 @@ public class ShopMessage {
     private static YamlConfiguration chatConfig;
     private static YamlConfiguration signConfig;
     private static YamlConfiguration displayConfig;
-
+    private static int targetMaxLength;
     public ShopMessage(Shop plugin) {
 
         File chatConfigFile = new File(plugin.getDataFolder(), "chatConfig.yml");
@@ -75,6 +75,7 @@ public class ShopMessage {
         freePriceWord = signConfig.getString("sign_text.zeroPrice");
         adminStockWord = signConfig.getString("sign_text.adminStock");
         serverDisplayName = signConfig.getString("sign_text.serverDisplayName");
+        targetMaxLength = displayConfig.getInt("targetMaxLength", 40);
 
         // Load in our placeholders
         this.loadPlaceholders();
@@ -886,8 +887,16 @@ public class ShopMessage {
             formattedLine = formatMessage(line, shop, null, false);
 //            formattedLine = ChatColor.translateAlternateColorCodes('&', formattedLine);
 
-            if(formattedLine != null && !formattedLine.isEmpty() && !ChatColor.stripColor(formattedLine).trim().isEmpty())
-                formattedLines.add(formattedLine);
+            Boolean splitLine = formattedLine.contains("[split]");
+            formattedLine = formattedLine.replace("[split]", "");
+            if(formattedLine != null && !formattedLine.isEmpty() && !ChatColor.stripColor(formattedLine).trim().isEmpty()) {
+                if (splitLine) {
+                    List<String> splitLines = UtilMethods.splitStringIntoLines(formattedLine, targetMaxLength);
+                    formattedLines.addAll(splitLines);
+                } else {
+                    formattedLines.add(formattedLine);
+                }
+            }
         }
         return formattedLines;
     }
@@ -1207,5 +1216,9 @@ public class ShopMessage {
             creationWords.put("COMBO", comboString.toLowerCase());
         else
             creationWords.put("COMBO", "combo");
+    }
+
+    public static int getTargetMaxLength() {
+        return targetMaxLength;
     }
 }

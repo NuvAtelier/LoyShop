@@ -48,20 +48,24 @@
 # [location] : The x,y,z coordinates of the shop sign #
 # [world] : The name of the world the shop is in #
 
-# Hologram Exclusive Shifts
+# Hologram Exclusive Placeholders
 # [lshift] : shift location of a single hologram line one block left #
 # [rshift] : shift location of a single hologram line one block right #
+# [split] : split the line into multiple lines if it's too long #
+
+# Target Maximum Length for [split], we will attempt to split lines that are longer than this.
+targetMaxLength: 40
 
 display_tag_text:
    SELL:
       normal:
          - "[item]&7(x[item amount])"
-         - "&b[item enchants]"
+         - "&b[item enchants][split]"
          - "&7<right click sign to have shop sell the item to you>"
    BUY:
       normal:
          - "[item]&7(x[item amount])"
-         - "&b[item enchants]"
+         - "&b[item enchants][split]"
          - "&7<right click sign to have shop buy the item from you>"
    BARTER:
       normal:
@@ -76,7 +80,7 @@ display_tag_text:
    COMBO:
       normal:
          - "[item]&7(x[item amount])"
-         - "&b[item enchants]"
+         - "&b[item enchants][split]"
          - "&7<click &aLEFT &7side of sign for shop to &aBUY &7item from you>"
          - "[item]&7(x[item amount]) for &a[price]"
          - "&7<click &6RIGHT &7side of sign for shop to &6SELL &7item to you>"
