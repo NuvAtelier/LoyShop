@@ -204,6 +204,13 @@ public abstract class AbstractDisplay {
                 if (displayBlock.getType() == Material.BARREL || displayBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL) {
                     lowerTagLocation = lowerTagLocation.add(0, .25, 0);
                 }
+                // If there is a block above our display, offset the tag location
+                // so that it doesn't become hidden inside the block. (most noticible with chests)
+                if (getShop().getChestLocation().clone().add(0,2,0).getBlock().getType() != Material.AIR) {
+                    // Adds 0.35 on top of the 0.2 added above (total of 0.55)
+                    // 0.3 to get to edge of block, 0.05 to give a lil more wiggle room when the player isnt looking directly at the display
+                    lowerTagLocation = UtilMethods.pushLocationInDirection(lowerTagLocation, this.getShop().getFacing(), 0.35);
+                }
             }
 
             // Create a list to store tag data
