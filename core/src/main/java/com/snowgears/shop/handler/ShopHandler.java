@@ -703,7 +703,9 @@ public class ShopHandler {
             sortedLocations.sort(Comparator.comparing(Map.Entry::getValue));
             
             // Process in distance order with small delays between batches to reduce visual clutter
-            int batchSize = 10; // Process 10 displays at a time
+            // Use configurable batch size from config
+            int batchSize = plugin.getDisplayBatchSize();
+            int batchDelay = plugin.getDisplayBatchDelay();
             int totalBatches = (sortedLocations.size() + batchSize - 1) / batchSize;
             
             plugin.getLogger().debug("Creating " + sortedLocations.size() + " displays in " + totalBatches + " batches for " + player.getName());
@@ -711,7 +713,7 @@ public class ShopHandler {
             for (int batch = 0; batch < totalBatches; batch++) {
                 final int currentBatch = batch;
                 
-                // Add a small delay between batches
+                // Add a configurable delay between batches
                 plugin.getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
                     if (!player.isOnline()) return;
                     
@@ -727,7 +729,7 @@ public class ShopHandler {
                             addActiveShopDisplay(player, locationToShow);
                         }
                     }
-                }, batch * 2); // 2 tick delay between batches
+                }, batch * batchDelay); // Configurable delay between batches
             }
         }, 2); // 2 tick delay after removals
     }

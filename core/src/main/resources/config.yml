@@ -340,6 +340,22 @@ maxShopDisplayDistance: 20.0
 # The code is highly optimized, so you can set this higher, but you should not need to.
 shopSearchRadius: 1
 
+# Number of shop displays to process in a single batch when sending to a player
+# This setting helps make shop displays appear more smoothly by sending them in smaller groups
+# Lower values create a smoother experience but take longer to fully load all displays
+# Higher values load displays faster but may cause momentary client lag
+# This primarily affects client-side performance, not server performance
+# Recommended range: 5-20, default: 10
+displayBatchSize: 10
+
+# Delay between batches of shop displays in server ticks (20 ticks = 1 second)
+# This setting controls how much time passes between sending each batch of displays to a player
+# Lower values make all displays appear faster but may cause client stuttering
+# Higher values create a smoother appearance but take longer to show all displays
+# This primarily affects client-side experience, not server performance
+# Recommended range: 1-3, default: 2
+displayBatchDelay: 2
+
 # =================================================================== #
 #                            DEBUG TOOLS                              #
 # =================================================================== #

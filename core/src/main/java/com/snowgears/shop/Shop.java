@@ -125,6 +125,8 @@ public class Shop extends JavaPlugin {
     private double displayMovementThreshold;
     private double maxShopDisplayDistance;
     private int shopSearchRadius;
+    private int displayBatchSize;
+    private int displayBatchDelay;
 
     private YamlConfiguration config;
 
@@ -491,6 +493,8 @@ public class Shop extends JavaPlugin {
         displayMovementThreshold = config.getDouble("displayMovementThreshold");
         maxShopDisplayDistance = config.getDouble("maxShopDisplayDistance");
         shopSearchRadius = config.getInt("shopSearchRadius");
+        displayBatchSize = config.getInt("displayBatchSize", 10);
+        displayBatchDelay = config.getInt("displayBatchDelay", 2);
 
         // Check if we should load VAULT economy
         if (currencyType == CurrencyType.VAULT) {
@@ -767,6 +771,8 @@ public class Shop extends JavaPlugin {
         metrics.addCustomChart(new SimplePie("display_movement_threshold", () -> String.valueOf(displayMovementThreshold)));
         metrics.addCustomChart(new SimplePie("display_max_shop_distance", () -> String.valueOf(maxShopDisplayDistance)));
         metrics.addCustomChart(new SimplePie("display_shop_search_radius", () -> String.valueOf(shopSearchRadius)));
+        metrics.addCustomChart(new SimplePie("display_batch_size", () -> String.valueOf(displayBatchSize)));
+        metrics.addCustomChart(new SimplePie("display_batch_delay", () -> String.valueOf(displayBatchDelay)));
 
         debug_allowUseOwnShop = config.getBoolean("debug.allowUseOwnShop");
         debug_transactionDebugLogs = config.getBoolean("debug.transactionDebugLogs");
@@ -1202,5 +1208,25 @@ public class Shop extends JavaPlugin {
      */
     public int getShopSearchRadius() {
         return shopSearchRadius;
+    }
+
+    /**
+     * Gets the number of shop displays to process in a single batch when sending to a player.
+     * This controls how many displays are sent at once to create a smoother appearance.
+     * 
+     * @return The batch size for shop display processing
+     */
+    public int getDisplayBatchSize() {
+        return displayBatchSize;
+    }
+
+    /**
+     * Gets the delay between batches of shop displays in server ticks (20 ticks = 1 second).
+     * Higher values create a smoother appearance but take longer to show all displays.
+     * 
+     * @return The delay in ticks between display batches
+     */
+    public int getDisplayBatchDelay() {
+        return displayBatchDelay;
     }
 }
