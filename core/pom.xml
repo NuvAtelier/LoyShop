@@ -55,7 +55,23 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>papermc</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
     </repositories>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.intellectualsites.bom</groupId> <!-- PlotSquared -->
+                <artifactId>bom-newest</artifactId>
+                <version>1.52</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -145,7 +161,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>2.1.214</version>
+            <version>2.1.214</version> <!-- Updating to 2.2.220 broke things, leave it here for now -->
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -160,6 +176,11 @@
             <version>2.14.1</version>
         </dependency>
         <dependency>
+            <groupId>com.intellectualsites.plotsquared</groupId>
+            <artifactId>plotsquared-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot</artifactId>
             <version>${spigot.version}</version>
@@ -169,7 +190,14 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
+            <version>24.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- FoliaLib dependency -->
+        <dependency>
+            <groupId>com.github.technicallycoded</groupId>
+            <artifactId>FoliaLib</artifactId>
+            <version>0.4.4</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
@@ -187,7 +215,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <version>3.4.1</version>
                 <configuration>
                 </configuration>
                 <executions>
@@ -209,6 +237,11 @@
                                 <relocation>
                                     <pattern>de.tr7zw.changeme.nbtapi</pattern>
                                     <shadedPattern>com.snowgears.shop.artifact.nbtapi</shadedPattern>
+                                </relocation>
+                                <!-- FoliaLib relocation -->
+                                <relocation>
+                                    <pattern>com.tcoded.folialib</pattern>
+                                    <shadedPattern>com.snowgears.shop.artifact.folialib</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>

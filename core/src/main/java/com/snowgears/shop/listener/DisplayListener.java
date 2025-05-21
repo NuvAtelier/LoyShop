@@ -27,77 +27,76 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.scheduler.BukkitRunnable;
-
 import java.util.*;
+import com.tcoded.folialib.wrapper.task.WrappedTask;
 
 public class DisplayListener implements Listener {
 
     public Shop plugin;
     private ArrayList<ItemStack> allServerRecipeResults = new ArrayList<>();
-    private int repeatingViewTask;
-    private int repeatingDisplayTask;
+    private WrappedTask repeatingViewTask;
+    private WrappedTask repeatingDisplayTask;
 
     public void startRepeatingDisplayViewTask() {
         if (plugin.getDisplayTagOption() == DisplayTagOption.VIEW_SIGN) {
             //run task every 15 ticks
-            repeatingViewTask = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            repeatingViewTask = plugin.getFoliaLib().getScheduler().runTimer(() -> {
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
                     if (player != null) {
-                            try {
-                                Block block = player.getTargetBlockExact(8);
-                                if (block != null && block.getBlockData() instanceof WallSign) {
-                                    AbstractShop shopObj = plugin.getShopHandler().getShop(block.getLocation());
-                                    if (shopObj != null) {
-                                        shopObj.getDisplay().showDisplayTags(player);
-                                    }
+                        try {
+                            Block block = player.getTargetBlockExact(8);
+                            if (block != null && block.getBlockData() instanceof WallSign) {
+                                AbstractShop shopObj = plugin.getShopHandler().getShop(block.getLocation());
+                                if (shopObj != null) {
+                                    shopObj.getDisplay().showDisplayTags(player);
                                 }
-                            } catch (IllegalStateException e) {
-                                //do nothing, the block iterator missed a block for a player
                             }
+                        } catch (IllegalStateException e) {
+                            //do nothing, the block iterator missed a block for a player
+                        } catch (Exception e) {
+                            //do nothing, the block iterator missed a block for a player
                         }
-                }
-            }, 0, 15);
-        }
-
-        BukkitRunnable runnable = (new BukkitRunnable() {
-            @Override
-            public void run() {
-                for (Player player : plugin.getServer().getOnlinePlayers()) {
-                    if (player != null && player.isOnline()) {
-                        plugin.getShopHandler().processShopDisplaysNearPlayer(player);
                     }
                 }
+            }, 1, 15);
+        }
+
+        // Run shop displays processing using configurable interval from config
+        repeatingDisplayTask = plugin.getFoliaLib().getScheduler().runTimerAsync(() -> {
+            // Process players in a staggered fashion to avoid overwhelming the server or client
+            List<Player> onlinePlayers = new ArrayList<>(plugin.getServer().getOnlinePlayers());
+            
+            for (int i = 0; i < onlinePlayers.size(); i++) {
+                Player player = onlinePlayers.get(i);
+                if (player != null && player.isOnline()) {
+                    // Add a slight staggered delay for each player to distribute packet sending
+                    final int playerIndex = i;
+                    plugin.getFoliaLib().getScheduler().runLater(() -> {
+                        if (player.isOnline()) {
+                            plugin.getShopHandler().processShopDisplaysNearPlayer(player);
+                        }
+                    }, playerIndex); // Stagger by 1 tick per player
+                }
             }
-        });
-        repeatingDisplayTask = runnable.runTaskTimerAsynchronously(plugin, 0L, 100L).getTaskId();
-        //run task every 100 ticks (5 seconds)
-//        repeatingDisplayTask = Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-//            for (Player player : plugin.getServer().getOnlinePlayers()) {
-//                if (player != null) {
-//                    plugin.getShopHandler().processShopDisplaysNearPlayer(player);
-//                }
-//            }
-//        }, 0, 100);
+        }, 1, (long)(plugin.getDisplayProcessInterval() * 20)); // Convert seconds to ticks
     }
 
     public DisplayListener(Shop instance) {
         plugin = instance;
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                HashMap<ItemStack, Boolean> recipes = new HashMap();
-                Iterator<Recipe> recipeIterator = plugin.getServer().recipeIterator();
-                while(recipeIterator.hasNext()) {
-                    ItemStack result = recipeIterator.next().getResult();
-                    //System.out.println("[Shop] adding recipe for gamble. "+result.getType().toString()+" (x"+result.getAmount()+")");
-                    if(result.getAmount() != 0)
-                        recipes.put(result, true);
-                }
-                allServerRecipeResults.addAll(recipes.keySet());
-                Collections.shuffle(allServerRecipeResults);
+        // Load all recipes on server once all other plugins are loaded
+        plugin.getFoliaLib().getScheduler().runLater(task -> {
+            HashMap<ItemStack, Boolean> recipes = new HashMap();
+            Iterator<Recipe> recipeIterator = plugin.getServer().recipeIterator();
+            while(recipeIterator.hasNext()) {
+                ItemStack result = recipeIterator.next().getResult();
+                //System.out.println("[Shop] adding recipe for gamble. "+result.getType().toString()+" (x"+result.getAmount()+")");
+                if(result.getAmount() != 0)
+                    recipes.put(result, true);
             }
-        }.runTaskLater(this.plugin, 1); //load all recipes on server once all other plugins are loaded
+            allServerRecipeResults.addAll(recipes.keySet());
+            Collections.shuffle(allServerRecipeResults);
+        }, 1);
     }
 
     public ItemStack getRandomItem(AbstractShop shop){
@@ -218,7 +217,11 @@ public class DisplayListener implements Listener {
     }
 
     public void cancelRepeatingViewTask(){
-        Bukkit.getScheduler().cancelTask(repeatingViewTask);
-        Bukkit.getScheduler().cancelTask(repeatingDisplayTask);
+        if (repeatingViewTask != null) {
+            plugin.getFoliaLib().getScheduler().cancelTask(repeatingViewTask);
+        }
+        if (repeatingDisplayTask != null) {
+            plugin.getFoliaLib().getScheduler().cancelTask(repeatingDisplayTask);
+        }
     }
 }

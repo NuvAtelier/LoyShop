@@ -53,7 +53,22 @@ public class Transaction {
         this.itemBeingSold = shop.getItemStack();
         this.amountBeingSold = shop.getAmount();
 
-        if (transactionType == ShopType.GAMBLE) {
+        if (shop instanceof ComboShop) {
+            this.price = ((ComboShop)shop).getPriceSell();
+            // From players perspective, they are selling to the shop
+            if (transactionType == ShopType.SELL) {
+                this.buyer = new TransactionParty(false, shop.isAdmin(), shop.getOwner(), shop.getInventory());
+                this.seller = new TransactionParty(true, false, player, player.getInventory());
+                this.price = ((ComboShop)shop).getPriceSell();
+            } 
+            // From players perspective, they are buying from the shop
+            else if (transactionType == ShopType.BUY) {
+                this.buyer = new TransactionParty(true, false, player, player.getInventory());
+                this.seller = new TransactionParty(false, shop.isAdmin(), shop.getOwner(), shop.getInventory());
+                this.price = ((ComboShop)shop).getPriceBuy();
+            }
+        }
+        else if (transactionType == ShopType.GAMBLE) {
             this.buyer = new TransactionParty(true, false, player, player.getInventory());
             this.seller = new TransactionParty(false, shop.isAdmin(), shop.getOwner(), shop.getInventory());
 
@@ -76,11 +91,6 @@ public class Transaction {
             // Shop is selling to the player
             this.buyer = new TransactionParty(true, false, player, player.getInventory());
             this.seller = new TransactionParty(false, shop.isAdmin(), shop.getOwner(), shop.getInventory());
-
-            // If we are a combo shop, then we need to grab the sell price
-            if (shop instanceof ComboShop) {
-                this.price = ((ComboShop)shop).getPriceSell();
-            }
         }
 
         // Store the original values for the price/amount that comes from the shop directly
@@ -98,8 +108,19 @@ public class Transaction {
     public void negotiatePurchase(int desiredAmount) {
         // Don't perform this processing if we are a gamble shop!
         if (shop.getType() == ShopType.GAMBLE) { return; }
+        // Handle free transactions
+        if (shop.getPrice() == 0) {
+            this.price = 0;
+            this.amountBeingSold = this.shop.getAmount();
+            return;
+        }
 
-        PriceNegotiator negotiator = new PriceNegotiator(TX_DEBUG_LOGGING, this.originalPrice, this.originalAmountBeingSold);
+        PriceNegotiator negotiator = new PriceNegotiator(
+            TX_DEBUG_LOGGING, 
+            this.originalPrice, 
+            this.originalAmountBeingSold, 
+            Shop.getPlugin().getAllowFractionalCurrency()
+        );
 
         negotiator.negotiatePurchase(
                 Shop.getPlugin().getAllowPartialSales(),

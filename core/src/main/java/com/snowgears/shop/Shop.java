@@ -29,6 +29,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import com.tcoded.folialib.FoliaLib;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +42,7 @@ public class Shop extends JavaPlugin {
     private static final Logger log = Logger.getLogger("Minecraft");
     private static Shop plugin;
     private ShopLogger logger = new ShopLogger(this, true);
+    private FoliaLib foliaLib;
 
     private ShopListener shopListener;
     private DisplayListener displayListener;
@@ -56,6 +58,7 @@ public class Shop extends JavaPlugin {
     private boolean dynmapEnabled;
     private BentoBoxHookListener bentoBoxHookListener;
     private ARMHookListener armHookListener;
+    private PlotSquaredHookListener plotSquaredHookListener;
 
     private ShopHandler shopHandler;
     private CommandHandler commandHandler;
@@ -98,6 +101,7 @@ public class Shop extends JavaPlugin {
     private CurrencyType currencyType;
     private String currencyName = "";
     private String currencyFormat = "";
+    private boolean allowFractionalCurrency = false;
     private Economy econ = null;
     private List<Material> enabledContainers;
     private boolean inverseComboShops;
@@ -115,6 +119,14 @@ public class Shop extends JavaPlugin {
     private NamespacedKey signLocationNameSpacedKey;
     private NamespacedKey playerUUIDNameSpacedKey;
     private LogHandler logHandler;
+    
+    // Shop display optimization settings
+    private double displayProcessInterval;
+    private double displayMovementThreshold;
+    private double maxShopDisplayDistance;
+    private int shopSearchRadius;
+    private int displayBatchSize;
+    private int displayBatchDelay;
 
     private YamlConfiguration config;
 
@@ -125,6 +137,8 @@ public class Shop extends JavaPlugin {
     public static Shop getPlugin() {
         return plugin;
     }
+
+    public static boolean loggedDisplayDisabledWarning = false;
 
     // Return the custom ShopLogger so that we can log at higher levels.
     @Override
@@ -147,17 +161,17 @@ public class Shop extends JavaPlugin {
         // Check if WorldGuard exists
         // Note: If WorldGuard exists we will check to verify a user can build in the region
         if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
-            this.getLogger().debug("WorldGuard detected, Shop will respect `passthrough`, `build`, and `chest-access` region flags during shop creation!");
+            this.getLogger().notice("WorldGuard detected, Shop will respect `passthrough`, `build`, and `chest-access` region flags during shop creation!");
             // Store for later
             this.worldGuardExists = true;
             // Check if we want to require `allow-shop: true` to exist on regions
             if(hookWorldGuard){
-                this.getLogger().debug("Registering WorldGuard `allow-shop` flag...");
+                this.getLogger().notice("Registering WorldGuard `allow-shop` flag...");
                 // Register flag for WorldGuard if we are hooking into the flag system
                 WorldGuardHook.registerAllowShopFlag();
-                this.getLogger().debug("WorldGuard `allow-shop` flag restriction enabled, Shops can only be created in regions with the `allow-shop` flag set!");
+                this.getLogger().notice("WorldGuard `allow-shop` flag restriction enabled, Shops can only be created in regions with the `allow-shop` flag set!");
             } else {
-                this.getLogger().debug("WorldGuard `allow-shop` flag restriction is disabled, if you want to only allow shops in regions with the `allow-shop` flag, please set `hookWorldGuard` to `true` in `config.yml`");
+                this.getLogger().notice("WorldGuard `allow-shop` flag restriction is disabled, if you want to only allow shops in regions with the `allow-shop` flag, please set `hookWorldGuard` to `true` in `config.yml`");
             }
         } else {
             this.worldGuardExists = false;
@@ -167,6 +181,9 @@ public class Shop extends JavaPlugin {
     @Override
     public void onEnable() {
         plugin = this;
+
+        // Initialize FoliaLib
+        foliaLib = new FoliaLib(this);
 
         File configFile = new File(getDataFolder(), "config.yml");
         if (!configFile.exists()) {
@@ -363,6 +380,10 @@ public class Shop extends JavaPlugin {
             currencyType = CurrencyType.ITEM;
         }
 
+        if (currencyType == CurrencyType.VAULT) {
+            allowFractionalCurrency = config.getBoolean("allowFractionalCurrency");
+        }
+
         offlinePurchaseNotificationsEnabled = config.getBoolean("offlinePurchaseNotifications.enabled");
 
         if (offlinePurchaseNotificationsEnabled && config.getString("logging.type").toUpperCase().equals("OFF")) {
@@ -412,8 +433,24 @@ public class Shop extends JavaPlugin {
             gambleDisplayFile.getParentFile().mkdirs();
             UtilMethods.copy(getResource("GAMBLE_DISPLAY.yml"), gambleDisplayFile);
         }
-        YamlConfiguration gambleItemConfig = YamlConfiguration.loadConfiguration(gambleDisplayFile);
-        gambleDisplayItem = gambleItemConfig.getItemStack("GAMBLE_DISPLAY");
+        try {
+            YamlConfiguration gambleItemConfig = YamlConfiguration.loadConfiguration(gambleDisplayFile);
+            gambleDisplayItem = gambleItemConfig.getItemStack("GAMBLE_DISPLAY");
+        } catch (IllegalArgumentException e) {
+            this.getLogger().severe("Error loading gamble display item from file: " + gambleDisplayFile.getAbsolutePath());
+            gambleDisplayItem = new ItemStack(Material.DIAMOND);
+        } catch (Exception e) {
+            this.getLogger().warning("Error loading gamble display item from file: " + gambleDisplayFile.getAbsolutePath());
+            gambleDisplayItem = new ItemStack(Material.DIAMOND);
+        } catch (Error e) {
+            this.getLogger().warning("Error loading gamble display item from file: " + gambleDisplayFile.getAbsolutePath());
+            gambleDisplayItem = new ItemStack(Material.DIAMOND);
+        }
+
+        if (gambleDisplayItem == null) {
+            this.getLogger().severe("Error loading gamble display item from file: " + gambleDisplayFile.getAbsolutePath());
+            gambleDisplayItem = new ItemStack(Material.DIAMOND);
+        }
 
         currencyName = config.getString("currency.name");
         currencyFormat = config.getString("currency.format");
@@ -450,20 +487,30 @@ public class Shop extends JavaPlugin {
         clickTypeActionMap.put(ShopClickType.valueOf(config.getString("actionMappings.transactWithShopFullStack")), ShopAction.TRANSACT_FULLSTACK);
         clickTypeActionMap.put(ShopClickType.valueOf(config.getString("actionMappings.viewShopDetails")), ShopAction.VIEW_DETAILS);
         clickTypeActionMap.put(ShopClickType.valueOf(config.getString("actionMappings.cycleShopDisplay")), ShopAction.CYCLE_DISPLAY);
+        
+        // Load shop display optimization settings
+        displayProcessInterval = config.getDouble("displayProcessInterval");
+        displayMovementThreshold = config.getDouble("displayMovementThreshold");
+        maxShopDisplayDistance = config.getDouble("maxShopDisplayDistance");
+        shopSearchRadius = config.getInt("shopSearchRadius");
+        displayBatchSize = config.getInt("displayBatchSize", 10);
+        displayBatchDelay = config.getInt("displayBatchDelay", 2);
 
         // Check if we should load VAULT economy
         if (currencyType == CurrencyType.VAULT) {
             if (setupEconomy()) {
                 this.getLogger().info("Shops will use the Vault economy (" + currencyName + ") as currency on the server.");
             } else {
-                this.getLogger().severe("Unable to connect to Vault! Is the plugin installed?");
+                this.getLogger().severe("Unable to connect to Vault Economy! Are both Vault AND an Economy plugin installed?");
                 this.getLogger().severe("Plugin Disabled: Invalid configuration value `economy.type` config.yml. If you do not wish to use Vault with Shop, make sure to set `economy.type` in the config file to `ITEM`.");
                 getServer().getPluginManager().disablePlugin(plugin);
+                return;
             }
         } else {
             if (itemCurrency == null) {
                 this.getLogger().severe("Plugin Disabled: Invalid value for `itemCurrencyID` in `config.yml`");
                 getServer().getPluginManager().disablePlugin(plugin);
+                return;
             }
             this.getLogger().info("Shops will use " + itemNameUtil.getName(itemCurrency).toPlainText() + "(s) as the currency on the server.");
         }
@@ -530,20 +577,17 @@ public class Shop extends JavaPlugin {
         if(getServer().getPluginManager().getPlugin("BlueMap") != null && bluemapEnabled){
             plugin.getLogger().notice("BlueMap is installed, starting BlueMap integration");
             // Wait for 2 minutes for BlueMap to become available/boot up, then initialize listener.
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    BlueMapAPI.getInstance().ifPresent(api -> {
-                        plugin.getLogger().debug("BlueMap is ready, creating BlueMap listener");
-                        bluemapHookListener = new BluemapHookListener(plugin);
-                        getServer().getPluginManager().registerEvents(bluemapHookListener, plugin);
-                        // Make sure we load the markers in case there are shops that BlueMap doesn't know about
-                        bluemapHookListener.reloadMarkers(shopHandler);
-                        // Mark the task as complete and cancel the timer
-                        cancel();
-                    });
-                }
-            }.runTaskTimer(plugin, 20, 20); // Check every second (20 ticks) until BlueMap is booted
+            foliaLib.getScheduler().runTimer(task -> {
+                BlueMapAPI.getInstance().ifPresent(api -> {
+                    plugin.getLogger().debug("BlueMap is ready, creating BlueMap listener");
+                    bluemapHookListener = new BluemapHookListener(plugin);
+                    getServer().getPluginManager().registerEvents(bluemapHookListener, plugin);
+                    // Make sure we load the markers in case there are shops that BlueMap doesn't know about
+                    bluemapHookListener.reloadMarkers(shopHandler);
+                    // Mark the task as complete and cancel the timer
+                    foliaLib.getScheduler().cancelTask(task);
+                });
+            }, 20, 20); // Check every second (20 ticks) until BlueMap is booted
         }
 
         if(getServer().getPluginManager().getPlugin("BentoBox") != null){
@@ -556,6 +600,12 @@ public class Shop extends JavaPlugin {
             armHookListener = new ARMHookListener(this);
             getServer().getPluginManager().registerEvents(armHookListener, this);
             this.getLogger().notice("AdvancedRegionMarket is installed, creating AdvancedRegionMarket listener");
+        }
+
+        if(getServer().getPluginManager().getPlugin("PlotSquared") != null){
+            plotSquaredHookListener = new PlotSquaredHookListener(this);
+            getServer().getPluginManager().registerEvents(plotSquaredHookListener, this);
+            this.getLogger().notice("PlotSquared is installed, creating PlotSquared listener");
         }
 
         int bstatsPluginId = 25211;
@@ -587,7 +637,7 @@ public class Shop extends JavaPlugin {
         }));
         metrics.addCustomChart(new AdvancedPie("shop_containers", () -> shopHandler.getShopContainerCounts()));
         metrics.addCustomChart(new SimplePie("economy_type", () -> { return currencyType.toString(); }));
-        
+        metrics.addCustomChart(new SimplePie("fractional_currency", () -> { return String.valueOf(allowFractionalCurrency); }));
         // Add metrics for more configuration options
         metrics.addCustomChart(new SimplePie("use_permissions", () -> String.valueOf(usePerms)));
         metrics.addCustomChart(new SimplePie("allow_partial_sales", () -> String.valueOf(allowPartialSales)));
@@ -717,6 +767,13 @@ public class Shop extends JavaPlugin {
             return "NOT_SET";
         }));
 
+        metrics.addCustomChart(new SimplePie("display_processing_interval", () -> String.valueOf(displayProcessInterval)));
+        metrics.addCustomChart(new SimplePie("display_movement_threshold", () -> String.valueOf(displayMovementThreshold)));
+        metrics.addCustomChart(new SimplePie("display_max_shop_distance", () -> String.valueOf(maxShopDisplayDistance)));
+        metrics.addCustomChart(new SimplePie("display_shop_search_radius", () -> String.valueOf(shopSearchRadius)));
+        metrics.addCustomChart(new SimplePie("display_batch_size", () -> String.valueOf(displayBatchSize)));
+        metrics.addCustomChart(new SimplePie("display_batch_delay", () -> String.valueOf(displayBatchDelay)));
+
         debug_allowUseOwnShop = config.getBoolean("debug.allowUseOwnShop");
         debug_transactionDebugLogs = config.getBoolean("debug.transactionDebugLogs");
         debug_shopCreateCooldown = config.getInt("debug.shopCreateCooldown");
@@ -733,10 +790,13 @@ public class Shop extends JavaPlugin {
 
     @Override
     public void onDisable(){
-        displayListener.cancelRepeatingViewTask();
-
-        // Save all the shops that need to be updated
-        shopHandler.saveAllShops();
+        // Cancel all FoliaLib scheduled tasks
+        if (foliaLib != null) {
+            foliaLib.getScheduler().cancelAllTasks();
+        }
+        
+        //save any remaining shops (usually not required but just in case)
+        if (shopHandler != null) shopHandler.saveAllShops();
 
         this.getLogger().info("Disabled Shop " + this.getDescription().getVersion());
     }
@@ -1032,6 +1092,10 @@ public class Shop extends JavaPlugin {
         return econ;
     }
 
+    public boolean getAllowFractionalCurrency() { 
+        return allowFractionalCurrency;
+    }
+
     public List<Material> getEnabledContainers(){
         return enabledContainers;
     }
@@ -1111,5 +1175,58 @@ public class Shop extends JavaPlugin {
 
     public LogHandler getLogHandler(){
         return logHandler;
+    }
+
+    // Getter for FoliaLib
+    public FoliaLib getFoliaLib() {
+        return foliaLib;
+    }
+
+    public double getDisplayProcessInterval() {
+        return displayProcessInterval;
+    }
+    
+    public double getDisplayMovementThreshold() {
+        return displayMovementThreshold;
+    }
+
+    /**
+     * Gets the maximum distance at which shop displays will be shown to players.
+     * Higher values will show shops from further away but may cause client lag.
+     * 
+     * @return The maximum display distance in blocks
+     */
+    public double getMaxShopDisplayDistance() {
+        return maxShopDisplayDistance;
+    }
+
+    /**
+     * Gets the radius (in chunks) around a player to search for shops.
+     * Each increment searches exponentially more chunks (1=3x3 area, 2=5x5 area, 3=7x7 area).
+     * 
+     * @return The shop search radius in chunks
+     */
+    public int getShopSearchRadius() {
+        return shopSearchRadius;
+    }
+
+    /**
+     * Gets the number of shop displays to process in a single batch when sending to a player.
+     * This controls how many displays are sent at once to create a smoother appearance.
+     * 
+     * @return The batch size for shop display processing
+     */
+    public int getDisplayBatchSize() {
+        return displayBatchSize;
+    }
+
+    /**
+     * Gets the delay between batches of shop displays in server ticks (20 ticks = 1 second).
+     * Higher values create a smoother appearance but take longer to show all displays.
+     * 
+     * @return The delay in ticks between display batches
+     */
+    public int getDisplayBatchDelay() {
+        return displayBatchDelay;
     }
 }

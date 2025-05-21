@@ -40,21 +40,23 @@ public class WorldGuardHook {
     // Note: WorldGuard only allows registering flags before it got enabled.
     public static void registerAllowShopFlag() {
         if (getPlugin() == null) return; // WorldGuard is not loaded
-            Internal.registerAllowShopFlag();
+
+        Internal.registerAllowShopFlag(Shop.getPlugin());
     }
 
     // Separate class that gets only accessed if WorldGuard is present. Avoids class loading issues.
     private static class Internal {
 
-        public static void registerAllowShopFlag() {
-            Shop.getPlugin().getLogger().debug("Registering WorldGuard flag '" + FLAG_ALLOW_SHOP + "'.");
+        public static void registerAllowShopFlag(Shop plugin) {
+            Bukkit.getLogger().log(Level.INFO,"[Shop] Registering WorldGuard flag '" + FLAG_ALLOW_SHOP + "'");
             try {
                 StateFlag allowShopFlag = new StateFlag(FLAG_ALLOW_SHOP, false);
                 WorldGuard.getInstance().getFlagRegistry().register(allowShopFlag);
+                Bukkit.getLogger().log(Level.INFO,"[Shop] Registered WorldGuard flag '" + FLAG_ALLOW_SHOP + "'");
             } catch (FlagConflictException | IllegalStateException e) {
                 // Another plugin has probably already registered this flag,
                 // or this plugin got hard reloaded by some plugin manager plugin.
-                Bukkit.getLogger().log(Level.SEVERE,"Couldn't register WorldGuard flag '" + FLAG_ALLOW_SHOP + "': " + e.getMessage());
+                Bukkit.getLogger().log(Level.SEVERE,"[Shop] Couldn't register WorldGuard flag '" + FLAG_ALLOW_SHOP + "': " + e.getMessage());
             }
         }
 

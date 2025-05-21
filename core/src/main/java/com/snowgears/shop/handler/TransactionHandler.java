@@ -1,4 +1,3 @@
-
 package com.snowgears.shop.handler;
 
 import com.snowgears.shop.Shop;
@@ -100,7 +99,10 @@ public class TransactionHandler {
 
         // Set the desired purchase amount if we are a full stack order
         if (fullStackOrder) {
-            transaction.negotiatePurchase(64);
+            // Use either 64 (Minecraft's standard "full stack") or the shop's amount, whichever is larger
+            // This ensures players get 64 items when buying from shops with smaller default amounts
+            // But still get the full amount from shops configured to sell larger quantities
+            transaction.negotiatePurchase(Math.max(shop.getAmount(), 64));
         } else {
             transaction.negotiatePurchase();
         }
@@ -208,7 +210,7 @@ public class TransactionHandler {
         else{
             shopMessageCooldown.put(shop.getSignLocation(), shop.getOwnerUUID());
 
-            new BukkitRunnable() {
+            plugin.getFoliaLib().getScheduler().runLater(new BukkitRunnable() {
                 @Override
                 public void run() {
                     if(shop != null){
@@ -218,7 +220,7 @@ public class TransactionHandler {
                     }
                     //TODO if shop is null, should you clear the entire cooldown list so that that location isn't messed up?
                 }
-            }.runTaskLater(this.plugin, 2400); //make cooldown 2 minutes
+            }, 2400); //make cooldown 2 minutes
         }
         return true;
     }

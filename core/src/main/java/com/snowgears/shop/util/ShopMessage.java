@@ -6,24 +6,22 @@ import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
-import com.snowgears.shop.util.NBTAdapter;
-import de.tr7zw.changeme.nbtapi.NBT;
 import net.md_5.bungee.api.chat.*;
+import net.md_5.bungee.api.chat.hover.content.Item;
+
 import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.google.gson.JsonParseException;
 
 
 public class ShopMessage {
@@ -32,14 +30,20 @@ public class ShopMessage {
 
     private static final Map<String, Function<PlaceholderContext, TextComponent>> placeholders = new HashMap<>();
     // Regex pattern to identify placeholders within square brackets, e.g., [owner]
-    private static final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORa-fk-or])";
+    private static final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORXa-fk-orx])";
     private static final String HEX_CODE_REGEX = "(#[0-9a-fA-F]{6})";
-    private static final String PLACEHOLDER_REGEX = "(\\[[^\\[\\]]+\\])";
+    // Modified placeholder regex to only match real placeholders
+    private static final String PLACEHOLDER_REGEX = "(\\[([^&§#\\[\\]]+)\\])";
     private static final String TEXT_SEGMENT_REGEX = "([^&§\\[#]+)";
+    // Add dedicated patterns for brackets to ensure they're matched individually
+    private static final String OPEN_BRACKET_REGEX = "(\\[)";
+    private static final String CLOSE_BRACKET_REGEX = "(\\])";
     private static final String MESSAGE_PARTS_REGEX = 
         COLOR_CODE_REGEX + "|" + 
         HEX_CODE_REGEX + "|" + 
         PLACEHOLDER_REGEX + "|" + 
+        OPEN_BRACKET_REGEX + "|" +  // Match opening bracket
+        CLOSE_BRACKET_REGEX + "|" +  // Match closing bracket
         TEXT_SEGMENT_REGEX + "|" +  // Match text segments
         "(.{1})";          // Match any single character as fallback
 
@@ -53,7 +57,7 @@ public class ShopMessage {
     private static YamlConfiguration chatConfig;
     private static YamlConfiguration signConfig;
     private static YamlConfiguration displayConfig;
-
+    private static int targetMaxLength;
     public ShopMessage(Shop plugin) {
 
         File chatConfigFile = new File(plugin.getDataFolder(), "chatConfig.yml");
@@ -71,6 +75,7 @@ public class ShopMessage {
         freePriceWord = signConfig.getString("sign_text.zeroPrice");
         adminStockWord = signConfig.getString("sign_text.adminStock");
         serverDisplayName = signConfig.getString("sign_text.serverDisplayName");
+        targetMaxLength = displayConfig.getInt("targetMaxLength", 40);
 
         // Load in our placeholders
         this.loadPlaceholders();
@@ -107,7 +112,10 @@ public class ShopMessage {
             } catch (Exception e) {
                 // Log the exception
                 Bukkit.getLogger().warning("Error replacing placeholder " + placeholder + ": " + e.getMessage());
-                e.printStackTrace();
+                // e.printStackTrace();
+            } catch (Error e) {
+                Bukkit.getLogger().warning("Error replacing placeholder " + placeholder + ": " + e.getMessage());
+                // e.printStackTrace();
             }
         }
         // If placeholder not found, remove the placeholder and just return an empty string
@@ -134,8 +142,8 @@ public class ShopMessage {
      * @return The formatted message with all placeholders replaced
      */
     public static TextComponent format(String message, PlaceholderContext context) {
-        TextComponent formattedMessage = new TextComponent("");
-        if (message == null) { return formattedMessage; }
+        TextComponent formattedMessage = null;
+        if (message == null) { return new TextComponent(""); }
         plugin.getLogger().spam("[ShopMessage] pre-format: " + ChatColor.translateAlternateColorCodes('&', message), true);
 
         // Define the regex pattern
@@ -147,6 +155,13 @@ public class ShopMessage {
 
         ChatColor latestColor = null;
         boolean addedText = false;
+
+        boolean isBold = false;
+        boolean isItalic = false;
+        boolean isStrikethrough = false;
+        boolean isUnderlined = false;
+        boolean isObfuscated = false;
+        
         for (String part : parts) {
             plugin.getLogger().spam("\n\n");
             plugin.getLogger().trace("[ShopMessage.format] part: " + part);
@@ -157,11 +172,28 @@ public class ShopMessage {
                 try {
                     ChatColor newColor = getColor(part);
                     if (newColor != null) {
-                        latestColor = newColor;
+                        if (newColor == ChatColor.BOLD) isBold = true;
+                        else if (newColor == ChatColor.ITALIC) isItalic = true;
+                        else if (newColor == ChatColor.STRIKETHROUGH) isStrikethrough = true;
+                        else if (newColor == ChatColor.UNDERLINE) isUnderlined = true;
+                        else if (newColor == ChatColor.MAGIC) isObfuscated = true;
+                        else if (newColor == ChatColor.RESET) {
+                            plugin.getLogger().hyper("[ShopMessage.format]     matched RESET color code: " + part);
+                            latestColor = ChatColor.WHITE;
+                            isBold = false;
+                            isItalic = false;
+                            isStrikethrough = false;
+                            isUnderlined = false;
+                            isObfuscated = false;
+                            formattedMessage.addExtra("§r");
+                        } else {
+                            latestColor = newColor;
+                        }
                     }
                     plugin.getLogger().hyper("[ShopMessage.format]     matched COLOR_CODE_REGEX: " + part);
                     plugin.getLogger().hyper("[ShopMessage.format]     newColor: " + newColor.toString());
                     plugin.getLogger().hyper("[ShopMessage.format] *** skipping to next part: " + newColor.getName().toUpperCase());
+                    plugin.getLogger().hyper("[ShopMessage.format]     isBold: " + isBold + " isItalic: " + isItalic + " isStrikethrough: " + isStrikethrough + " isUnderlined: " + isUnderlined + " isObfuscated: " + isObfuscated);
                     continue; // Don't add this text to the message, just go to the next part
                 } catch (Exception e) {
                     plugin.getLogger().hyper("[ShopMessage.format] XXX unknown color code! Going to add this as a normal string! " + part);
@@ -176,7 +208,10 @@ public class ShopMessage {
                     plugin.getLogger().hyper("[ShopMessage.format]     replacing placeholder... " + part);
                     partComponent = replacePlaceholder(part, context);
                     // Check if we set a color inside our part (for example [stock color])
-                    if (partComponent.getColor() != latestColor && partComponent.getColor() != null && partComponent.getColor() != ChatColor.WHITE) { latestColor = partComponent.getColor(); }
+                    if (partComponent.getColor() != latestColor && partComponent.getColor() != null && partComponent.getColor() != ChatColor.WHITE) { 
+                        plugin.getLogger().hyper("[ShopMessage.format]     getting latestColor from partComponent: " + partComponent.getColor().getName().toUpperCase());
+                        latestColor = partComponent.getColor(); 
+                    }
                 }
             }
 
@@ -185,13 +220,23 @@ public class ShopMessage {
                 plugin.getLogger().hyper("[ShopMessage.format]     setting part color to: " + latestColor.getName().toUpperCase());
                 partComponent.setColor(latestColor);
             }
-            // Add the part of the string to the
-            formattedMessage.addExtra(partComponent);
+            partComponent.setBold(isBold);
+            partComponent.setItalic(isItalic);
+            partComponent.setStrikethrough(isStrikethrough);
+            partComponent.setUnderlined(isUnderlined);
+            partComponent.setObfuscated(isObfuscated);
+            if (formattedMessage == null) {
+                formattedMessage = partComponent;
+            } else {
+                // Add the part of the string to the
+                formattedMessage.addExtra(partComponent);
+            }
             addedText = true;
             plugin.getLogger().hyper("[ShopMessage.format] *** add part TextComponent to main message: " + partComponent);
         }
 
         // Handle if we are just a color code with an empty string
+        if (formattedMessage == null) formattedMessage = new TextComponent("");
         if (!addedText && latestColor != null) formattedMessage.setColor(latestColor);
 
         plugin.getLogger().spam("[ShopMessage] postFormat: " + formattedMessage.toLegacyText(), true);
@@ -204,8 +249,24 @@ public class ShopMessage {
     public static void sendMessage(String message, Player player, PlaceholderContext context) {
         TextComponent fancyMessage = format(message, context);
         // Verify we are not trying to send an empty string or null
-        if(!ChatColor.stripColor(fancyMessage.toLegacyText()).trim().isEmpty())
+        // if(!ChatColor.stripColor(fancyMessage.toLegacyText()).trim().isEmpty())
+        plugin.getLogger().debug("Sent msg to player " + player.getName() + ": " + fancyMessage.toLegacyText(), true);
+        try {
             player.spigot().sendMessage(fancyMessage);
+            return;
+        } catch (JsonParseException e) {
+            plugin.getNBTAdapter().handleException("Possible NBTAPI error while sending message to player, Item Hover events will now be disabled! Details: " + e.getMessage());
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error sending message to player: " + e.getMessage());
+        } catch (Error e) {
+            plugin.getLogger().warning("Error sending message to player: " + e.getMessage());
+        }
+
+        // If we get here, we have an error, we should at least try to send it as legacy text
+        try {
+            player.sendMessage(fancyMessage.toLegacyText());
+            plugin.getLogger().warning("Sent legacy text message to player as backup, removed hover/click events");
+        } catch (Exception e) {} catch (Error e) {}
     }
 
     /**
@@ -468,7 +529,6 @@ public class ShopMessage {
     private static HoverEvent getItemHoverEvent(ItemStack item) {
         if (item == null) { return null; }
         if (plugin.getNBTAdapter().haveErrorsOccured()) {
-            plugin.getLogger().warning("[ShopMessage] NBTAPI errors occurred, unable to show embedded Hover Text for item!");
             plugin.getNBTAdapter().handleException("NBTAPI errors occurred, unable to show embedded Hover Text for item!");
             return null; 
         }
@@ -477,6 +537,14 @@ public class ShopMessage {
             hoverItem.setAmount(1);
             BaseComponent[] component = new BaseComponent[]{new TextComponent(plugin.getNBTAdapter().getNBTforItem(hoverItem))};
             return new HoverEvent(HoverEvent.Action.SHOW_ITEM, component);
+            // 1.21.5 Paper - hover event is borked: https://github.com/PaperMC/Paper/issues/12289
+
+            // In theory in the future we could remove the NBTAPI dependency and do:
+            // String itemId = item.getType().getKey().toString();
+            // String nbt = item.getItemMeta().getAsString(); // Special Bukkit function to get the NBT as a string built for HoverEvents!
+            // ItemTag tag = ItemTag.ofNbt(nbt);
+            // Item itemContent = new Item(itemId, item.getAmount(), tag);
+            // return new HoverEvent(HoverEvent.Action.SHOW_ITEM, itemContent);
         } catch (Exception e) {
             return null;
         }
@@ -487,16 +555,28 @@ public class ShopMessage {
     }
 
     private static TextComponent embedItem(TextComponent message, ItemStack item) {
-        if (item == null) { return null; }
-        TextComponent msg = new TextComponent(message);
-        HoverEvent event = getItemHoverEvent(item);
-        if (event != null) { msg.setHoverEvent(event); }
-        return msg;
+        // If we have any NBTAPI errors, don't try to embed the item hover text
+        if (plugin.getNBTAdapter().haveErrorsOccured()) {
+            return message;
+        }
+        try {
+            if (item == null) { return null; }
+            BaseComponent msg = TextComponent.fromLegacy(UtilMethods.removeColorsIfOnlyWhite(message.toLegacyText()));
+            HoverEvent event = getItemHoverEvent(item);
+            if (event != null) { msg.setHoverEvent(event); }
+            return (TextComponent) msg;
+        } catch (Exception e) {
+            plugin.getNBTAdapter().handleException("Error embedding item hover text: " + e.getMessage());
+            return message;
+        } catch (Error e) {
+            plugin.getNBTAdapter().handleException("Error embedding item hover text: " + e.getMessage());
+            return message;
+        }
     }
 
     private static HoverEvent getTransactionsHoverEvent(PlaceholderContext context) {
         try {
-            TextComponent hoverText = new TextComponent(context.getOfflineTransactions().getTransactionsLore());
+            BaseComponent hoverText = TextComponent.fromLegacy(context.getOfflineTransactions().getTransactionsLore());
             return new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{hoverText});
         } catch (Exception e) {}
         return null;
@@ -535,7 +615,10 @@ public class ShopMessage {
             Iterator<ShopType> typeIterator = typeList.iterator();
             while (typeIterator.hasNext()) {
                 ShopType type = typeIterator.next();
-                if (!player.hasPermission("shop.operator") && !player.hasPermission("shop.create." + type.toString())) {
+                if (
+                    !player.hasPermission("shop.operator") 
+                    && !player.hasPermission("shop.create." + type.toString()) 
+                    && !player.hasPermission("shop.create")) {
                     typeIterator.remove();
                 }
             }
@@ -744,8 +827,10 @@ public class ShopMessage {
     //      # [server name] : The name of the server #
     public static String[] getSignLines(AbstractShop shop, ShopType shopType){
 
-        DisplayType displayType = shop.getDisplay().getType();
-        if(displayType == null)
+        DisplayType displayType = null;
+        if (shop.getDisplay() != null)
+            displayType = shop.getDisplay().getType();
+        if (displayType == null)
             displayType = Shop.getPlugin().getDisplayType();
 
         String shopFormat;
@@ -763,10 +848,7 @@ public class ShopMessage {
         for(int i=0; i<lines.length; i++) {
             lines[i] = formatMessage(lines[i], shop, null, true);
             lines[i] = ChatColor.translateAlternateColorCodes('&', lines[i]);
-
-            //TODO have smart way of cutting lines if too long so at least some of word can go on
-//            if(lines[i].length() > 15)
-//                lines[i]
+            lines[i] = UtilMethods.trimForSign(lines[i]);
         }
         return lines;
     }
@@ -778,10 +860,7 @@ public class ShopMessage {
         for(int i=0; i<lines.length; i++) {
             lines[i] = formatMessage(lines[i], shop, null, true);
             lines[i] = ChatColor.translateAlternateColorCodes('&', lines[i]);
-
-            //TODO have smart way of cutting lines if too long so at least some of word can go on
-//            if(lines[i].length() > 15)
-//                lines[i]
+            lines[i] = UtilMethods.trimForSign(lines[i]);
         }
         return lines;
     }
@@ -808,8 +887,16 @@ public class ShopMessage {
             formattedLine = formatMessage(line, shop, null, false);
 //            formattedLine = ChatColor.translateAlternateColorCodes('&', formattedLine);
 
-            if(formattedLine != null && !formattedLine.isEmpty() && !ChatColor.stripColor(formattedLine).trim().isEmpty())
-                formattedLines.add(formattedLine);
+            Boolean splitLine = formattedLine.contains("[split]");
+            formattedLine = formattedLine.replace("[split]", "");
+            if(formattedLine != null && !formattedLine.isEmpty() && !ChatColor.stripColor(formattedLine).trim().isEmpty()) {
+                if (splitLine) {
+                    List<String> splitLines = UtilMethods.splitStringIntoLines(formattedLine, targetMaxLength);
+                    formattedLines.addAll(splitLines);
+                } else {
+                    formattedLines.add(formattedLine);
+                }
+            }
         }
         return formattedLines;
     }
@@ -1129,5 +1216,9 @@ public class ShopMessage {
             creationWords.put("COMBO", comboString.toLowerCase());
         else
             creationWords.put("COMBO", "combo");
+    }
+
+    public static int getTargetMaxLength() {
+        return targetMaxLength;
     }
 }

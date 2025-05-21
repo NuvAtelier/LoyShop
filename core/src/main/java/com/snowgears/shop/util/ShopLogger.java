@@ -147,6 +147,10 @@ public class ShopLogger extends Logger {
         setLevel(Level.ALL);
     }
 
+    public boolean isLevelEnabled(Level level) {
+        return this.getLogLevel().intValue() <= level.intValue();
+    }
+
     @Override
     public void log(@NotNull Level level, @NotNull String message) {
 
@@ -178,17 +182,20 @@ public class ShopLogger extends Logger {
     // Normal Logging functions
     public void severe(String message) { super.log(Level.SEVERE, addColor(BOLD + INTENSE_RED, message)); }
     public void warning(String message) { super.log(Level.WARNING, addColor(BOLD + INTENSE_YELLOW, message)); }
-    public void info(String message) { super.log(Level.INFO, addColor(INTENSE_WHITE, message)); }
+    public void info(String message) { super.log(Level.INFO, addColor(YELLOW, message)); }
     // Additional Log Levels
-    public void notice(String message) { logFilterLevel(NOTICE, addColor(INTENSE_CYAN, "[Notice] " + message)); }
+    public void notice(String message) { logFilterLevel(NOTICE, addColor(BLUE, "[Notice] " + message)); }
     public void helpful(String message) { logFilterLevel(HELPFUL, addColor(CYAN, "[Helpful] " + message)); }
     public void debug(String message) { logFilterLevel(DEBUG, addColor(DIM_GREY, "[Debug] " + message)); }
-
+    public void debug(String message, boolean withChatColors) {
+        if (this.getLogLevel().intValue() > DEBUG.intValue()) { return; }
+        Bukkit.getConsoleSender().sendMessage(INTENSE_WHITE + "[" + plugin.getDescription().getName() + "] " + DIM_GREY + "[Debug] " + message + RESET);
+    }
     public void trace(String message) { logFilterLevel(TRACE, addColor(VERY_DIM_GREY, "[Trace] " + message)); }
     public void spam(String message) { logFilterLevel(SPAM, addColor(VERY_VERY_DIM_GREY, "[Spam] " + message)); }
     public void spam(String message, boolean withChatColors) {
-        if (this.getLogLevel().intValue() > DEBUG.intValue()) { return; }
-        Bukkit.getConsoleSender().sendMessage(INTENSE_WHITE + "[" + plugin.getDescription().getName() + "] " + DIM_GREY + "[Debug] " + message + RESET);
+        if (this.getLogLevel().intValue() > SPAM.intValue()) { return; }
+        Bukkit.getConsoleSender().sendMessage(INTENSE_WHITE + "[" + plugin.getDescription().getName() + "] " + DIM_GREY + "[Spam] " + message + RESET);
     }
     public void hyper(String message) { logFilterLevel(SPAM, addColor(ALMOST_BLACK, "[Hyper] " + message)); }
 

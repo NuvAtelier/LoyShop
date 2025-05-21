@@ -164,8 +164,8 @@ interaction:
       opDestroy: "&7You have destroyed a combo shop owned by [owner]."
       opOpen: "&7You are opening a combo shop owned by [owner]."
       createHitChestAmount: '&eEnter in chat the amount of &a[item](s)&b[item enchants] &eyou want to buy/sell per transaction.'
-      createHitChestPrice: '&eEnter in chat the price players will &dBUY &a[item](x[item amount])&b[item enchants] &efor.'
-      createHitChestPriceCombo: '&eEnter in chat the price players you will &dSELL &a[item](x[item amount])&b[item enchants] &efor.'
+      createHitChestPrice: '&eEnter in chat the price you will &dBUY &a[item](x[item amount])&b[item enchants] &efor.'
+      createHitChestPriceCombo: '&eEnter in chat the price you will &dSELL &a[item](x[item amount])&b[item enchants] &efor.'
    GAMBLE:
       create: "&eYou have created a gambling shop."
       opDestroy: "&7You have destroyed a gambling shop owned by [server name]."
@@ -246,7 +246,7 @@ permission:
    use: "&cYou are not authorized to use [shop type] shops."
    create: "&cYou are not authorized to create [shop type] shops."
    destroy: "&cYou are not authorized to destroy shops."
-   buildLimit: "&cYou have already reached your build limit of [build limit] shops."
+   buildLimit: "&cYou have already reached your build limit of [user amount]/[build limit] shops."
 
 hover:
    location:
@@ -277,7 +277,7 @@ guiSearchSelection:
 
 command:
    list: "&b/[plugin] list &7- list your shops on the server"
-   list_output_total: "There are &6[total shops]&f shops registered on the server."
+   list_output_total: "&lThere are &6[total shops]&f shops registered on the server."
    list_output_perms: "&7You have built [user amount] out of your [build limit] allotted shops."
    list_output_noperms: "&7You own [user amount] of these shops."
    currency: "&b/[plugin] currency &7- info about the currency shops use"

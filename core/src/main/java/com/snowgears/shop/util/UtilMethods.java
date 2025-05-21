@@ -3,6 +3,7 @@ package com.snowgears.shop.util;
 import net.md_5.bungee.api.ChatColor;
 import com.snowgears.shop.Shop;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -19,6 +20,7 @@ import org.bukkit.util.Vector;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.block.Sign;
 import net.md_5.bungee.api.chat.TranslatableComponent;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -41,13 +43,72 @@ public class UtilMethods {
     private static ArrayList<Material> nonIntrusiveMaterials = new ArrayList<Material>();
 
     public static String trimForSign(String text) {
-        // Check if we can fit on a sign, max length is 17.
-        int maxLength = 17;
-        int totalLength = text.length();
-        if (totalLength > maxLength) {
-            return text.substring(0, maxLength);
+        final int MAX_SIGN_WIDTH = 80; // Maximum width allowed on a sign line
+        int currentWidth = 0;
+        StringBuilder result = new StringBuilder();
+        
+        // Process each character
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            
+            // Handle color codes (they don't take up width)
+            if ((c == '§' || c == '&') && i + 1 < text.length()) {
+                char nextChar = text.charAt(i + 1);
+                if ("0123456789abcdefklmnorxABCDEFKLMNORX".indexOf(nextChar) != -1) {
+                    result.append(c).append(nextChar);
+                    i++; // Skip the next character (color code)
+                    continue;
+                }
+            }
+            
+            // Get the width of the current character
+            int charWidth = getMinecraftCharWidth(c);
+            
+            // Check if adding this character would exceed the width
+            if (currentWidth + charWidth >= MAX_SIGN_WIDTH) {
+                break; // We've reached the maximum width for the sign
+            }
+            
+            // Add the character and update the width
+            result.append(c);
+            currentWidth += charWidth;
         }
-        return text;
+        
+        return result.toString();
+    }
+
+    /**
+     * Returns the width of a character in the Minecraft font.
+     * Based on the width data from Minecraft's font.
+     * From: https://bukkit.org/threads/formatting-plugin-output-text-into-columns.8481/#post-133295
+     */
+    private static int getMinecraftCharWidth(char c) {
+        switch (c) {
+            // Narrow characters (width = 2)
+            case '!': case ',': case '.': case ':': case ';': case 'i': case '|': case '¡':
+                return 3;
+                // return 2; // For some reason, this width of 2 is not working as expected!
+            
+            // Width = 3
+            case '\'': case 'l': case 'ì': case 'í':
+                return 3;
+            
+            // Width = 4
+            case ' ': case 'I': case '[': case ']': case 'ï': case '×':
+                return 4;
+            
+            // Width = 5
+            case '"': case '(': case ')': case '<': case '>': case 'f': case 'k': case '{': case '}':
+                return 5;
+            
+            // Width = 7
+            case '@': case '~': case '®':
+                return 7;
+            
+            // All other characters (width = 6)
+            default:
+                return 6;
+        }
     }
 
     //this is used for formatting numbers like 5000 to 5k
@@ -372,6 +433,17 @@ public class UtilMethods {
         return " " + romanNumerals[number - 1];
     }
 
+    // Remove white color codes if the message only contains white color codes
+    // This can occur since we are building up TextComponents and it adds white color codes to the start of messages
+    public static String removeColorsIfOnlyWhite(String message){
+        String COLOR_CODE_REGEX_NO_WHITE = "([&§][0-9A-EK-ORXa-ek-orx])";
+        // Check if there are any non-white color codes in the message
+        boolean hasOtherColors = Pattern.compile(COLOR_CODE_REGEX_NO_WHITE).matcher(message).find();
+        String msgStr = message;
+        if (!hasOtherColors) { msgStr = ChatColor.stripColor(msgStr); }
+        return msgStr;
+    }
+
     public static TextComponent getEnchantmentsComponent(ItemStack item){
         TextComponent formattedMessage = new TextComponent("");
 
@@ -406,29 +478,139 @@ public class UtilMethods {
                 formattedMessage.addExtra(" (" + material.replace(" Material", "") + ")]");
             }
         }
+        
+        // Add support for displaying music disc information and goat horn sounds
+        if(item.getItemMeta() != null) {
+            String itemType = item.getType().name();
+            
+            // Add support for displaying music disc information
+            if(itemType.startsWith("MUSIC_DISC_")) {
+                String trackName = itemType.replace("MUSIC_DISC_", "");
+                String formattedName = capitalize(trackName.toLowerCase().replace("_", " "));
+                formattedMessage.addExtra(" [Song: " + formattedName + "]");
+            }
+            // Handle legacy music disc naming that doesn't follow the MUSIC_DISC_ prefix pattern
+            else if(itemType.equals("MUSIC_DISC")) { formattedMessage.addExtra(" [Song: Unknown]"); }
+            else if(itemType.equals("PIGSTEP")) { formattedMessage.addExtra(" [Song: Pigstep]"); }
+            else if(itemType.equals("OTHERSIDE")) { formattedMessage.addExtra(" [Song: Otherside]"); }
+            else if(itemType.equals("FIVE")) { formattedMessage.addExtra(" [Song: 5]"); }
+            else if(itemType.equals("RELIC")) { formattedMessage.addExtra(" [Song: Relic]"); }
+            
+            // Add support for displaying goat horn sounds
+            else if(itemType.equals("GOAT_HORN")) {
+                // Try to get the instrument type from item data if available
+                try {
+                    org.bukkit.inventory.meta.MusicInstrumentMeta instrumentMeta = (org.bukkit.inventory.meta.MusicInstrumentMeta) item.getItemMeta();
+                    if (instrumentMeta != null && instrumentMeta.getInstrument() != null) {
+                        String instrumentKey = instrumentMeta.getInstrument().getKey().getKey();
+                        // Format the instrument key properly (e.g., "ponder_goat_horn" -> "Ponder")
+                        String soundType = instrumentKey.replace("_goat_horn", "");
+                        formattedMessage.addExtra(" [Sound: " + capitalize(soundType) + "]");
+                    } else {
+                        formattedMessage.addExtra(" [Sound: Unknown]");
+                    }
+                } catch (Exception e) {
+                    // Fallback for older versions or if the meta is not available
+                    formattedMessage.addExtra(" [Sound: Unknown]");
+                }
+            }
+            
+            // Add support for displaying bee hive/nest information
+            else if(itemType.equals("BEE_NEST") || itemType.equals("BEEHIVE")) {
+                try {
+                    if(item.getItemMeta() instanceof org.bukkit.inventory.meta.BlockStateMeta) {
+                        org.bukkit.inventory.meta.BlockStateMeta blockStateMeta = (org.bukkit.inventory.meta.BlockStateMeta) item.getItemMeta();
+                        
+                        if(blockStateMeta.hasBlockState() && blockStateMeta.getBlockState() instanceof org.bukkit.block.Beehive) {
+                            org.bukkit.block.Beehive beehive = (org.bukkit.block.Beehive) blockStateMeta.getBlockState();
+                            
+                            int honeyLevel = 0;
+                            int beeCount = 0;
+                            
+                            // Get honey level (this is from BlockData)
+                            try {
+                                org.bukkit.block.data.type.Beehive beehiveData = (org.bukkit.block.data.type.Beehive) beehive.getBlockData();
+                                honeyLevel = beehiveData.getHoneyLevel();
+                            } catch (Exception e) { }
+                            // Get bee count (this is from the entity storage)
+                            try { beeCount = beehive.getEntityCount(); } catch (Exception e) {}
+                            
+                            // Format the message
+                            if(honeyLevel > 0 || beeCount > 0) {
+                                StringBuilder beeInfo = new StringBuilder(" [");
+                                if(honeyLevel > 0) {
+                                    beeInfo.append("Honey: ").append(honeyLevel).append("/5");
+                                    if(beeCount > 0) { beeInfo.append(", "); }
+                                }
+                                if(beeCount > 0) { beeInfo.append("Bees: ").append(beeCount); }
+                                beeInfo.append("]");
+                                formattedMessage.addExtra(beeInfo.toString());
+                            }
+                        }
+                    }
+                } catch (Exception e) { /* Silently handle any exceptions for backward compatibility */ }
+            }
+        }
+
+        // Add Ominous Bottle support (Bad Omen level)
+        try {
+            if(item.getItemMeta() != null && item.getItemMeta() instanceof org.bukkit.inventory.meta.OminousBottleMeta) {
+                org.bukkit.inventory.meta.OminousBottleMeta ominousMeta = (org.bukkit.inventory.meta.OminousBottleMeta) item.getItemMeta();
+                int level = ominousMeta.hasAmplifier() ? ominousMeta.getAmplifier() + 1 : 1; // zero based
+                formattedMessage.addExtra(" [Bad Omen" + formatRomanNumerals(level) + "]");
+            }
+        } catch (Error e) {} catch (Exception e) {  /* This might happen on older versions where OminousBottleMeta isn't available */ }
 
         // Add custom potion formatting
         if(item.getItemMeta() != null && item.getItemMeta() instanceof PotionMeta){
             PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
-            String formattedName = "";
             if (potionMeta.getBasePotionType() != null) {
-                formattedName = UtilMethods.capitalize(potionMeta.getBasePotionType().toString().replace("_", " ").toLowerCase());
-                formattedMessage.addExtra(" [" + formattedName + "]");
                 formattedMessage.addExtra(getPotionEffects(potionMeta.getBasePotionType().getPotionEffects()));
             }
-            if (potionMeta.getCustomEffects().size() > 0) {
-                formattedMessage.addExtra(getPotionEffects(potionMeta.getCustomEffects()));
+            
+            // Check for custom effects
+            List<PotionEffect> customEffects = potionMeta.getCustomEffects();
+            if(!customEffects.isEmpty()) {
+                formattedMessage.addExtra(getPotionEffects(customEffects));
             }
         }
 
-        if(item.getItemMeta() != null && item.getItemMeta() instanceof FireworkMeta){
-            FireworkMeta fireworkMeta = (FireworkMeta) item.getItemMeta();
-            int power = fireworkMeta.getPower();
-            if (power == 0) power = 1;
-            formattedMessage.addExtra(" [Duration " + power + "]");
+        // Add detailed firework effect information
+        if(item.getItemMeta() != null) {
+            // Handle Firework Stars
+            if(item.getItemMeta() instanceof org.bukkit.inventory.meta.FireworkEffectMeta) {
+                org.bukkit.inventory.meta.FireworkEffectMeta fireworkMeta = (org.bukkit.inventory.meta.FireworkEffectMeta) item.getItemMeta();
+                if(fireworkMeta.hasEffect()) {
+                    formattedMessage.addExtra(getFormattedFireworkEffect(fireworkMeta.getEffect(), true));
+                }
+            }
+            // Handle Fireworks
+            else if(item.getItemMeta() instanceof FireworkMeta) {
+                FireworkMeta fireworkMeta = (FireworkMeta) item.getItemMeta();
+                int power = fireworkMeta.getPower();
+                
+                // Display duration
+                if (power == 0) power = 1;
+                formattedMessage.addExtra(" [Duration " + power + "]");
+                
+                // Display effects
+                List<org.bukkit.FireworkEffect> effects = fireworkMeta.getEffects();
+                if(effects != null && !effects.isEmpty()) {
+                    int effectCount = effects.size();
+                    if(effectCount <= 2) {
+                        // If there's only one-two effects, show their details
+                        for (org.bukkit.FireworkEffect effect : effects) {
+                            formattedMessage.addExtra(getFormattedFireworkEffect(effect, false));
+                        }
+                    } else {
+                        // If there are multiple effects, just show the count
+                        formattedMessage.addExtra(" [" + effectCount + " Effects]");
+                    }
+                }
+            }
         }
-        
-        return formattedMessage;
+
+        return new TextComponent(ChatColor.stripColor(formattedMessage.toLegacyText()));
     }
 
     private static TextComponent getPotionEffects(List<PotionEffect> effects){
@@ -439,14 +621,171 @@ public class UtilMethods {
         for (int i = 0; i < numEffects; i++) {
             PotionEffect effect = effects.get(i);
             formattedEffects.addExtra(new TranslatableComponent(effect.getType().getTranslationKey()));
-            if(effect.getAmplifier() > 0) formattedEffects.addExtra(formatRomanNumerals(effect.getAmplifier()));
-            if(effect.getDuration() > 0) formattedEffects.addExtra(formatTickTime(effect.getDuration()));
+            
+            // Show level for all potions, not just those with amplifier > 0
+            // For potions with amplifier 0, we don't add any suffix (it's the base level)
+            if(effect.getAmplifier() > 0) {
+                formattedEffects.addExtra(formatRomanNumerals(effect.getAmplifier() + 1)); // +1 because amplifier is 0-based
+            }
+            
+            // Only add duration for non-instant effects
+            // Instant effects like Instant Health and Instant Damage shouldn't show duration
+            boolean isInstantEffect = effect.getType().equals(org.bukkit.potion.PotionEffectType.INSTANT_HEALTH) || 
+                                     effect.getType().equals(org.bukkit.potion.PotionEffectType.INSTANT_DAMAGE);
+            
+            if(effect.getDuration() > 0 && !isInstantEffect) {
+                formattedEffects.addExtra(formatTickTime(effect.getDuration()));
+            }
+            
             // if we have more than one effect, add a comma, dont add a comma after the last effect
             if(i < numEffects - 1)
                 formattedEffects.addExtra(", ");
         }
         formattedEffects.addExtra(")");
         return formattedEffects;
+    }
+
+    /**
+     * Formats a firework effect into a readable string
+     * @param effect The firework effect to format
+     * @param isFireworkStar Whether this is for a firework star (true) or a firework (false)
+     * @return Formatted text component with firework effect information
+     */
+    private static TextComponent getFormattedFireworkEffect(org.bukkit.FireworkEffect effect, boolean isFireworkStar) {
+        TextComponent formattedEffect = new TextComponent("");
+        
+        if(effect == null) return formattedEffect;
+        
+        StringBuilder sb = new StringBuilder();
+        
+        // Start the formatted string
+        sb.append(" [");
+        
+        // Add the shape
+        String shapeName = formatFireworkShape(effect.getType());
+        sb.append(shapeName);
+        
+        // Add special effects
+        List<String> specialEffects = new ArrayList<>();
+        if(effect.hasTrail()) specialEffects.add("Trail");
+        if(effect.hasFlicker()) specialEffects.add("Twinkle");
+        
+        if(!specialEffects.isEmpty()) {
+            sb.append(" (");
+            sb.append(String.join(", ", specialEffects));
+            sb.append(")");
+        }
+        
+        // Add color information if we have it
+        List<org.bukkit.Color> colors = effect.getColors();
+        if(colors != null && !colors.isEmpty()) {
+            if(colors.size() == 1) {
+                // If there's just one color, add it directly
+                sb.append(" ").append(formatFireworkColor(colors.get(0)));
+            } else if(colors.size() <= 3) {
+                // If there are 2-3 colors, list them
+                sb.append(" ");
+                for(int i = 0; i < colors.size(); i++) {
+                    sb.append(formatFireworkColor(colors.get(i)));
+                    if(i < colors.size() - 1) sb.append(", ");
+                }
+            } else {
+                // If there are many colors, just show the count
+                sb.append(" ").append(colors.size()).append(" Colors");
+            }
+        }
+        
+        // Add fade information if available
+        List<org.bukkit.Color> fadeColors = effect.getFadeColors();
+        if(fadeColors != null && !fadeColors.isEmpty()) {
+            if(fadeColors.size() == 1) {
+                // If there's just one fade color, add it directly
+                sb.append("→").append(formatFireworkColor(fadeColors.get(0)));
+            } else if(fadeColors.size() <= 2) {
+                // If there are 2 fade colors, list them
+                sb.append("→");
+                for(int i = 0; i < fadeColors.size(); i++) {
+                    sb.append(formatFireworkColor(fadeColors.get(i)));
+                    if(i < fadeColors.size() - 1) sb.append(", ");
+                }
+            } else {
+                // If there are many fade colors, just show the count
+                sb.append(" → ").append(fadeColors.size()).append(" Fade Colors");
+            }
+        }
+        
+        sb.append("]");
+        
+        formattedEffect.addExtra(sb.toString());
+        return formattedEffect;
+    }
+    
+    /**
+     * Formats a firework shape into a readable string
+     * @param type The firework effect type
+     * @return Formatted shape name
+     */
+    private static String formatFireworkShape(org.bukkit.FireworkEffect.Type type) {
+        switch(type) {
+            case BALL:
+                return "Small";
+            case BALL_LARGE:
+                return "Large";
+            case STAR:
+                return "Star";
+            case BURST:
+                return "Burst";
+            case CREEPER:
+                return "Creeper";
+            default:
+                return capitalize(type.toString().toLowerCase().replace("_", " "));
+        }
+    }
+    
+    /**
+     * Formats a color into a readable string
+     * @param color The color to format
+     * @return Formatted color name
+     */
+    private static String formatFireworkColor(org.bukkit.Color color) {
+        Shop.getPlugin().getLogger().debug("[formatFireworkColor]     color: " + color.toString());
+
+        // Map common RGB values to color names
+        if(color.equals(org.bukkit.Color.WHITE)) return "White";
+        if(color.equals(org.bukkit.Color.SILVER)) return "Silver";
+        if(color.equals(org.bukkit.Color.GRAY)) return "Gray";
+        if(color.equals(org.bukkit.Color.BLACK)) return "Black";
+        if(color.equals(org.bukkit.Color.RED)) return "Red";
+        if(color.equals(org.bukkit.Color.MAROON)) return "Maroon";
+        if(color.equals(org.bukkit.Color.YELLOW)) return "Yellow";
+        if(color.equals(org.bukkit.Color.OLIVE)) return "Olive";
+        if(color.equals(org.bukkit.Color.LIME)) return "Lime";
+        if(color.equals(org.bukkit.Color.GREEN)) return "Green";
+        if(color.equals(org.bukkit.Color.AQUA)) return "Aqua";
+        if(color.equals(org.bukkit.Color.TEAL)) return "Teal";
+        if(color.equals(org.bukkit.Color.BLUE)) return "Blue";
+        if(color.equals(org.bukkit.Color.NAVY)) return "Navy";
+        if(color.equals(org.bukkit.Color.FUCHSIA)) return "Fuchsia";
+        if(color.equals(org.bukkit.Color.PURPLE)) return "Purple";
+        if(color.equals(org.bukkit.Color.ORANGE)) return "Orange";
+
+        
+        // For dye colors (Minecraft 1.8+)
+        try {
+            for(org.bukkit.DyeColor dyeColor : org.bukkit.DyeColor.values()) {
+                if(dyeColor.getColor().equals(color)) {
+                    return capitalize(dyeColor.toString().toLowerCase().replace("_", " "));
+                }
+                if(dyeColor.getFireworkColor().equals(color)) {
+                    return capitalize(dyeColor.toString().toLowerCase().replace("_", " "));
+                }
+            }
+        } catch(NoSuchMethodError e) {
+            // Fallback for older versions that might not have getFireworkColor()
+        }
+        
+        // If no match is found, return a generic "Custom"
+        return "Custom";
     }
 
     private static void initializeNonIntrusiveMaterials(){
@@ -646,6 +985,10 @@ public class UtilMethods {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
 
+        // Set max item stack size to 64 if its higher than 64
+        // Otherwise the serialization complains...
+        if (item.getAmount() > 64) { item.setAmount(64); }
+
         // Write the ItemStack to the ObjectOutputStream
         dataOutput.writeObject(item);
         dataOutput.close();
@@ -665,9 +1008,12 @@ public class UtilMethods {
     }
 
     public static List<String> splitStringIntoLines(String text, int maxLineLength) {
+        final String HEX_COLOR_CODE_REGEX = "(§x§.§.§.§.§.§.)"; // Hex code format using mc color codes
         final String COLOR_CODE_REGEX = "([&§][0-9A-FK-ORa-fk-or])";
 
-        Matcher matcher = Pattern.compile(COLOR_CODE_REGEX + "| |[^&§\\s]+").matcher(text);
+        Matcher matcher = Pattern
+            .compile(HEX_COLOR_CODE_REGEX + "|" + COLOR_CODE_REGEX + "| |[^&§\\s]+")
+            .matcher(ChatColor.translateAlternateColorCodes('&', text));
         List<String> words = new ArrayList<>();
         while (matcher.find()) {
             words.add(matcher.group());
@@ -676,23 +1022,90 @@ public class UtilMethods {
         StringBuilder currentLine = new StringBuilder();
         List<String> linesByColor = new ArrayList<>();
 
-        String latestColor = "";
+        String latestColors = "";
+        String latestHexColor = ""; // For tracking hex colors
+        ChatColor latestColor = ChatColor.WHITE; // Initially white in case user provides no color codes
+        boolean isBold = false;
+        boolean isItalic = false;
+        boolean isStrikethrough = false;
+        boolean isUnderlined = false;
+        boolean isObfuscated = false;
         for (String word : words) {
-            if (word.matches(COLOR_CODE_REGEX)) {
-                if (!latestColor.equals(word)) {
-                    latestColor = word;
-                    // New color, add the line and start a new line
-                    linesByColor.add(currentLine.toString().trim());
-                    currentLine = new StringBuilder(latestColor);
+            if (Shop.getPlugin() != null) Shop.getPlugin().getLogger().hyper("[ShopMessage.format]     word: " + word);
+            
+            boolean isStandardColor = word.matches(COLOR_CODE_REGEX);
+            boolean isHexColor = word.matches(HEX_COLOR_CODE_REGEX);
+            if (isStandardColor || isHexColor) {
+                if (isStandardColor) {
+                    ChatColor newColor = ChatColor.getByChar(word.charAt(1));
+                    if (newColor == ChatColor.BOLD) isBold = true;
+                    else if (newColor == ChatColor.ITALIC) isItalic = true;
+                    else if (newColor == ChatColor.STRIKETHROUGH) isStrikethrough = true;
+                    else if (newColor == ChatColor.UNDERLINE) isUnderlined = true;
+                    else if (newColor == ChatColor.MAGIC) isObfuscated = true;
+                    else if (newColor == ChatColor.RESET) {
+                        if (Shop.getPlugin() != null) Shop.getPlugin().getLogger().hyper("[ShopMessage.format]     matched RESET color code: " + word);
+                        latestColor = ChatColor.WHITE;
+                        latestHexColor = ""; // Reset hex color when RESET code is found
+                        isBold = false;
+                        isItalic = false;
+                        isStrikethrough = false;
+                        isUnderlined = false;
+                        isObfuscated = false;
+                    } else {
+                        latestColor = newColor;
+                        latestHexColor = ""; // Clear hex color when a standard color is set
+                    }
+                } else if (isHexColor) {
+                    latestColor = null;
+                    latestHexColor = word;
                 }
+
+                String newColors = "";
+                // Follow vanilla behavior, add colors first, then formatting codes
+                // FIRST Add standard color OR hex color
+                if (latestColor != null) newColors += latestColor.toString();
+                else if (!latestHexColor.isEmpty()) newColors += latestHexColor;
+                // SECOND Add formatting codes
+                if (isBold) newColors += ChatColor.BOLD;
+                if (isItalic) newColors += ChatColor.ITALIC;
+                if (isStrikethrough) newColors += ChatColor.STRIKETHROUGH;
+                if (isUnderlined) newColors += ChatColor.UNDERLINE;
+                if (isObfuscated) newColors += ChatColor.MAGIC;
+
+                if (!latestColors.equals(newColors)) {
+                    latestColors = newColors;
+                    if (currentLine.toString().contains(" ")) {
+                        // New color, add the line and start a new line
+                        if (ChatColor.stripColor(currentLine.toString()).length() > 0) {
+                            linesByColor.add(currentLine.toString());
+                        }
+                        // Set the current line to the new color, ignore any old colors
+                        currentLine = new StringBuilder(latestColors);
+                    } else {
+                        // If our current line has text other than color codes, add the latest color code.
+                        if (ChatColor.stripColor(currentLine.toString()).length() > 0) {
+                            currentLine.append(word);
+                        } else {
+                            // We are just useless colors, wipe them and start the line again with our current colors.
+                            currentLine = new StringBuilder(latestColors);
+                        }
+                    }
+                }
+
                 continue;
             }
 
             // Also split if the single color line is too long!
-            int potentialLength = ChatColor.stripColor(currentLine.toString()).length() + ChatColor.stripColor(word).length() + 1;
+            int currentLineLength = ChatColor.stripColor(currentLine.toString()).length();
+            int nextWordLength = ChatColor.stripColor(word).length();
+            int potentialLength = currentLineLength + nextWordLength;
+            if (Shop.getPlugin() != null) Shop.getPlugin().getLogger().spam("[ShopMessage.format]     potentialLength: " + potentialLength + " maxLineLength: " + maxLineLength);
+            
             if (word.matches(" ") && potentialLength > maxLineLength) {
-                linesByColor.add(currentLine.toString().trim());
-                currentLine = new StringBuilder(latestColor);
+                if (Shop.getPlugin() != null) Shop.getPlugin().getLogger().spam("[ShopMessage.format]     adding line: " + currentLine.toString().trim(), true);
+                linesByColor.add(currentLine.toString());
+                currentLine = new StringBuilder(latestColors);
             } else {
                 currentLine.append(word);
             }
@@ -700,24 +1113,31 @@ public class UtilMethods {
 
         // Append the last line if there's any content left
         if (currentLine.length() > 0) {
-            linesByColor.add(currentLine.toString().trim());
+            if (Shop.getPlugin() != null) Shop.getPlugin().getLogger().spam("[ShopMessage.format]     adding line: " + currentLine.toString().trim(), true);
+            linesByColor.add(currentLine.toString());
         }
 
         // Now we need to start taking the "blocks" of text and combining them into lines, limited by maxLineLength
         List<String> result = new ArrayList<>();
         currentLine = new StringBuilder();
         for (String line : linesByColor) {
-            // Add it if we are less than the max line length or if the line is only a color
-            if (currentLine.length() + line.length() <= maxLineLength || ChatColor.stripColor(line).length() == 0) {
-                if (currentLine.toString().trim().length() == 0 || ChatColor.stripColor(line).trim().length() == 0) currentLine.append(line);
-                else currentLine.append(" " + line);
+            int lineLengthNoColors = ChatColor.stripColor(line).length();
+            int currentLineLengthNoColors = ChatColor.stripColor(currentLine.toString()).length();
+            // If we are less than the max line length
+            // OR if the line/currentLine is empty add it
+            if (
+                currentLineLengthNoColors + lineLengthNoColors <= maxLineLength 
+                || lineLengthNoColors == 0
+                || currentLineLengthNoColors == 0
+            ) {
+                currentLine.append(line);
             } else {
-                result.add(currentLine.toString().trim());
+                result.add(currentLine.toString().trim()); // only trim on final add
                 currentLine = new StringBuilder(line);
             }
         }
         if (currentLine.length() > 0) {
-            result.add(currentLine.toString().trim());
+            result.add(currentLine.toString().trim()); // only trim on final add
         }
         return result;
     }

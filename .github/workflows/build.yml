@@ -69,7 +69,6 @@ jobs:
       with:
         name: shop-plugin
         path: target/Shop-*.jar
-        exclude: target/original-Shop-*.jar
         
     - name: Find JAR filename
       id: find-jar

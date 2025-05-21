@@ -18,6 +18,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.bukkit.Location;
+import org.bukkit.ChatColor;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
@@ -67,20 +68,29 @@ public class Display extends AbstractDisplay {
 
     @Override
     protected void spawnArmorStandPacket(Player player, ArmorStandData armorStandData, String text) {
+        boolean hasText = (text != null && ChatColor.stripColor(text).length() > 0);
+        boolean hasEquipment = armorStandData.getEquipment() != null;
+        
         Location location = armorStandData.getLocation();
         ServerLevel mcServerLevel = nmsHelper.getMCServerLevel(location);
 
         ArmorStand armorStand = new ArmorStand(mcServerLevel, location.getX(), location.getY(), location.getZ());
         armorStand.setYRot((float)(armorStandData.getYaw()));
 
-        if(text != null) {
+        // Just in case overwrite name of "Armor Stand" to a space
+        armorStand.setCustomName(nmsHelper.getFormattedChatMessage(" "));
+        // Default to not show name
+        armorStand.setCustomNameVisible(false);
+
+        if (hasText) {
+            // Set name to display text
             armorStand.setCustomName(nmsHelper.getFormattedChatMessage(text));
+            // Show name since there is text
+            armorStand.setCustomNameVisible(true);
             this.addDisplayTag(player, armorStand.getId());
-        }
-        else{
+        } else {
             this.addEntityID(player, armorStand.getId());
         }
-        armorStand.setCustomNameVisible(text != null);
 
         if(armorStandData.getRightArmPose() != null){
             EulerAngle angle = armorStandData.getRightArmPose(); //EulerAngles are in radians
@@ -156,7 +166,7 @@ public class Display extends AbstractDisplay {
     private void sendPacket(Player player, Packet packet){
         if (player != null) {
             if(isSameWorld(player)) {
-                ServerPlayerConnection connection = nmsHelper.getPlayerConnection(player);
+                ServerPlayerConnection connection = (ServerPlayerConnection) Shop.getPlugin().getShopHandler().getCachedPlayerConnection(player);
                 if (connection != null) {
                     connection.send(packet); //sendPacket()
                     //System.out.println("Sending player a packet: "+packet.getClass().toString());
@@ -165,7 +175,7 @@ public class Display extends AbstractDisplay {
         }
         else {
             for (Player onlinePlayer : this.shopSignLocation.getWorld().getPlayers()) {
-                ServerPlayerConnection connection = nmsHelper.getPlayerConnection(onlinePlayer);
+                ServerPlayerConnection connection = (ServerPlayerConnection) Shop.getPlugin().getShopHandler().getCachedPlayerConnection(onlinePlayer);
                 if(connection != null) {
                     connection.send(packet); //sendPacket
                 }

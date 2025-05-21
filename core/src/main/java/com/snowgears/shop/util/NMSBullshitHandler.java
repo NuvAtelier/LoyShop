@@ -22,6 +22,12 @@ public class NMSBullshitHandler {
     private Class<?> craftPlayerClass;
     private Class<?> craftChatMessageClass;
     private Class<?> enumDirectionClass;
+    
+    // Cached reflection Method objects
+    private Method chatMessageFromStringMethod;
+    private Method asNMSCopyMethod;
+    private Method getHandleWorldMethod;
+    private Method getHandlePlayerMethod;
 
     public NMSBullshitHandler(Shop plugin){
         this.plugin = plugin;
@@ -30,11 +36,11 @@ public class NMSBullshitHandler {
 
     public void init() {
         String mcVersion = plugin.getServer().getClass().getPackage().getName();
-        Shop.getPlugin().getLogger().log(Level.FINE, "mcVersion: " + mcVersion);
+        Shop.getPlugin().getLogger().debug("mcVersion: " + mcVersion);
 
         // Check if we are on Paper 1.20.5 or later, it will not include the CB relocation version (i.e. "1_20_R3")
         if (!mcVersion.equals("org.bukkit.craftbukkit")) {
-            Shop.getPlugin().getLogger().log(Level.WARNING, "Minecraft version is old or Spigot, loaded version is: " + mcVersion);
+            Shop.getPlugin().getLogger().warning("Minecraft version is old or Spigot, loaded version is: " + mcVersion);
 
             String[] mcVersionSplit = mcVersion.replace(".", ",").split(",");
             // Convert mcVersion into a number like 120.4 (1_20_R4) or 121.1 (1_21_R1) so that we can use it later
@@ -42,8 +48,8 @@ public class NMSBullshitHandler {
         }
 
         // log the server version we are on, it will be 0 when we are on a Paper server
-        Shop.getPlugin().getLogger().log(Level.FINE, "Server Version: " + this.getServerVersion());
-        Shop.getPlugin().getLogger().log(Level.FINE, "Is Server Version over 117.0D: " + (Math.floor(this.getServerVersion()) >= 117.0D));
+        Shop.getPlugin().getLogger().debug("Server Version: " + this.getServerVersion());
+        Shop.getPlugin().getLogger().debug("Is Server Version over 117.0D: " + (Math.floor(this.getServerVersion()) >= 117.0D));
 
         try {
             this.craftItemStackClass = Class.forName(mcVersion + ".inventory.CraftItemStack");
@@ -55,13 +61,31 @@ public class NMSBullshitHandler {
 
                 // java.lang.ClassNotFoundException: net.minecraft.server.v1_17_R1.ItemStack
 
-                Shop.getPlugin().getLogger().spam("CraftItemStack: " + this.craftItemStackClass.toString());
-                Shop.getPlugin().getLogger().spam("CraftWorld: " + this.craftWorldClass.toString());
-                Shop.getPlugin().getLogger().spam("CraftPlayer: " + this.craftPlayerClass.toString());
+                Shop.getPlugin().getLogger().debug("CraftItemStack: " + this.craftItemStackClass.toString());
+                Shop.getPlugin().getLogger().debug("CraftWorld: " + this.craftWorldClass.toString());
+                Shop.getPlugin().getLogger().debug("CraftPlayer: " + this.craftPlayerClass.toString());
+                
+                // Cache the commonly used methods
+                try {
+                    chatMessageFromStringMethod = craftChatMessageClass.getMethod("fromStringOrNull", String.class);
+                    asNMSCopyMethod = craftItemStackClass.getMethod("asNMSCopy", org.bukkit.inventory.ItemStack.class);
+                    getHandleWorldMethod = craftWorldClass.getMethod("getHandle");
+                    getHandlePlayerMethod = craftPlayerClass.getMethod("getHandle");
+                    
+                    Shop.getPlugin().getLogger().debug("Successfully cached reflection methods");
+                } catch (NoSuchMethodException e) {
+                    Shop.getPlugin().getLogger().warning("Failed to cache some reflection methods: " + e.getMessage());
+                }
             }
         } catch (ClassNotFoundException e) {
+            Shop.getPlugin().getLogger().severe("Unable to retrieve a NMS class used for NBT data.");
             e.printStackTrace();
-            Shop.getPlugin().getLogger().log(Level.SEVERE, "Unable to retrieve a NMS class used for NBT data.");
+        } catch (Exception e) {
+            Shop.getPlugin().getLogger().severe("Unable to retrieve a NMS class used for NBT data.");
+            e.printStackTrace();
+        } catch (Error e) {
+            Shop.getPlugin().getLogger().severe("Unable to retrieve a NMS class used for NBT data.");
+            e.printStackTrace();
         }
     }
 
@@ -83,8 +107,10 @@ public class NMSBullshitHandler {
 
     public net.minecraft.network.chat.Component getFormattedChatMessage(String text) {
         try {
-            Method chatMessageFromString = craftChatMessageClass.getMethod("fromStringOrNull", String.class);
-            return (net.minecraft.network.chat.Component) chatMessageFromString.invoke(chatMessageFromString.getClass(), text);
+            if (chatMessageFromStringMethod == null) {
+                chatMessageFromStringMethod = craftChatMessageClass.getMethod("fromStringOrNull", String.class);
+            }
+            return (net.minecraft.network.chat.Component) chatMessageFromStringMethod.invoke(null, text);
         } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -92,8 +118,10 @@ public class NMSBullshitHandler {
 
     public net.minecraft.world.item.ItemStack getMCItemStack(ItemStack is) {
         try {
-            Method asNMSCopy = craftItemStackClass.getMethod("asNMSCopy", org.bukkit.inventory.ItemStack.class);
-            return (net.minecraft.world.item.ItemStack) asNMSCopy.invoke(asNMSCopy.getClass(), is);
+            if (asNMSCopyMethod == null) {
+                asNMSCopyMethod = craftItemStackClass.getMethod("asNMSCopy", org.bukkit.inventory.ItemStack.class);
+            }
+            return (net.minecraft.world.item.ItemStack) asNMSCopyMethod.invoke(null, is);
         } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
@@ -103,8 +131,10 @@ public class NMSBullshitHandler {
         try {
             Object craftWorld = craftWorldClass.cast(location.getWorld());
             if (craftWorld != null) {
-                Method serverWorld = craftWorld.getClass().getMethod("getHandle");
-                return (net.minecraft.world.level.Level) serverWorld.invoke(craftWorld);
+                if (getHandleWorldMethod == null) {
+                    getHandleWorldMethod = craftWorldClass.getMethod("getHandle");
+                }
+                return (net.minecraft.world.level.Level) getHandleWorldMethod.invoke(craftWorld);
             }
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -116,8 +146,10 @@ public class NMSBullshitHandler {
         try {
             Object craftWorld = craftWorldClass.cast(location.getWorld());
             if (craftWorld != null) {
-                Method serverWorld = craftWorld.getClass().getMethod("getHandle");
-                return (ServerLevel) serverWorld.invoke(craftWorld);
+                if (getHandleWorldMethod == null) {
+                    getHandleWorldMethod = craftWorldClass.getMethod("getHandle");
+                }
+                return (ServerLevel) getHandleWorldMethod.invoke(craftWorld);
             }
         } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -129,8 +161,10 @@ public class NMSBullshitHandler {
         try {
             Object craftPlayer = craftPlayerClass.cast(player);
             if (craftPlayer != null) {
-                Method getHandle = craftPlayer.getClass().getMethod("getHandle");
-                Object entityPlayer = getHandle.invoke(craftPlayer);
+                if (getHandlePlayerMethod == null) {
+                    getHandlePlayerMethod = craftPlayerClass.getMethod("getHandle");
+                }
+                Object entityPlayer = getHandlePlayerMethod.invoke(craftPlayer);
                 if (entityPlayer != null) {
                     try {
                         Field playerConnection = entityPlayer.getClass().getDeclaredField("connection");

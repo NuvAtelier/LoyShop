@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.tcoded.folialib.wrapper.task.WrappedTask;
+
 public class ShopCreationProcess {
 
     private ChatCreationStep step;
@@ -53,7 +55,9 @@ public class ShopCreationProcess {
     }
 
     public void cleanup() {
-        this.display.removeDisplayEntities(player, true);
+        if (this.display.isEnabled()) {
+            this.display.removeDisplayEntities(player, true);
+        }
     }
 
     public Block getClickedChest() {
@@ -130,30 +134,28 @@ public class ShopCreationProcess {
 
     public void createShop(Player player){
         final ShopCreationProcess process = this;
-        Shop.getPlugin().getServer().getScheduler().runTask(Shop.getPlugin(), new Runnable() {
-            @Override
-            public void run() {
-                //TODO do some calculation here if clickedFace is filled with a block or UP / DOWN was clicked
-                Block signBlock = clickedChest.getRelative(clickedFace);
-                signBlock.setType(Material.OAK_WALL_SIGN);
+        // Run task at the chest block location to ensure it runs in the correct region in Folia
+        Shop.getPlugin().getFoliaLib().getScheduler().runAtLocation(clickedChest.getLocation(), task -> {
+            //TODO do some calculation here if clickedFace is filled with a block or UP / DOWN was clicked
+            Block signBlock = clickedChest.getRelative(clickedFace);
+            signBlock.setType(Material.OAK_WALL_SIGN);
 
-                if(signBlock.getBlockData() instanceof WallSign) {
-                    Directional wallSignData = (Directional) signBlock.getBlockData();
-                    wallSignData.setFacing(clickedFace);
-                    signBlock.setBlockData(wallSignData);
-                }
+            if(signBlock.getBlockData() instanceof WallSign) {
+                Directional wallSignData = (Directional) signBlock.getBlockData();
+                wallSignData.setFacing(clickedFace);
+                signBlock.setBlockData(wallSignData);
+            }
 
-                AbstractShop shop = Shop.getPlugin().getShopCreationUtil().createShop(Bukkit.getPlayer(playerUUID), clickedChest, signBlock, getPricePair(), getItemAmount(), isAdmin, shopType, clickedFace, true);
-                if(shop == null) {
-                    return;
-                }
+            AbstractShop shop = Shop.getPlugin().getShopCreationUtil().createShop(Bukkit.getPlayer(playerUUID), clickedChest, signBlock, getPricePair(), getItemAmount(), isAdmin, shopType, clickedFace, true);
+            if(shop == null) {
+                return;
+            }
 
-                boolean initializedShop = Shop.getPlugin().getShopCreationUtil().initializeShop(shop, player, itemStack, barterItemStack);
+            boolean initializedShop = Shop.getPlugin().getShopCreationUtil().initializeShop(shop, player, itemStack, barterItemStack);
 
-                if(initializedShop) {
-                    Shop.getPlugin().getShopCreationUtil().sendCreationSuccess(player, shop);
-                    Shop.getPlugin().getLogHandler().logAction(player, shop, ShopActionType.INIT);
-                }
+            if(initializedShop) {
+                Shop.getPlugin().getShopCreationUtil().sendCreationSuccess(player, shop);
+                Shop.getPlugin().getLogHandler().logAction(player, shop, ShopActionType.INIT);
             }
         });
     }
@@ -204,21 +206,21 @@ public class ShopCreationProcess {
 
     public void displayFloatingText(String key, String subkey) {
         // Check if feature is enabled or not.
-        if (!Shop.getPlugin().getConfig().getBoolean("displayFloatingCreateText")) {
+        if (!Shop.getPlugin().getConfig().getBoolean("displayFloatingCreateText") || !this.display.isEnabled()) {
             ShopMessage.sendMessage(key, subkey, this, player);
             return;
         }
         // Build the lines
         String unformatted = ShopMessage.getUnformattedMessage(key, subkey);
         String formatted = ShopMessage.format(unformatted, this.placeholderContext).toLegacyText();
-        List<String> lines = UtilMethods.splitStringIntoLines(formatted, 40);
+        List<String> lines = UtilMethods.splitStringIntoLines(formatted, ShopMessage.getTargetMaxLength());
         // Display the lines
         displayFloatingLines(lines);
     }
 
     public void displayFloatingTextList(String key, String subkey) {
         // Check if feature is enabled or not.
-        if (!Shop.getPlugin().getConfig().getBoolean("displayFloatingCreateText")) {
+        if (!Shop.getPlugin().getConfig().getBoolean("displayFloatingCreateText") || !this.display.isEnabled()) {
             for (String message : ShopMessage.getUnformattedMessageList(key, subkey)) {
                 if (message != null && !message.isEmpty())
                     ShopMessage.sendMessage(message, player);
@@ -230,7 +232,7 @@ public class ShopCreationProcess {
         for (String unformatted : ShopMessage.getUnformattedMessageList(key, subkey)) {
             if (unformatted != null && !unformatted.isEmpty()){
                 String formatted = ShopMessage.format(unformatted, this.placeholderContext).toLegacyText();
-                lines.addAll(UtilMethods.splitStringIntoLines(formatted, 40));
+                lines.addAll(UtilMethods.splitStringIntoLines(formatted, ShopMessage.getTargetMaxLength()));
             }
         }
         // Display the lines
@@ -238,6 +240,10 @@ public class ShopCreationProcess {
     }
 
     public void displayFloatingLines(List<String> lines) {
+        if (!this.display.isEnabled()) {
+            Shop.getPlugin().getLogger().warning("Unable to display floating text for player " + player.getName() + ", Display is disabled");
+            return;
+        }
         // Remove any existing text
         this.display.removeDisplayEntities(player, true);
 

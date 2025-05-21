@@ -3,14 +3,10 @@ package com.snowgears.shop.listener;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.hook.WorldGuardHook;
+import com.snowgears.shop.listener.CreativeSelectionListener;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.*;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -28,19 +24,18 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.scheduler.BukkitRunnable;
+import com.tcoded.folialib.wrapper.task.WrappedTask;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 
 
 public class ShopListener implements Listener {
 
     private Shop plugin;
-    private HashMap<String, Integer> shopBuildLimits = new HashMap<String, Integer>();
+    private HashMap<UUID, Integer> shopBuildLimits = new HashMap<UUID, Integer>();
     private HashMap<UUID, OfflineTransactions> transactionsWhileOffline = new HashMap<>();
     private HashMap<UUID, Long> playerLastShopTeleport = new HashMap<>();
 
@@ -50,18 +45,17 @@ public class ShopListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event){
-        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-            public void run() {
-                recalculateShopPerms(event.getPlayer());
-            }
-        }, 5L);
+        plugin.getFoliaLib().getScheduler().runLater(() -> {
+            recalculateShopPerms(event.getPlayer());
+        }, 5);
     }
 
     public void recalculateShopPerms(Player player){
+        int buildPermissionNumber = -1;
         if(plugin.usePerms()){
-            int buildPermissionNumber = -1;
+            Set<PermissionAttachmentInfo> permissions = player.getEffectivePermissions();
             //calculate base buildlimit permission first (highest number)
-            for(PermissionAttachmentInfo permInfo : player.getEffectivePermissions()){
+            for(PermissionAttachmentInfo permInfo : permissions){
                 if(permInfo.getPermission().contains("shop.buildlimit.")){
                     try {
                         int tempNum = Integer.parseInt(permInfo.getPermission().substring(permInfo.getPermission().lastIndexOf(".") + 1));
@@ -71,27 +65,30 @@ public class ShopListener implements Listener {
                     } catch (NumberFormatException e) {}
                 }
             }
-            //add all extra build limits next
-            for(PermissionAttachmentInfo permInfo : player.getEffectivePermissions()){
-                if(permInfo.getPermission().contains("shop.buildlimitextra.")){
-                    try {
-                        int extraNum = Integer.parseInt(permInfo.getPermission().substring(permInfo.getPermission().lastIndexOf(".") + 1));
-                        buildPermissionNumber += extraNum;
-                    } catch (NumberFormatException e) {}
-                }
-            }
-            if(buildPermissionNumber == -1)
-                shopBuildLimits.put(player.getName(), 10000);
-            else {
-                shopBuildLimits.put(player.getName(), buildPermissionNumber);
-            }
+        }
+        // Check if we had a matching permission
+        if(buildPermissionNumber == -1) {
+            shopBuildLimits.put(player.getUniqueId(), 10000);
+        } else {
+            shopBuildLimits.put(player.getUniqueId(), buildPermissionNumber);
         }
     }
 
     public int getBuildLimit(Player player){
-        if(shopBuildLimits.get(player.getName()) != null)
-            return shopBuildLimits.get(player.getName());
-        return Integer.MAX_VALUE;
+        boolean hasCachedBuildLimit = shopBuildLimits.containsKey(player.getUniqueId());
+        // Check if we need to calculate for the first time
+        // or if the players permissions have changed
+        if (!hasCachedBuildLimit) {
+            recalculateShopPerms(player);
+            return shopBuildLimits.get(player.getUniqueId());
+        }
+        int cachedBuildLimit = shopBuildLimits.get(player.getUniqueId());
+        if (!player.hasPermission("shop.buildlimit." + cachedBuildLimit)) {
+            recalculateShopPerms(player);
+            return shopBuildLimits.get(player.getUniqueId());
+        }
+        // We have the latest build limit permissions for the user
+        return cachedBuildLimit;
     }
 
     @EventHandler (ignoreCancelled = true, priority = EventPriority.LOW)
@@ -360,29 +357,28 @@ public class ShopListener implements Listener {
 
         //final Inventory inv = plugin.getEnderChestHandler().getInventory(player);
 
-        plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-            public void run() {
-                if(plugin.getCurrencyType() == CurrencyType.EXPERIENCE) {
-                    PlayerExperience exp = PlayerExperience.loadFromFile(player);
-                    if(exp != null){
-                        exp.apply();
-                    }
+        plugin.getFoliaLib().getScheduler().runLater(() -> {
+            if(plugin.getCurrencyType() == CurrencyType.EXPERIENCE) {
+                PlayerExperience exp = PlayerExperience.loadFromFile(player);
+                if(exp != null){
+                    exp.apply();
                 }
+            }
 //                if(plugin.useEnderChests() && inv != null){
 //                    player.getEnderChest().setContents(inv.getContents());
 //                    plugin.getEnderChestHandler().saveInventory(player, inv);
 //                }
 
-                plugin.getShopHandler().clearShopDisplaysNearPlayer(player);
-                plugin.getShopHandler().processShopDisplaysNearPlayer(player);
-            }
-        }, 2L);
+            plugin.getShopHandler().clearShopDisplaysNearPlayer(player);
+            // Force process shop displays on login - ignore movement threshold
+            plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
+        }, 20);
 
 
         //setup a repeating task that checks if async sql calculations are still running, if they are done, send messages and cancel task
         OfflineTransactions offlineTransactions = transactionsWhileOffline.get(player.getUniqueId());
         if(offlineTransactions != null) {
-            new BukkitRunnable() {
+            BukkitRunnable runnable = new BukkitRunnable() {
                 public void run() {
                     if (transactionsWhileOffline.containsKey(player.getUniqueId())) {
                         if (offlineTransactions != null && !offlineTransactions.isCalculating()) {
@@ -394,11 +390,15 @@ public class ShopListener implements Listener {
                                 }
                             }
                             transactionsWhileOffline.remove(player.getUniqueId());
-                            this.cancel();
                         }
                     }
                 }
-            }.runTaskTimer(plugin, 10L, 2L);
+            };
+            WrappedTask task = plugin.getFoliaLib().getScheduler().runTimer(runnable, 1, 20);
+            // Let it attempt to run for 5 seconds before cancelling
+            plugin.getFoliaLib().getScheduler().runLater(() -> {
+                plugin.getFoliaLib().getScheduler().cancelTask(task);
+            }, 100);
         }
     }
 
@@ -416,27 +416,66 @@ public class ShopListener implements Listener {
 
     @EventHandler
     public void onLogout(PlayerQuitEvent event){
+        Player player = event.getPlayer();
+        
+        // Clear shop displays and connection cache for this player
+        plugin.getShopHandler().clearShopDisplaysNearPlayer(player);
+        
         if(plugin.getCurrencyType() == CurrencyType.EXPERIENCE) {
             //this automatically saves to file
-            new PlayerExperience(event.getPlayer());
+            new PlayerExperience(player);
         }
     }
 
     @EventHandler (ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event){
-        plugin.getShopHandler().processShopDisplaysNearPlayer(event.getPlayer());
-        //if(!event.getTo().getWorld().getUID().equals(event.getFrom().getWorld().getUID())) {
-            plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-                public void run() {
-                    plugin.getShopHandler().processShopDisplaysNearPlayer(event.getPlayer());
+        final Player player = event.getPlayer();
+        
+        // Skip shop display processing if player is in creative selection mode
+        CreativeSelectionListener creativeModeListener = plugin.getCreativeSelectionListener();
+        if (creativeModeListener != null && creativeModeListener.isPlayerInCreativeSelection(player)) {
+            plugin.getLogger().debug("Skipping shop display refresh for " + player.getName() + " (in creative selection)");
+            return;
+        }
+        
+        // Immediate attempt right after teleport
+        plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
+        
+        // Staggered display updates after teleport
+        // First delayed attempt - wait for chunks to load
+        plugin.getFoliaLib().getScheduler().runLater(() -> {
+            if (player.isOnline()) {
+                // Check again inside the delayed task in case player entered selection during the delay
+                if (creativeModeListener != null && creativeModeListener.isPlayerInCreativeSelection(player)) {
+                    plugin.getLogger().debug("Skipping delayed shop display refresh for " + player.getName() + " (in creative selection)");
+                    return;
                 }
-            }, 5L);
-        //}
+                plugin.getLogger().debug("First display refresh for " + player.getName() + " after teleport");
+                plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
+            }
+        }, 5); // 5 ticks (250ms) delay
+        
+        // Second attempt - for completeness
+        plugin.getFoliaLib().getScheduler().runLater(() -> {
+            if (player.isOnline()) {
+                // Check again inside the delayed task in case player entered selection during the delay
+                if (creativeModeListener != null && creativeModeListener.isPlayerInCreativeSelection(player)) {
+                    plugin.getLogger().debug("Skipping delayed shop display refresh for " + player.getName() + " (in creative selection)");
+                    return;
+                }
+                plugin.getLogger().debug("Second display refresh for " + player.getName() + " after teleport");
+                plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);
+            }
+        }, 15); // 750ms delay
     }
 
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event){
         plugin.getShopHandler().processUnloadedShopsInChunk(event.getChunk());
+        
+        // Also rebuild shop displays for any players near this chunk
+        // This ensures displays reappear after chunk unload/load cycles
+        plugin.getShopHandler().rebuildDisplaysInChunk(event.getChunk());
     }
 
     public int getTeleportCooldownRemaining(Player player){

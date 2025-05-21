@@ -1,11 +1,9 @@
-name: Shop
-author: SnowGears
-description: Easily create shops to buy or sell items!
-version: ${project.version}
-api-version: 1.14
-folia-supported: true
-main: com.snowgears.shop.Shop
-softdepend: [NBTAPI, Vault, WorldGuard, Towny, LWC, DynMap, BlueMap, BentoBox, AdvancedRegionMarket, Multiverse-Core]
+To enable permission usage you must set `usePermissions` to `true` inside `config.yml`!
+
+If you have permissions enabled, then by default players have NO permissions, and permissions are only granted to OP's.
+
+**Available Permissions**
+``` yaml
 permissions:
     shop.use:
         description: Allows player to use all shops.
@@ -25,6 +23,7 @@ permissions:
     shop.use.gamble:
         description: Allows player to use gambling shops.
         default: op
+
     shop.create:
         description: Allows player to create all shops.
         default: op
@@ -43,21 +42,27 @@ permissions:
     shop.create.gamble:
         description: Allows player to create admin gamble shops. Only give this permission to Operators!
         default: op
+
     shop.destroy:
         description: Allows player to destroy their own shops.
         default: op
     shop.destroy.other:
         description: Allows player to destroy other player's shops.
         default: op
+
     shop.buildlimit.#:
          description: Restricts the number of shops a player can create. For example shop.buildlimit.10 would limit players to creating 10 shops maximum.
          default: op
+
     shop.setdisplay:
          description: Allows player to set the display type on their shop (allows shop display cycling, see actionMappings in config.yml).
          default: op
+
     shop.gui.teleport:
          description: Allows player to use teleport to shops by using the gui.
          default: op
+
     shop.operator:
         description: Allows access to operator actions like setting currency, setting the gamble item, reloading configs, creating gamble/admin shops, etc.
         default: op
+```

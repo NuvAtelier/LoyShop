@@ -124,8 +124,6 @@ public class NBTAdapter {
             }
             plugin.getLogger().severe("[NBTAdapter] Please install the latest version of the NBTAPI plugin! https://www.spigotmc.org/resources/nbt-api.7939/");
             plugin.getLogger().severe("[NBTAdapter] Error message: " + message);
-        } else {
-            plugin.getLogger().severe("[NBTAdapter] Too many NBTAPI errors! Throttled logging! Please install the latest version of the NBTAPI plugin! https://www.spigotmc.org/resources/nbt-api.7939/");
         }
     }
 }

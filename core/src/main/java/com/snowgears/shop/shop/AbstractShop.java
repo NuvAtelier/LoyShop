@@ -397,32 +397,46 @@ public abstract class AbstractShop {
 
         // Remove "0 Damage" from item meta (old config bug)
         this.item = this.removeZeroDamageMeta(is.clone());
+        this.signLinesRequireRefresh = true;
+        this.calculateStock();
     }
 
     public void setSecondaryItemStack(ItemStack is) {
         this.secondaryItem = this.removeZeroDamageMeta(is.clone());
+        this.signLinesRequireRefresh = true;
+        this.calculateStock();
     }
 
     public ItemStack removeZeroDamageMeta(ItemStack item) {
-        // In the past we used to explicitly set the durability of an item to be 0, this caused blocks/items to be saved
-        // with extra NBT data that we don't actually want. For example, dirt shouldn't have a damage of 0.
-        // Detect if we set it to 0, and if so, remove it from the ItemMeta!
-        if (item.getItemMeta() instanceof Damageable && ((Damageable) item.getItemMeta()).getDamage() == 0) {
-            String components = item.getItemMeta().getAsComponentString(); // example: "[minecraft:damage=53]"
+        try {
+            // In the past we used to explicitly set the durability of an item to be 0, this caused blocks/items to be saved
+            // with extra NBT data that we don't actually want. For example, dirt shouldn't have a damage of 0.
+            // Detect if we set it to 0, and if so, remove it from the ItemMeta!
+            if (item.getItemMeta() instanceof Damageable && ((Damageable) item.getItemMeta()).getDamage() == 0) {
+                String components = item.getItemMeta().getAsComponentString(); // example: "[minecraft:damage=53]"
 
-            // Remove it from the array
-            components = components.replace(",minecraft:damage=0", ""); // Middle of an array
-            components = components.replace("minecraft:damage=0,", ""); // Start of an array
-            components = components.replace("minecraft:damage=0", ""); // Only object in array
+                // Remove it from the array
+                components = components.replace(",minecraft:damage=0", ""); // Middle of an array
+                components = components.replace("minecraft:damage=0,", ""); // Start of an array
+                components = components.replace("minecraft:damage=0", ""); // Only object in array
 
-            // Convert it back into an item
-            String itemTypeKey = item.getType().getKey().toString(); // example: "minecraft:diamond_sword"
-            String itemAsString = itemTypeKey + components; // results in: "minecraft:diamond_sword[minecraft:damage=53]"
-            return Bukkit.getItemFactory().createItemStack(itemAsString);
+                // Convert it back into an item
+                String itemTypeKey = item.getType().getKey().toString(); // example: "minecraft:diamond_sword"
+                String itemAsString = itemTypeKey + components; // results in: "minecraft:diamond_sword[minecraft:damage=53]"
+                return Bukkit.getItemFactory().createItemStack(itemAsString);
+            }
+
+            // Default return original item
+            return item;
+        } catch (Exception e) {
+            Shop.getPlugin().getLogger().warning("Error removing zero damage meta from item: " + item);
+            Shop.getPlugin().getLogger().warning("checkItemDurability feature may be unsupported on your version of Paper/Spigot!");
+            return item;
+        } catch (Error e) {
+            Shop.getPlugin().getLogger().warning("Error removing zero damage meta from item: " + item);
+            Shop.getPlugin().getLogger().warning("checkItemDurability feature may be unsupported on your version of Paper/Spigot!");
+            return item;
         }
-
-        // Default return original item
-        return item;
     }
 
     public void setOwner(UUID newOwner){
@@ -501,46 +515,48 @@ public abstract class AbstractShop {
 
         signLines = ShopMessage.getSignLines(this, this.type);
 
-        Shop.getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(Shop.getPlugin(), new Runnable() {
-            public void run() {
-                // Update the GUI Icon since the sign needs an update.
-                refreshGuiIcon();
+        // Use the sign's location to ensure the update runs in the correct region in Folia
+        Shop.getPlugin().getFoliaLib().getScheduler().runAtLocationLater(signLocation, task -> {
+            // Update the GUI Icon since the sign needs an update.
+            refreshGuiIcon();
 
-                Sign signBlock;
-                try {
-                    signBlock = (Sign) signLocation.getBlock().getState();
-                } catch (ClassCastException e){
-                    Shop.getPlugin().getShopHandler().removeShop(AbstractShop.this);
-                    return;
-                }
-
-                String[] lines = signLines.clone();
-
-                if (!isInitialized()) {
-                    signBlock.setLine(0, ChatColor.RED + ChatColor.stripColor(lines[0]));
-                    signBlock.setLine(1, ChatColor.RED + ChatColor.stripColor(lines[1]));
-                    signBlock.setLine(2, ChatColor.RED + ChatColor.stripColor(lines[2]));
-                    signBlock.setLine(3, ChatColor.RED + ChatColor.stripColor(lines[3]));
-                } else {
-                    signBlock.setLine(0, lines[0]);
-                    signBlock.setLine(1, lines[1]);
-                    signBlock.setLine(2, lines[2]);
-                    signBlock.setLine(3, lines[3]);
-                }
-
-                if(isMCVersion17Plus()) {
-                    if (Shop.getPlugin().getGlowingSignText()) {
-                        signBlock.setGlowingText(true);
-                    }
-                    else{
-                        signBlock.setGlowingText(false);
-                    }
-                }
-
-                signBlock.update(true);
-                signLinesRequireRefresh = false;
+            Sign signBlock;
+            try {
+                signBlock = (Sign) signLocation.getBlock().getState();
+            } catch (ClassCastException e){
+                Shop.getPlugin().getShopHandler().removeShop(AbstractShop.this);
+                return;
             }
-        }, 2L);
+
+            String[] lines = signLines.clone();
+
+            if (!isInitialized()) {
+                signBlock.setLine(0, ChatColor.RED + ChatColor.stripColor(lines[0]));
+                signBlock.setLine(1, ChatColor.RED + ChatColor.stripColor(lines[1]));
+                signBlock.setLine(2, ChatColor.RED + ChatColor.stripColor(lines[2]));
+                signBlock.setLine(3, ChatColor.RED + ChatColor.stripColor(lines[3]));
+            } else {
+                signBlock.setLine(0, lines[0]);
+                signBlock.setLine(1, lines[1]);
+                signBlock.setLine(2, lines[2]);
+                signBlock.setLine(3, lines[3]);
+            }
+
+            if(isMCVersion17Plus()) {
+                if (Shop.getPlugin().getGlowingSignText()) {
+                    signBlock.setGlowingText(true);
+                }
+                else{
+                    signBlock.setGlowingText(false);
+                }
+            }
+
+            signBlock.update(true);
+            signLinesRequireRefresh = false;
+
+            // Update the floating holograms for anybody who currently has them open
+            if (display != null) display.updateDisplayTags();
+        }, 2);
     }
 
     public void delete() {

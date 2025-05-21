@@ -1,4 +1,5 @@
-[![Build and Package](https://github.com/snowgears/Shop/actions/workflows/build.yml/badge.svg)](https://github.com/snowgears/Shop/actions/workflows/build.yml)
+![GitHub Release](https://img.shields.io/github/v/release/snowgears/Shop) [![Build and Package](https://github.com/snowgears/Shop/actions/workflows/build.yml/badge.svg)](https://github.com/snowgears/Shop/actions/workflows/build.yml) ![bStats Servers](https://img.shields.io/bstats/servers/25211) ![bStats Players](https://img.shields.io/bstats/players/25211) 
+
 [![520ef725efdc8caad836d0370a17d58ce8ee99b2](https://github.com/user-attachments/assets/075aaff3-2328-4672-89af-32bc86ec3fcd)](https://www.spigotmc.org/resources/shop-the-intuitive-shop-plugin.9628/)
 
 ## Description
@@ -8,10 +9,36 @@ By focusing on ease of use, players of any skill level can create in-game shops 
 
 [![Server Metrics](https://bstats.org/signatures/bukkit/shop-the-intuitive-shop-plugin.svg)](https://bstats.org/plugin/bukkit/shop-the-intuitive-shop-plugin/25211)
 
-## Build Locally
-* Update version in `/pom.xml`
-* `./compile.sh`
-* Plugin is built to `/target/shop-{version}.jar`
+## Features
+- **Versatile Shop Types:** Create shops to sell, buy, barter, or gamble items
+- **Multiple Currency Options:** Change currency to a custom item, virtual currency (Vault), or experience points
+- **Multiple Shop Creation Methods:** Fill out a sign or hit a chest with an item
+- **No Commands Required:** Create shops without needing complex commands
+- **Item Support:** Easily handles items with custom display names, descriptions, and enchantments
+- **Admin Shops:** Create shops that don't need to be stocked
+- **Display Options:** Change between different types of displays (item floating, glass case, large item, item frame)
+- **Holographic Displays:** Optional and fully configurable displays above shops
+- **Find Shops:** Easily find shops selling specific items and teleport to them (optional)
+- **Integration Support:** Works with WorldGuard, Towny, AdvancedRegionMarket, DynMap, BlueMap, and more
+- **Container Support:** Works with chests, double chests, barrels, shulker boxes, even ender chests
+
+## Shop Types
+- **Sell Shops:** Sell items to other players
+- **Buy Shops:** Buy items from other players
+- **Barter Shops:** Trade items with other players
+- **Combo Shops:** Combined buy and sell functionality in one shop
+- **Gamble Shops:** Let players gamble for random items
+
+## Usage
+Simply place a sign on a container (chest, barrel, etc.) and format it according to the shop type you want to create. Right-click the sign with the item you want to trade, and the shop will be created.
+
+Players can then interact with the shop by right-clicking the sign.
+
+## Developer Resources
+Check out the [Developer Documentation](https://www.spigotmc.org/wiki/shop-developer-wiki/) for API usage and integration information.
+
+## Contributing
+Interested in contributing to Shop? Check out our [CONTRIBUTING.md](CONTRIBUTING.md) guide for instructions on building the project locally and contributing to the codebase.
 
 ## Versioning
 This project follows [semantic versioning](https://semver.org/)
@@ -26,41 +53,7 @@ Examples:
 - `v1.1.x` -> `v1.2.x`: New Minecraft update or backwards compatible feature added to Shop
 - `v1.1.0` -> `v1.1.1`: Bug was fixed
 
-## Compiling Prerequisites
-Before you begin, ensure you have met the following requirements:
+## Support
+Join our [Discord server](https://discord.gg/GpSwEWS) for support, discussions, and updates.
 
-- Docker: Install Docker from the official website.
-- JDK 21: Ensure you have JDK 21 installed. You can download it from the Oracle website.
-- Maven: Verify Maven is installed. You can download it from the Maven website.
-
-### Building the Local Maven Repository
-Before compiling the plugin, you need to set up the local Maven repository with the supported versions of Spigot.
-
-- Open a terminal.
-- Navigate to the root directory of the repository.
-- Run the script to build the local Maven repository:
-```shell
-# Pull the latest image from Docker Hub and extract the Maven repo from it
-./buildMavenRepo.sh
-# Alternatively, you can build the image locally on your machine, it just might take an hour or two
-# useful if you add a new version to the Dockerfile
-./buildMavenRepo.sh local
-```
-
-This script will compile all supported versions of Spigot and copy the Maven repository into the Shop folder for later use.
-
-## Compiling the Plugin
-After setting up the local Maven repository, you can compile the Shop plugin.
-
-- Open a terminal.
-- Navigate to the root directory of the repository.
-- Run the script to compile the plugin:
-```shell
-./compile.sh
-```
-
-The compiled plugin will be stored in the target directory with the filename Shop-version.jar.
-
-## Usage
-After compiling, you can find the plugin jar file in the target directory. Copy this jar file into the plugins folder of your Spigot server to use the Shop plugin.
-
+For bug reports and feature requests, please use our [GitHub Issues](https://github.com/snowgears/shopbugs/issues) tracker.

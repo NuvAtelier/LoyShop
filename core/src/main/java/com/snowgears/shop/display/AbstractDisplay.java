@@ -41,6 +41,8 @@ public abstract class AbstractDisplay {
         chunkZ = UtilMethods.floor(shopSignLocation.getBlockZ()) >> 4;
     }
 
+    public boolean isEnabled() { return true; }
+
     public boolean isInChunk(Chunk chunk){
         return chunk.getX() == chunkX && chunk.getZ() == chunkZ && chunk.getWorld().toString().equals(shopSignLocation.getWorld().toString());
     }
@@ -202,7 +204,17 @@ public abstract class AbstractDisplay {
                 if (displayBlock.getType() == Material.BARREL || displayBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL) {
                     lowerTagLocation = lowerTagLocation.add(0, .25, 0);
                 }
+                // If there is a block above our display, offset the tag location
+                // so that it doesn't become hidden inside the block. (most noticible with chests)
+                if (getShop().getChestLocation().clone().add(0,2,0).getBlock().getType() != Material.AIR) {
+                    // Adds 0.35 on top of the 0.2 added above (total of 0.55)
+                    // 0.3 to get to edge of block, 0.05 to give a lil more wiggle room when the player isnt looking directly at the display
+                    lowerTagLocation = UtilMethods.pushLocationInDirection(lowerTagLocation, this.getShop().getFacing(), 0.35);
+                }
             }
+
+            // Create a list to store tag data
+            List<Map.Entry<String, Location>> tagData = new ArrayList<>();
 
             double verticalAddition = 0;
             //iterate through list backwards to build from bottom -> up
@@ -211,20 +223,30 @@ public abstract class AbstractDisplay {
 
                 String tagLine = displayTags.get(i);
                 if (tagLine.contains("[lshift]")) {
-                    asTagLocation = asTagLocation.add(getLargeItemBarterOffset(false));
-                    asTagLocation = asTagLocation.add(getLargeItemBarterOffset(false));
-//                    tagLine = tagLine.replace("[lshift]", "");
+                    asTagLocation = asTagLocation.add(getShiftOffset(true, false));
+                    tagLine = tagLine.replace("[lshift]", "");
                 }
                 if (tagLine.contains("[rshift]")) {
-                    asTagLocation = asTagLocation.add(getLargeItemBarterOffset(true));
-                    asTagLocation = asTagLocation.add(getLargeItemBarterOffset(true));
-//                    tagLine = tagLine.replace("[rshift]", "");
+                    asTagLocation = asTagLocation.add(getShiftOffset(false, true));
+                    tagLine = tagLine.replace("[rshift]", "");
                 }
 
                 asTagLocation = asTagLocation.add(0, verticalAddition, 0);
+                
+                // Store the tag data instead of creating it immediately
+                tagData.add(new AbstractMap.SimpleEntry<>(tagLine, asTagLocation));
+                
+                verticalAddition += 0.3;
+            }
+            
+            // Now create the tags in reverse order (top to bottom)
+            for (int i = tagData.size() - 1; i >= 0; i--) {
+                Map.Entry<String, Location> entry = tagData.get(i);
+                String tagLine = entry.getKey();
+                Location asTagLocation = entry.getValue();
+                
                 Shop.getPlugin().getLogger().spam("[Display] Adding tag line: " + tagLine, true);
                 createTagEntity(player, tagLine, asTagLocation);
-                verticalAddition += 0.3;
             }
 
             Shop.getPlugin().getShopHandler().addActiveShopDisplayTag(player, this.shopSignLocation);
@@ -237,7 +259,36 @@ public abstract class AbstractDisplay {
         }
     }
 
+    public void updateDisplayTags(){
+        // Update any players display tags who currently have them open
+        if (displayTagEntityIDs == null || displayTagEntityIDs.isEmpty()) {
+            return;
+        }
+        
+        // Get a copy of the keys to avoid concurrent modification issues
+        Set<UUID> playerUUIDs = new HashSet<>(displayTagEntityIDs.keySet());
+        
+        for (UUID playerUUID : playerUUIDs) {
+            Player player = Shop.getPlugin().getServer().getPlayer(playerUUID);
+            
+            // Skip if player is offline or in a different world
+            if (player == null || !player.isOnline() || !isSameWorld(player)) {
+                continue;
+            }
+            
+            // Check if player has display tags visible
+            if (displayTagsVisible(player)) {
+                // Remove the current display tags
+                removeDisplayEntities(player, true);
+                
+                // Show updated display tags
+                showDisplayTags(player);
+            }
+        }
+    }
+
     public void createTagEntity(Player player, String text, Location location){
+        Shop.getPlugin().getLogger().debug("Spawning hologram for player " + player.getName() + " at " + location.getBlockX() + "/" + location.getBlockY() + "/" + location.getBlockZ() + ": " + text, true);
         ArmorStandData caseStandData = new ArmorStandData();
         caseStandData.setSmall(false);
         caseStandData.setLocation(location);
@@ -429,6 +480,43 @@ public abstract class AbstractDisplay {
         return shop.getChestLocation().clone().add(dropX, dropY, dropZ);
     }
 
+    public Vector getShiftOffset(boolean isLeftShift, boolean isRightShift){
+        AbstractShop shop = this.getShop();
+
+        Vector offset = new Vector(0,0,0);
+        double space = 0.48;
+
+        // @TODO: Verify that we are modifying the coordinates correctly!
+        switch (shop.getFacing()) {
+            case NORTH:
+                if (isRightShift)
+                    offset.setX(-space);
+                else if (isLeftShift)
+                    offset.setX(space);
+                break;
+            case EAST:
+                if (isRightShift)
+                    offset.setZ(-space);
+                else if (isLeftShift)
+                    offset.setZ(space);
+                break;
+            case SOUTH:
+                if (isRightShift)
+                    offset.setX(space);
+                else if (isLeftShift)
+                    offset.setX(-space);
+                break;
+            case WEST:
+                if (isRightShift)
+                    offset.setZ(space);
+                else if (isLeftShift)
+                    offset.setZ(-space);
+                break;
+        }
+        return offset;
+    }
+
+
     private Vector getLargeItemBarterOffset(boolean isBarterItem){
         AbstractShop shop = this.getShop();
 
@@ -501,21 +589,18 @@ public abstract class AbstractDisplay {
 
     protected void removeDisplayTagsDelayedTask(Player player) {
         //remove all armor stand name tag entities after x seconds
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if(!displayTagsVisible(player)){
-                    removeDisplayEntities(player, true);
-                    return;
-                }
-                if (playerIsLookingTowardShop(player)) {
-                    removeDisplayTagsDelayedTask(player);
-                }
-                else {
-                    removeDisplayEntities(player, true);
-                }
+        Shop.getPlugin().getFoliaLib().getScheduler().runAtEntityLater(player, () -> {
+            if(!displayTagsVisible(player)){
+                removeDisplayEntities(player, true);
+                return;
             }
-        }.runTaskLater(Shop.getPlugin(), 20);
+            if (playerIsLookingTowardShop(player)) {
+                removeDisplayTagsDelayedTask(player);
+            }
+            else {
+                removeDisplayEntities(player, true);
+            }
+        }, 20);
     }
 
     protected boolean displayTagsVisible(Player player){
