@@ -405,8 +405,9 @@ public class DisplayUtil {
 
     public static boolean isTool(Material material){
         String sMaterial = material.toString().toUpperCase();
-        return (sMaterial.contains("_AXE") || sMaterial.contains("_HOE") || sMaterial.contains("_PICKAXE")
-                || sMaterial.contains("_SPADE") || sMaterial.contains("_SWORD")
+        return (sMaterial.contains("_AXE") || sMaterial.contains("_HOE") 
+                || sMaterial.contains("_PICKAXE") || sMaterial.contains("_SPADE") 
+                || sMaterial.contains("_SWORD") || sMaterial.contains("MACE")
                 || material == Material.BONE || material == Material.STICK  || material == Material.BLAZE_ROD
                 || material == Material.CARROT_ON_A_STICK || material == Material.FISHING_ROD);
     }
