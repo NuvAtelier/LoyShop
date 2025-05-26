@@ -94,6 +94,8 @@ public class DisplayUtil {
             case LEGS:
             case FEET:
                 armorStandData.setSmall(true);
+                if (itemStack.getType() == Material.ELYTRA)
+                    standLocation.setY(standLocation.getY() + 0.7);
                 break;
             case HAND:
                 armorStandData.setRightArmPose(getArmAngle(itemStack));
