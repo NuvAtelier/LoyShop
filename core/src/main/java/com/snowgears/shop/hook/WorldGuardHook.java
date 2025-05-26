@@ -1,5 +1,12 @@
 package com.snowgears.shop.hook;
 
+import com.snowgears.shop.Shop;
+
+import java.util.logging.Level;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldguard.LocalPlayer;
@@ -13,13 +20,7 @@ import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.flags.registry.FlagConflictException;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
-import com.snowgears.shop.Shop;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
-
-import java.util.logging.Level;
+import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 
 public class WorldGuardHook {
 
@@ -39,24 +40,68 @@ public class WorldGuardHook {
 
     // Note: WorldGuard only allows registering flags before it got enabled.
     public static void registerAllowShopFlag() {
-        if (getPlugin() == null) return; // WorldGuard is not loaded
+        if (getPlugin() == null) {
+            Bukkit.getLogger().log(Level.WARNING, "[Shop] Cannot register WorldGuard flag - WorldGuard is not loaded");
+            return;
+        }
 
-        Internal.registerAllowShopFlag(Shop.getPlugin());
+        try {
+            Internal.registerAllowShopFlag(Shop.getPlugin());
+        } catch (Exception | NoClassDefFoundError e) {
+            Bukkit.getLogger().log(Level.SEVERE, "[Shop] Failed to register WorldGuard flag due to unexpected error: " + e.getMessage());
+        }
     }
 
     // Separate class that gets only accessed if WorldGuard is present. Avoids class loading issues.
     private static class Internal {
+        private static StateFlag allowShopFlag;
+        private static BooleanFlag deprecated_boolean_allowShopFlag;
 
         public static void registerAllowShopFlag(Shop plugin) {
             Bukkit.getLogger().log(Level.INFO,"[Shop] Registering WorldGuard flag '" + FLAG_ALLOW_SHOP + "'");
+            FlagRegistry registry = WorldGuard.getInstance().getFlagRegistry();
             try {
-                StateFlag allowShopFlag = new StateFlag(FLAG_ALLOW_SHOP, false);
-                WorldGuard.getInstance().getFlagRegistry().register(allowShopFlag);
-                Bukkit.getLogger().log(Level.INFO,"[Shop] Registered WorldGuard flag '" + FLAG_ALLOW_SHOP + "'");
-            } catch (FlagConflictException | IllegalStateException e) {
-                // Another plugin has probably already registered this flag,
-                // or this plugin got hard reloaded by some plugin manager plugin.
-                Bukkit.getLogger().log(Level.SEVERE,"[Shop] Couldn't register WorldGuard flag '" + FLAG_ALLOW_SHOP + "': " + e.getMessage());
+                // Create a new state flag with the name FLAG_ALLOW_SHOP, defaulting to false
+                StateFlag flag = new StateFlag(FLAG_ALLOW_SHOP, false);
+                registry.register(flag);
+                // only set our field if there was no error
+                allowShopFlag = flag;
+                Bukkit.getLogger().log(Level.INFO,"[Shop] Successfully registered WorldGuard flag '" + FLAG_ALLOW_SHOP + "'");
+            } catch (FlagConflictException e) {
+                // some other plugin registered a flag by the same name already.
+                // you can use the existing flag, but this may cause conflicts - be sure to check type
+                Flag<?> existing = registry.get(FLAG_ALLOW_SHOP);
+                if (existing instanceof StateFlag) {
+                    allowShopFlag = (StateFlag) existing;
+                    Bukkit.getLogger().log(Level.INFO,"[Shop] WorldGuard flag already registered, reusing StateFlag: '" + FLAG_ALLOW_SHOP + "'");
+                }
+                // Might be legacy flag, but we can still use it.
+                else if (existing instanceof BooleanFlag) {
+                    deprecated_boolean_allowShopFlag = (BooleanFlag) existing;
+                    Bukkit.getLogger().log(Level.INFO,"[Shop] WorldGuard flag already registered, reusing BooleanFlag: '" + FLAG_ALLOW_SHOP + "' | Using deprecated 'BooleanFlag' (true/false), please update your regions to use a StateFlag (allow/deny)");
+                }
+                else {
+                    // types don't match - this is bad news! some other plugin conflicts with you
+                    // hopefully this never actually happens
+                    Bukkit.getLogger().log(Level.SEVERE,"[Shop] Error while attempting to register WorldGuard flag '" + FLAG_ALLOW_SHOP + "', the flag will not be enforced! Another plugin might have already registered the flag with a different type. '" + FLAG_ALLOW_SHOP + "' must be a StateFlag, but is a '" + existing.getClass().getName() + "'! | " + e.getMessage());
+                }
+            } catch (Exception e) {
+                Bukkit.getLogger().log(Level.SEVERE,"[Shop] Unknown Error while attempting to register WorldGuard flag '" + FLAG_ALLOW_SHOP + "' | " + e.getMessage());
+            }
+
+            // Verify registration was successful
+            if (allowShopFlag == null && deprecated_boolean_allowShopFlag == null) {
+                Bukkit.getLogger().log(Level.SEVERE,"[Shop] Unable to register WorldGuard flag '" + FLAG_ALLOW_SHOP + "', the flag will not be enforced!");
+            } else {
+                // Additional verification - check if the flag is actually in the registry
+                Flag<?> verifyFlag = registry.get(FLAG_ALLOW_SHOP);
+                if (verifyFlag == null) {
+                    Bukkit.getLogger().log(Level.SEVERE,"[Shop] WorldGuard flag '" + FLAG_ALLOW_SHOP + "' registration verification failed - flag not found in registry!");
+                    allowShopFlag = null;
+                    deprecated_boolean_allowShopFlag = null;
+                } else {
+                    Bukkit.getLogger().log(Level.INFO,"[Shop] WorldGuard flag '" + FLAG_ALLOW_SHOP + "' registration verified successfully");
+                }
             }
         }
 
@@ -65,36 +110,21 @@ public class WorldGuardHook {
             WorldGuardPlugin wgPlugin = (WorldGuardPlugin) worldGuardPlugin;
             RegionQuery query = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
 
-            // Check if we are not in a region.
-            ApplicableRegionSet regions = query.getApplicableRegions(BukkitAdapter.adapt(loc));
-            if (regions.size() == 0) {
-                // If we have no regions here, then we need to check if we are requiring the `allow-shops` worldguard flag
-                if (Shop.getPlugin().hookWorldGuard()) {
-                    // Allow shops ONLY in regions with the shop flag set
-                    return false;
-                }
-                // If we are not requiring `allow-shops` and we are not inside a region, then allow shop creation
-                return true;
-            }
+            // Always query the region, even if the region count is 0. 
+            // This is because there is still a global region we need to check
 
-            // Check if shop flag is set:
-            boolean allowShopFlag = false; // false if unset or disallowed
+            // Check if shop flag is set for the region:
+            boolean areShopsAllowedInRegion = false; // false if unset or disallowed
 
             // Get shop flag:
-            Flag<?> shopFlag = WorldGuard.getInstance().getFlagRegistry().get(FLAG_ALLOW_SHOP);
-            if (shopFlag != null) {
-                // Check if shop flag is set:
-                if (shopFlag instanceof StateFlag) {
-                    allowShopFlag = query.testState(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), (StateFlag) shopFlag);
-                } else if (shopFlag instanceof BooleanFlag) {
-                    // Value might be null:
-                    Boolean shopFlagValue = query.queryValue(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), (BooleanFlag) shopFlag);
-                    allowShopFlag = (Boolean.TRUE.equals(shopFlagValue));
-                } else {
-                    // Unknown flag type, assume unset.
-                }
-            } else {
-                // Shop flag doesn't exist, assume unset.
+            if (allowShopFlag != null) {
+                areShopsAllowedInRegion = query.testState(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), (StateFlag) allowShopFlag);
+            } 
+            // Check if the server might be using the deprecated boolean flag type
+            else if (deprecated_boolean_allowShopFlag != null) {
+                // Value might be null:
+                Boolean shopFlagValue = query.queryValue(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), (BooleanFlag) deprecated_boolean_allowShopFlag);
+                areShopsAllowedInRegion = (Boolean.TRUE.equals(shopFlagValue));
             }
 
             // Check if we should deny the player from creating a shop based on other WG Flags
@@ -108,11 +138,13 @@ public class WorldGuardHook {
                 return false;
             }
             // If passthrough is explicitly allowed, then we are allowed to create our shop
-            // If we alternatively explicitly have explicit build permission and chest access permission, then we are allowed to create our shop
-            else if (passthroughFlag == StateFlag.State.ALLOW || (buildFlag == StateFlag.State.ALLOW && chestAccessFlag == StateFlag.State.ALLOW)) {
+            // If we alternatively explicitly have explicit build permission and chest access permission, 
+            // then we are allowed to create our shop.
+            // --> Note, since we have Build permission, we also have Chest Access permission by inheritance.
+            else if (passthroughFlag == StateFlag.State.ALLOW || buildFlag == StateFlag.State.ALLOW) {
                 if (Shop.getPlugin().hookWorldGuard()) {
                     // Allow shops ONLY in regions with the shop flag set
-                    return allowShopFlag;
+                    return areShopsAllowedInRegion;
                 }
                 // If we are not required to have the shop flag, just default return true
                 return true;
