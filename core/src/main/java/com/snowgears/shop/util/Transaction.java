@@ -54,18 +54,19 @@ public class Transaction {
         this.amountBeingSold = shop.getAmount();
 
         if (shop instanceof ComboShop) {
-            this.price = ((ComboShop)shop).getPriceSell();
             // From players perspective, they are selling to the shop
-            if (transactionType == ShopType.SELL) {
+            if (transactionType == ShopType.BUY) {
                 this.buyer = new TransactionParty(false, shop.isAdmin(), shop.getOwner(), shop.getInventory());
                 this.seller = new TransactionParty(true, false, player, player.getInventory());
-                this.price = ((ComboShop)shop).getPriceSell();
+                // Player is selling to shop, so shop pays the buy price
+                this.price = ((ComboShop)shop).getPriceBuy();
             } 
             // From players perspective, they are buying from the shop
-            else if (transactionType == ShopType.BUY) {
+            else if (transactionType == ShopType.SELL) {
                 this.buyer = new TransactionParty(true, false, player, player.getInventory());
                 this.seller = new TransactionParty(false, shop.isAdmin(), shop.getOwner(), shop.getInventory());
-                this.price = ((ComboShop)shop).getPriceBuy();
+                // Player is buying from shop, so player pays the sell price
+                this.price = ((ComboShop)shop).getPriceSell();
             }
         }
         else if (transactionType == ShopType.GAMBLE) {
