@@ -36,6 +36,7 @@ public abstract class AbstractShop {
 
     protected UUID id = UUID.randomUUID();
     protected boolean needsSave = false;
+    protected boolean playerFileError = false;
     protected Location signLocation;
     protected Location chestLocation;
     protected BlockFace facing;
@@ -296,8 +297,10 @@ public abstract class AbstractShop {
         if (this.getOwner() != null){
             // If we can load the owner name, just use that
             try {
-                if (this.getOwner().getName() != null) return this.getOwner().getName();
+                if (!playerFileError) // Prevent trying to load it multiple times if we already failed once
+                    if (this.getOwner().getName() != null) return this.getOwner().getName();
             } catch (Error | Exception e) {
+                playerFileError = true;
                 Shop.getPlugin().getLogger().severe(
                     "Error loading Player File for Owner (uuid: " + this.getOwnerUUID() 
                     + ")!!! This could mean that the player file is corrupt or missing!!! "
