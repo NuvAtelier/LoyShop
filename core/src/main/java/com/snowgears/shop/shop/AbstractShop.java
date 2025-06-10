@@ -295,7 +295,15 @@ public abstract class AbstractShop {
             return "admin";
         if (this.getOwner() != null){
             // If we can load the owner name, just use that
-            if (this.getOwner().getName() != null) return this.getOwner().getName();
+            try {
+                if (this.getOwner().getName() != null) return this.getOwner().getName();
+            } catch (Error | Exception e) {
+                Shop.getPlugin().getLogger().severe(
+                    "Error loading Player File for Owner (uuid: " + this.getOwnerUUID() 
+                    + ")!!! This could mean that the player file is corrupt or missing!!! "
+                    + "Falling back to UUID only for Owner Name! Shop: " + this.toString()
+                );
+            }
             // Return unknown player text
             String shortId = this.getOwnerUUID().toString();
             shortId = shortId.substring(0,3) + "..." + shortId.substring(shortId.length()-3);
