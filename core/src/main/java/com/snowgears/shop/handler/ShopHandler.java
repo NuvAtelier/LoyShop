@@ -1237,7 +1237,8 @@ public class ShopHandler {
                         if (file.getName().endsWith(".yml")
                                 && !file.getName().contains("enderchests")
                                 && !file.getName().contains("itemCurrency")
-                                && !file.getName().contains("gambleDisplay")) {
+                                && !file.getName().contains("gambleDisplay")
+                                && !file.getName().contains("playerNameCache")) {
                             YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
                             boolean isLegacyConfig = false;
                             UUID playerUUID = null;
