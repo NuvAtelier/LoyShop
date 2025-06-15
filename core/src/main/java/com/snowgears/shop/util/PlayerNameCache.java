@@ -1,6 +1,7 @@
 package com.snowgears.shop.util;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import com.snowgears.shop.Shop;
 
@@ -49,10 +50,15 @@ public class PlayerNameCache {
 
         // Try loading from OfflinePlayer once, otherwise we'll just return the placeholder name
         try {
-            String name = Bukkit.getOfflinePlayer(uuid).getName();
-            if (name != null) {
-                cache.put(uuid, name);
-                return name;
+            OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+            if (player.hasPlayedBefore()) {
+                String name = player.getName();
+                if (name != null) {
+                    cache.put(uuid, name);
+                    return name;
+                }
+            } else {
+                Shop.getPlugin().getLogger().warning("Player " + uuid + " has not played on this server and/or their player data file does not exist! Unable to load the player name from OfflinePlayer!");
             }
         } catch (Error | Exception e) {
             Shop.getPlugin().getLogger().warning("Error while getting player name for " + uuid + " from OfflinePlayer.getName()! " + e.getMessage());
