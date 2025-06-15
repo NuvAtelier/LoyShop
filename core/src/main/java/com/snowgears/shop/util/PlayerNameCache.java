@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PlayerNameCache {
     
     private static final ConcurrentHashMap<UUID, String> cache = new ConcurrentHashMap<>();
-    private static final String CACHE_FILENAME = "playerNameCache.yml";
+    private static final String CACHE_FILENAME = "Data/playerNameCache.yml";
     
     /**
      * Initialize cache on startup - checks if cache file exists
