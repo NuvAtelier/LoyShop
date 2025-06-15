@@ -798,6 +798,9 @@ public class Shop extends JavaPlugin {
         //save any remaining shops (usually not required but just in case)
         if (shopHandler != null) shopHandler.saveAllShops();
 
+        // Save player name cache to ensure no data loss
+        PlayerNameCache.saveToFile();
+
         this.getLogger().info("Disabled Shop " + this.getDescription().getVersion());
     }
 

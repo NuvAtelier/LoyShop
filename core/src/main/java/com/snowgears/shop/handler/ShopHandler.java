@@ -8,6 +8,7 @@ import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.DisplayUtil;
 import com.snowgears.shop.util.ItemListType;
+import com.snowgears.shop.util.PlayerNameCache;
 import com.snowgears.shop.util.ShopLogger;
 import com.snowgears.shop.util.UtilMethods;
 import org.bukkit.*;
@@ -936,8 +937,12 @@ public class ShopHandler {
             public int compare(AbstractShop o1, AbstractShop o2) {
                 if(o1 == null || o2 == null)
                     return 0;
-                //could have something to do with switching between online and offline mode
-                return o1.getOwnerName().toLowerCase().compareTo(o2.getOwnerName().toLowerCase());
+                
+                // Cache owner names to avoid calling getOwnerName() twice per comparison
+                String owner1Name = o1.getOwnerName();
+                String owner2Name = o2.getOwnerName();
+                
+                return owner1Name.toLowerCase().compareTo(owner2Name.toLowerCase());
             }
         });
         return list;
@@ -1220,6 +1225,9 @@ public class ShopHandler {
             File fileDirectory = new File(plugin.getDataFolder(), "Data");
             if (!fileDirectory.exists())
                 return;
+
+            // Initialize player name cache (simple check for existing cache file)
+            PlayerNameCache.initialize();
 
             // load all the yml files from the data directory
             for (File file : fileDirectory.listFiles()) {
