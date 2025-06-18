@@ -293,14 +293,12 @@ public abstract class AbstractShop {
     public String getOwnerName() {
         if(this.isAdmin())
             return "admin";
-        if (this.getOwner() != null){
-            // If we can load the owner name, just use that
-            if (this.getOwner().getName() != null) return this.getOwner().getName();
-            // Return unknown player text
-            String shortId = this.getOwnerUUID().toString();
-            shortId = shortId.substring(0,3) + "..." + shortId.substring(shortId.length()-3);
-            return "Unknown Player (" + shortId + ")";
+        
+        if (this.getOwnerUUID() != null) {
+            // Use cache first - this avoids expensive disk I/O
+            return PlayerNameCache.getName(this.getOwnerUUID());
         }
+        
         return ChatColor.RED + "CLOSED";
     }
 

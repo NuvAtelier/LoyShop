@@ -46,6 +46,10 @@ public class ShopListener implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event){
         plugin.getFoliaLib().getScheduler().runLater(() -> {
+            // Cache player name for performance optimization
+            PlayerNameCache.cacheName(event.getPlayer().getUniqueId(), event.getPlayer().getName());
+            
+            // Check if the players permissions have changed
             recalculateShopPerms(event.getPlayer());
         }, 5);
     }
