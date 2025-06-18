@@ -32,7 +32,7 @@ public class ItemNameUtil {
 
         // Check if there is a name embedded in the item, aka named by an anvil or command
         if(item.getItemMeta() != null && item.getItemMeta().getDisplayName() != null && !item.getItemMeta().getDisplayName().isEmpty()){
-            return new TextComponent(item.getItemMeta().getDisplayName());
+            return (TextComponent) TextComponent.fromLegacy(item.getItemMeta().getDisplayName());
         }
 
         // Add custom formatting for player heads
