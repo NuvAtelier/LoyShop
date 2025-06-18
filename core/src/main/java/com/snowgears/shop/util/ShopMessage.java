@@ -7,7 +7,7 @@ import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import net.md_5.bungee.api.chat.*;
-import net.md_5.bungee.api.chat.hover.content.Item;
+// import net.md_5.bungee.chat.ComponentSerializer;
 
 import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
@@ -592,7 +592,8 @@ public class ShopMessage {
                 // Add new lines between text
                 hoverText.addExtra(format(line + (i == hoverLines.size() ? "" : "\n"), context));
             }
-            return new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{hoverText});
+            BaseComponent flatText = TextComponent.fromLegacy(hoverText.toLegacyText());
+            return new HoverEvent(HoverEvent.Action.SHOW_TEXT, new BaseComponent[]{flatText});
         } catch (Exception e) {}
         return null;
     }
