@@ -22,6 +22,8 @@ import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
 import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 
+import java.util.List;
+
 public class WorldGuardHook {
 
     public static final String PLUGIN_NAME = "WorldGuard";
@@ -56,10 +58,10 @@ public class WorldGuardHook {
     private static class Internal {
         private static StateFlag allowShopFlag;
         private static BooleanFlag deprecated_boolean_allowShopFlag;
+        private static FlagRegistry registry = WorldGuard.getInstance().getFlagRegistry();
 
         public static void registerAllowShopFlag(Shop plugin) {
             Bukkit.getLogger().log(Level.INFO,"[Shop] Registering WorldGuard flag '" + FLAG_ALLOW_SHOP + "'");
-            FlagRegistry registry = WorldGuard.getInstance().getFlagRegistry();
             try {
                 // Create a new state flag with the name FLAG_ALLOW_SHOP, defaulting to false
                 StateFlag flag = new StateFlag(FLAG_ALLOW_SHOP, false);
@@ -127,31 +129,105 @@ public class WorldGuardHook {
                 areShopsAllowedInRegion = (Boolean.TRUE.equals(shopFlagValue));
             }
 
-            // Check if we should deny the player from creating a shop based on other WG Flags
-            // We cannot create a shop if we cannot Build (add a sign), or if we cannot interact with a chest, and PASSTHROUGH is not allowed
-            StateFlag.State passthroughFlag = query.queryState(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), Flags.PASSTHROUGH);
-            StateFlag.State buildFlag = query.queryState(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), Flags.BUILD);
-            StateFlag.State chestAccessFlag = query.queryState(BukkitAdapter.adapt(loc), wgPlugin.wrapPlayer(player), Flags.CHEST_ACCESS);
+            // Use new configurable flag checking system
+            boolean flagCheckResult = checkWorldGuardFlags(query, wgPlugin.wrapPlayer(player), loc, 
+                Shop.getPlugin().getWorldGuardCreateShopHardAllowFlags(),
+                Shop.getPlugin().getWorldGuardCreateShopDenyFlags(),
+                Shop.getPlugin().getWorldGuardCreateShopAllowFlags(),
+                Shop.getPlugin().getWorldGuardCreateShopDefaultAction());
 
-            // If building or chest access is explicitly denied, then they are not allowed to make a shop here
-            if (buildFlag == StateFlag.State.DENY || chestAccessFlag == StateFlag.State.DENY) {
+            // If flag checks fail, deny shop creation
+            if (!flagCheckResult) {
                 return false;
             }
-            // If passthrough is explicitly allowed, then we are allowed to create our shop
-            // If we alternatively explicitly have explicit build permission and chest access permission, 
-            // then we are allowed to create our shop.
-            // --> Note, since we have Build permission, we also have Chest Access permission by inheritance.
-            else if (passthroughFlag == StateFlag.State.ALLOW || buildFlag == StateFlag.State.ALLOW) {
-                if (Shop.getPlugin().hookWorldGuard()) {
-                    // Allow shops ONLY in regions with the shop flag set
-                    return areShopsAllowedInRegion;
-                }
-                // If we are not required to have the shop flag, just default return true
-                return true;
-            }
 
-            // If we didn't match the flag requirements above, default return false
-            return false;
+            // If flag checks pass, check if we need the allow-shop flag
+            if (Shop.getPlugin().getWorldGuardRequireAllowShopFlag()) {
+                // Allow shops ONLY in regions with the shop flag set
+                return areShopsAllowedInRegion;
+            }
+            
+            // If we don't require the shop flag, allow shop creation
+            return true;
+        }
+
+        /**
+         * Check WorldGuard flags using the new configurable four-tier system.
+         * 
+         * @param query The WorldGuard region query
+         * @param player The player to check flags for
+         * @param loc The location to check
+         * @param hardAllowFlags List of flags that always allow if set to ALLOW
+         * @param denyFlags List of flags that deny if set to DENY
+         * @param allowFlags List of flags that allow if set to ALLOW (after deny checks)
+         * @param defaultAction What to do if no flags trigger ("ALLOW" or "DENY")
+         * @return true if the action should be allowed, false otherwise
+         */
+        private static boolean checkWorldGuardFlags(RegionQuery query, LocalPlayer player, Location loc,
+                List<String> hardAllowFlags, List<String> denyFlags, 
+                List<String> allowFlags, String defaultAction) {
+            
+            com.sk89q.worldedit.util.Location wgLoc = BukkitAdapter.adapt(loc);
+            
+            // Tier 1: Hard Allow Flags - Always allow if any are set to ALLOW
+            for (String flagName : hardAllowFlags) {
+                StateFlag flag = getStateFlagByName(flagName);
+                if (flag != null) {
+                    StateFlag.State state = query.queryState(wgLoc, player, flag);
+                    if (state == StateFlag.State.ALLOW) {
+                        return true; // Hard allow - bypass all other checks
+                    }
+                }
+            }
+            
+            // Tier 2: Deny Flags - Block if any are set to DENY
+            for (String flagName : denyFlags) {
+                StateFlag flag = getStateFlagByName(flagName);
+                if (flag != null) {
+                    StateFlag.State state = query.queryState(wgLoc, player, flag);
+                    if (state == StateFlag.State.DENY) {
+                        return false; // Explicit deny
+                    }
+                }
+            }
+            
+            // Tier 3: Allow Flags - Allow if any are set to ALLOW
+            for (String flagName : allowFlags) {
+                StateFlag flag = getStateFlagByName(flagName);
+                if (flag != null) {
+                    StateFlag.State state = query.queryState(wgLoc, player, flag);
+                    if (state == StateFlag.State.ALLOW) {
+                        return true; // Explicit allow
+                    }
+                }
+            }
+            
+            // Tier 4: Default Action - No flags triggered, use default
+            return "ALLOW".equalsIgnoreCase(defaultAction);
+        }
+
+        /**
+         * Get a WorldGuard StateFlag by name.
+         * 
+         * @param flagName The name of the flag (e.g., "BUILD", "CHEST_ACCESS")
+         * @return The StateFlag instance, or null if not found
+         */
+        private static StateFlag getStateFlagByName(String flagName) {
+            if (flagName == null || flagName.trim().isEmpty()) {
+                return null;
+            }
+            
+            try {
+                Flag<?> flag = registry.get(flagName);
+                if (flag instanceof StateFlag) {
+                    return (StateFlag) flag;
+                }
+            } catch (Exception e) {
+                // Flag not found, log warning
+                Bukkit.getLogger().warning("WorldGuard flag '" + flagName + "' not found or not a StateFlag");
+            }
+            
+            return null;
         }
 
         private Internal() {
@@ -183,10 +259,18 @@ public class WorldGuardHook {
             return true;
         }
         try {
-            LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
-            RegionManager regions = WorldGuard.getInstance().getPlatform().getRegionContainer().get(localPlayer.getWorld());
-            BlockVector3 vLoc = BlockVector3.at(location.getX(), location.getY(), location.getZ());
-            return regions == null || regions.getApplicableRegions(vLoc).queryState(localPlayer, Flags.USE) != StateFlag.State.DENY;
+            Plugin wgPlugin = getPlugin();
+            if (wgPlugin == null || !wgPlugin.isEnabled()) return true;
+            
+            WorldGuardPlugin worldGuardPlugin = (WorldGuardPlugin) wgPlugin;
+            RegionQuery query = WorldGuard.getInstance().getPlatform().getRegionContainer().createQuery();
+            
+            // Use new configurable flag checking system for shop usage
+            return Internal.checkWorldGuardFlags(query, worldGuardPlugin.wrapPlayer(player), location,
+                Shop.getPlugin().getWorldGuardUseShopHardAllowFlags(),
+                Shop.getPlugin().getWorldGuardUseShopDenyFlags(),
+                Shop.getPlugin().getWorldGuardUseShopAllowFlags(),
+                Shop.getPlugin().getWorldGuardUseShopDefaultAction());
         } catch (NoClassDefFoundError ignore) {
         }
         return true;
@@ -197,7 +281,6 @@ public class WorldGuardHook {
             return false;
         }
         try {
-//            System.out.println(player.getName()+" - checking if this player is a region owner at "+ UtilMethods.getCleanLocation(location, true));
             LocalPlayer localPlayer = WorldGuardPlugin.inst().wrapPlayer(player);
             RegionManager regions = WorldGuard.getInstance().getPlatform().getRegionContainer().get(localPlayer.getWorld());
             BlockVector3 vLoc = BlockVector3.at(location.getX(), location.getY(), location.getZ());
@@ -208,12 +291,7 @@ public class WorldGuardHook {
             if (set.size() == 0)
                 return false;
 
-//            for(ProtectedRegion region : set.getRegions()){
-//                System.out.println("    "+region.getId()+" - owner: "+region.getOwners().contains(player.getUniqueId()));
-//            }
-
             if(regions.getApplicableRegions(vLoc).isOwnerOfAll(localPlayer)){
-//                System.out.println(player.getName()+" - was a owner of all regions at that location");
                 return true;
             }
         } catch (NoClassDefFoundError ignore) {

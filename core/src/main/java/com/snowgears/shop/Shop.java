@@ -76,6 +76,18 @@ public class Shop extends JavaPlugin {
     private boolean checkUpdates;
     private boolean enableGUI;
     private boolean hookWorldGuard;
+    
+    // New WorldGuard configuration system
+    private boolean worldGuardRequireAllowShopFlag;
+    private List<String> worldGuardCreateShopHardAllowFlags;
+    private List<String> worldGuardCreateShopDenyFlags;
+    private List<String> worldGuardCreateShopAllowFlags;
+    private String worldGuardCreateShopDefaultAction;
+    private List<String> worldGuardUseShopHardAllowFlags;
+    private List<String> worldGuardUseShopDenyFlags;
+    private List<String> worldGuardUseShopAllowFlags;
+    private String worldGuardUseShopDefaultAction;
+    
     private boolean hookTowny;
     private String commandAlias;
     private DisplayType displayType;
@@ -158,20 +170,24 @@ public class Shop extends JavaPlugin {
 
         // look for the worldguard boolean, as it needs a flag registered before worldguard is enabled
         hookWorldGuard = config.getBoolean("hookWorldGuard");
+        
+        // Load the new WorldGuard configuration for onLoad (needed for flag registration)
+        boolean requireAllowShopFlag = config.getBoolean("worldGuard.requireAllowShopFlag", hookWorldGuard);
+        
         // Check if WorldGuard exists
         // Note: If WorldGuard exists we will check to verify a user can build in the region
         if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
-            this.getLogger().notice("WorldGuard detected, Shop will respect `passthrough`, `build`, and `chest-access` region flags during shop creation!");
+            this.getLogger().notice("WorldGuard detected, Shop will respect WorldGuard region flags during shop creation!");
             // Store for later
             this.worldGuardExists = true;
             // Check if we want to require `allow-shop: true` to exist on regions
-            if(hookWorldGuard){
+            if(requireAllowShopFlag){
                 this.getLogger().notice("Registering WorldGuard `allow-shop` flag...");
                 // Register flag for WorldGuard if we are hooking into the flag system
                 WorldGuardHook.registerAllowShopFlag();
                 this.getLogger().notice("WorldGuard `allow-shop` flag restriction enabled, Shops can only be created in regions with the `allow-shop` flag set!");
             } else {
-                this.getLogger().notice("WorldGuard `allow-shop` flag restriction is disabled, if you want to only allow shops in regions with the `allow-shop` flag, please set `hookWorldGuard` to `true` in `config.yml`");
+                this.getLogger().notice("WorldGuard `allow-shop` flag restriction is disabled, if you want to only allow shops in regions with the `allow-shop` flag, please set `worldGuard.requireAllowShopFlag` to `true` in `config.yml`");
             }
         } else {
             this.worldGuardExists = false;
@@ -218,6 +234,15 @@ public class Shop extends JavaPlugin {
             if (oldConfig.get("offlinePurchaseNotifications") == null && oldConfig.getString("logging.type").equals("OFF")) {
                 logger.info("Config default update: v1.10.0(+) is being run for the first time, setting logging type to FILE from old default OFF");
                 oldConfig.set("logging.type", "FILE");
+                oldConfig.save(configFile);
+            }
+
+            // Migrate old hookWorldGuard to new worldGuard.requireAllowShopFlag structure
+            if (oldConfig.get("hookWorldGuard") != null && oldConfig.get("worldGuard.requireAllowShopFlag") == null) {
+                boolean oldValue = oldConfig.getBoolean("hookWorldGuard");
+                logger.info("Config migration: moving 'hookWorldGuard' to 'worldGuard.requireAllowShopFlag'");
+                oldConfig.set("worldGuard.requireAllowShopFlag", oldValue);
+                oldConfig.set("hookWorldGuard", null); // remove old key
                 oldConfig.save(configFile);
             }
 
@@ -344,6 +369,18 @@ public class Shop extends JavaPlugin {
         checkUpdates = config.getBoolean("checkUpdates");
         enableGUI = config.getBoolean("enableGUI");
         hookWorldGuard = config.getBoolean("hookWorldGuard");
+        
+        // Load new WorldGuard configuration system
+        worldGuardRequireAllowShopFlag = config.getBoolean("worldGuard.requireAllowShopFlag", hookWorldGuard);
+        worldGuardCreateShopHardAllowFlags = config.getStringList("worldGuard.createShopFlagChecks.hardAllowFlags");
+        worldGuardCreateShopDenyFlags = config.getStringList("worldGuard.createShopFlagChecks.denyFlags");
+        worldGuardCreateShopAllowFlags = config.getStringList("worldGuard.createShopFlagChecks.allowFlags");
+        worldGuardCreateShopDefaultAction = config.getString("worldGuard.createShopFlagChecks.defaultAction", "DENY");
+        worldGuardUseShopHardAllowFlags = config.getStringList("worldGuard.useShopFlagChecks.hardAllowFlags");
+        worldGuardUseShopDenyFlags = config.getStringList("worldGuard.useShopFlagChecks.denyFlags");
+        worldGuardUseShopAllowFlags = config.getStringList("worldGuard.useShopFlagChecks.allowFlags");
+        worldGuardUseShopDefaultAction = config.getString("worldGuard.useShopFlagChecks.defaultAction", "ALLOW");
+        
         hookTowny = config.getBoolean("hookTowny");
         bluemapEnabled = config.getBoolean("bluemap-marker.enabled");
         dynmapEnabled = config.getBoolean("dynmap-marker.enabled");
@@ -542,17 +579,34 @@ public class Shop extends JavaPlugin {
         //only define different listener hooks if the plugins are present on the server
         if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
             this.getLogger().notice("WorldGuard is installed, creating WorldGuard listener");
-            this.getLogger().helpful("Shop will respect WorldGuard `passthrough`, `build`, and `chest-access` region flags during shop creation!");
+            
+            // Log information about flag configuration
+            if (!worldGuardCreateShopDenyFlags.isEmpty() || !worldGuardCreateShopAllowFlags.isEmpty() || !worldGuardCreateShopHardAllowFlags.isEmpty()) {
+                this.getLogger().helpful("Shop creation will check WorldGuard flags: " + 
+                    "hardAllow=" + worldGuardCreateShopHardAllowFlags + 
+                    ", deny=" + worldGuardCreateShopDenyFlags + 
+                    ", allow=" + worldGuardCreateShopAllowFlags + 
+                    ", default=" + worldGuardCreateShopDefaultAction);
+            }
+            
+            if (!worldGuardUseShopDenyFlags.isEmpty() || !worldGuardUseShopAllowFlags.isEmpty() || !worldGuardUseShopHardAllowFlags.isEmpty()) {
+                this.getLogger().helpful("Shop usage will check WorldGuard flags: " + 
+                    "hardAllow=" + worldGuardUseShopHardAllowFlags + 
+                    ", deny=" + worldGuardUseShopDenyFlags + 
+                    ", allow=" + worldGuardUseShopAllowFlags + 
+                    ", default=" + worldGuardUseShopDefaultAction);
+            }
+            
             // Store for later
             this.worldGuardExists = true;
             // Check if we want to require `allow-shop: true` to exist on regions
-            if(hookWorldGuard){
+            if(worldGuardRequireAllowShopFlag){
                 this.getLogger().helpful("WorldGuard `allow-shop` flag restriction enabled, Shops can only be created in regions with the `allow-shop` flag set!");
                 // Register flag for WorldGuard if we are hooking into the flag system
                 // Only log, don't re-register flags, we do that in the onLoad function.
 //                WorldGuardHook.registerAllowShopFlag();
             } else {
-                this.getLogger().helpful("WorldGuard `allow-shop` flag restriction is disabled, if you want to only allow shops in regions with the `allow-shop` flag, please set `hookWorldGuard` to `true` in `config.yml`");
+                this.getLogger().helpful("WorldGuard `allow-shop` flag restriction is disabled, if you want to only allow shops in regions with the `allow-shop` flag, please set `worldGuard.requireAllowShopFlag` to `true` in `config.yml`");
             }
         } else {
             this.worldGuardExists = false;
@@ -903,6 +957,43 @@ public class Shop extends JavaPlugin {
 
     public boolean hookWorldGuard(){
         return hookWorldGuard;
+    }
+
+    // New WorldGuard configuration system getters
+    public boolean getWorldGuardRequireAllowShopFlag() {
+        return worldGuardRequireAllowShopFlag;
+    }
+
+    public List<String> getWorldGuardCreateShopHardAllowFlags() {
+        return worldGuardCreateShopHardAllowFlags;
+    }
+
+    public List<String> getWorldGuardCreateShopDenyFlags() {
+        return worldGuardCreateShopDenyFlags;
+    }
+
+    public List<String> getWorldGuardCreateShopAllowFlags() {
+        return worldGuardCreateShopAllowFlags;
+    }
+
+    public String getWorldGuardCreateShopDefaultAction() {
+        return worldGuardCreateShopDefaultAction;
+    }
+
+    public List<String> getWorldGuardUseShopHardAllowFlags() {
+        return worldGuardUseShopHardAllowFlags;
+    }
+
+    public List<String> getWorldGuardUseShopDenyFlags() {
+        return worldGuardUseShopDenyFlags;
+    }
+
+    public List<String> getWorldGuardUseShopAllowFlags() {
+        return worldGuardUseShopAllowFlags;
+    }
+
+    public String getWorldGuardUseShopDefaultAction() {
+        return worldGuardUseShopDefaultAction;
     }
 
     public boolean worldGuardExists() { return worldGuardExists; }
