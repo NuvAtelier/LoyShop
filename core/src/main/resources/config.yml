@@ -273,6 +273,7 @@ offlinePurchaseNotifications:
 # The following plugins require explicit configuration below:
 
 # WorldGuard Integration Settings
+# For more details: https://github.com/snowgears/shopbugs/wiki/WorldGuard-Integration #
 worldGuard:
    # Require the 'allow-shop' flag to be set to 'allow' in WorldGuard regions before shops can be created
    # Replaces the old 'hookWorldGuard' setting with clearer naming
@@ -299,12 +300,6 @@ worldGuard:
       allowFlags: []
       # Default action if no flag rules are triggered: ALLOW or DENY
       defaultAction: "ALLOW"
-
-# If WorldGuard is installed Shop will by default ALWAYS respect the WG flags 'passthrough', 'build', 'chest-access'. #
-# If you would like to ADDITIONALLY require Shops to be created in WorldGuard regions with a Shop flag set (flag=allow-shop), set `hookWorldGuard` to `true` #
-# WorldGuard plugin must be installed for this feature to work #
-# For more details: https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#hookWorldGuard #
-hookWorldGuard: false
 
 # Setting this to true will force all Shops to be created in Towny regions where the players are residents #
 # Towny plugin must be installed for this feature to work #
