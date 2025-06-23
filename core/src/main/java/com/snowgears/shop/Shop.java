@@ -76,7 +76,6 @@ public class Shop extends JavaPlugin {
     private boolean usePerms;
     private boolean checkUpdates;
     private boolean enableGUI;
-    private boolean hookWorldGuard;
     
     // Simplified WorldGuard configuration
     private WorldGuardConfig worldGuardConfig;
@@ -217,6 +216,8 @@ public class Shop extends JavaPlugin {
 
         try {
             // Check if we need to update any legacy config values
+
+            // v1.10.0
             // Check if offlinePurchaseNotifications.enabled is a new value
             YamlConfiguration oldConfig = YamlConfiguration.loadConfiguration(configFile);
             // One time update if the Offline Purchase Notifications feature is being started up for the very first time
@@ -227,6 +228,7 @@ public class Shop extends JavaPlugin {
                 oldConfig.save(configFile);
             }
 
+            // v1.10.2
             // Migrate old hookWorldGuard to new worldGuard.requireAllowShopFlag structure
             if (oldConfig.get("hookWorldGuard") != null && oldConfig.get("worldGuard.requireAllowShopFlag") == null) {
                 boolean oldValue = oldConfig.getBoolean("hookWorldGuard");
@@ -235,6 +237,8 @@ public class Shop extends JavaPlugin {
                 oldConfig.set("hookWorldGuard", null); // remove old key
                 oldConfig.save(configFile);
             }
+
+            // Next time we add a migration lets move it to a util class to keep things clean.
 
             ConfigUpdater.update(plugin, "config.yml", configFile, new ArrayList<>());
         } catch (IOException e) {
@@ -911,10 +915,6 @@ public class Shop extends JavaPlugin {
 
     public CurrencyType getCurrencyType() {
         return currencyType;
-    }
-
-    public boolean hookWorldGuard(){
-        return hookWorldGuard;
     }
 
     // Simplified WorldGuard configuration getter
