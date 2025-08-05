@@ -51,8 +51,9 @@ permissions:
         default: op
 
     shop.buildlimit.#:
-         description: Restricts the number of shops a player can create. For example shop.buildlimit.10 would limit players to creating 10 shops maximum.
-         default: op
+         description: Restricts the number of shops a player can create. For example shop.buildlimit.10 would limit players to creating 10 shops maximum. If multiple buildlimit permissions exist, ONLY the highest will be used.
+    shop.buildlimitextra.#:
+         description: Add an additional number of shops to the players build limit. For example shop.buildlimitextra.5 would grant players an additional 5 shops to their limit. If mulitple buildlimitextra permissions exist they will ALL be used and added together.
 
     shop.setdisplay:
          description: Allows player to set the display type on their shop (allows shop display cycling, see actionMappings in config.yml).
