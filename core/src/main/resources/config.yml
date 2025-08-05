@@ -272,11 +272,34 @@ offlinePurchaseNotifications:
 
 # The following plugins require explicit configuration below:
 
-# If WorldGuard is installed Shop will by default ALWAYS respect the WG flags 'passthrough', 'build', 'chest-access'. #
-# If you would like to ADDITIONALLY require Shops to be created in WorldGuard regions with a Shop flag set (flag=allow-shop), set `hookWorldGuard` to `true` #
-# WorldGuard plugin must be installed for this feature to work #
-# For more details: https://github.com/snowgears/shopbugs/wiki/Configuration-(config.yml)#hookWorldGuard #
-hookWorldGuard: false
+# WorldGuard Integration Settings
+# For more details: https://github.com/snowgears/shopbugs/wiki/WorldGuard-Integration #
+worldGuard:
+   # Require the 'allow-shop' flag to be set to 'allow' in WorldGuard regions before shops can be created
+   # Replaces the old 'hookWorldGuard' setting with clearer naming
+   requireAllowShopFlag: false
+   
+   # Shop Creation Flag Logic - Four-tier hierarchy for maximum flexibility
+   createShopFlagChecks:
+      # If any of these flags are ALLOW, ALWAYS allow shop creation (bypasses all other checks)
+      hardAllowFlags: []
+      # If any of these flags are DENY, always block shop creation
+      denyFlags: ["BUILD", "CHEST_ACCESS"]
+      # If any of these flags are ALLOW (after checking denies), allow shop creation
+      allowFlags: ["PASSTHROUGH", "BUILD"]
+      # Default action if no flag rules are triggered: ALLOW or DENY
+      defaultAction: "DENY"
+   
+   # Shop Usage Flag Logic - Simple deny-only checking by default
+   useShopFlagChecks:
+      # If any of these flags are ALLOW, ALWAYS allow shop usage (bypasses all other checks)
+      hardAllowFlags: []
+      # If any of these flags are DENY, always block shop usage
+      denyFlags: ["USE"]
+      # If any of these flags are ALLOW (after checking denies), allow shop usage
+      allowFlags: []
+      # Default action if no flag rules are triggered: ALLOW or DENY
+      defaultAction: "ALLOW"
 
 # Setting this to true will force all Shops to be created in Towny regions where the players are residents #
 # Towny plugin must be installed for this feature to work #
