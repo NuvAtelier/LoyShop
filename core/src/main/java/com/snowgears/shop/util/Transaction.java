@@ -189,6 +189,16 @@ public class Transaction {
             else { return this.setError(TransactionError.INVENTORY_FULL_SHOP); }
         }
 
+        // Check if the negotiation resulted in invalid values (-1, indicating insufficient inventory/funds)
+        // This check comes after the specific checks above, so it handles cases where PriceNegotiator
+        // determined the transaction was invalid for other reasons (e.g., partial sales restrictions)
+        // Allow (price == 0) for "free" price transactions
+        if (this.price < 0 || this.amountBeingSold <= 0) {
+            // Failed Verification: The negotiation determined the transaction is not possible
+            shop.updateStock(); // Update sign to show out of stock in case we were out of sync
+            return this.setError(TransactionError.INSUFFICIENT_FUNDS_SHOP);
+        }
+
         // Check if any other plugins want to cancel the transaction
         PlayerExchangeShopEvent e = new PlayerExchangeShopEvent(player, shop);
         Bukkit.getPluginManager().callEvent(e);
