@@ -50,14 +50,17 @@ permissions:
         description: Allows player to destroy other player's shops.
         default: op
     shop.buildlimit.#:
-         description: Restricts the number of shops a player can create. For example shop.buildlimit.10 would limit players to creating 10 shops maximum.
-         default: op
+        description: Restricts the number of shops a player can create. For example shop.buildlimit.10 would limit players to creating 10 shops maximum. If multiple buildlimit permissions exist, ONLY the highest will be used.
+        default: op
+    shop.buildlimitextra.#:
+        description: Add an additional number of shops to the players build limit. For example shop.buildlimitextra.5 would grant players an additional 5 shops to their limit. If mulitple buildlimitextra permissions exist they will ALL be used and added together.
+        default: op
     shop.setdisplay:
-         description: Allows player to set the display type on their shop (allows shop display cycling, see actionMappings in config.yml).
-         default: op
+        description: Allows player to set the display type on their shop (allows shop display cycling, see actionMappings in config.yml).
+        default: op
     shop.gui.teleport:
-         description: Allows player to use teleport to shops by using the gui.
-         default: op
+        description: Allows player to use teleport to shops by using the gui.
+        default: op
     shop.operator:
         description: Allows access to operator actions like setting currency, setting the gamble item, reloading configs, creating gamble/admin shops, etc.
         default: op

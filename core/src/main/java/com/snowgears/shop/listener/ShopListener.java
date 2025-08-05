@@ -3,7 +3,6 @@ package com.snowgears.shop.listener;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.DisplayTagOption;
 import com.snowgears.shop.hook.WorldGuardHook;
-import com.snowgears.shop.listener.CreativeSelectionListener;
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ShopType;
 import com.snowgears.shop.util.*;
@@ -35,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 public class ShopListener implements Listener {
 
     private Shop plugin;
-    private HashMap<UUID, Integer> shopBuildLimits = new HashMap<UUID, Integer>();
     private HashMap<UUID, OfflineTransactions> transactionsWhileOffline = new HashMap<>();
     private HashMap<UUID, Long> playerLastShopTeleport = new HashMap<>();
 
@@ -48,51 +46,53 @@ public class ShopListener implements Listener {
         plugin.getFoliaLib().getScheduler().runLater(() -> {
             // Cache player name for performance optimization
             PlayerNameCache.cacheName(event.getPlayer().getUniqueId(), event.getPlayer().getName());
-            
-            // Check if the players permissions have changed
-            recalculateShopPerms(event.getPlayer());
         }, 5);
     }
 
-    public void recalculateShopPerms(Player player){
-        int buildPermissionNumber = -1;
-        if(plugin.usePerms()){
-            Set<PermissionAttachmentInfo> permissions = player.getEffectivePermissions();
-            //calculate base buildlimit permission first (highest number)
-            for(PermissionAttachmentInfo permInfo : permissions){
-                if(permInfo.getPermission().contains("shop.buildlimit.")){
-                    try {
-                        int tempNum = Integer.parseInt(permInfo.getPermission().substring(permInfo.getPermission().lastIndexOf(".") + 1));
-                        if(tempNum > buildPermissionNumber) {
-                            buildPermissionNumber = tempNum;
-                        }
-                    } catch (NumberFormatException e) {}
-                }
+    public int getBuildLimit(Player player){
+        // If permissions are disabled, there is "no limit"
+        if (!plugin.usePerms()) {
+            return 10000;
+        }
+
+        int baseBuildLimit = -1;
+        int extraBuildLimit = 0;
+        Set<PermissionAttachmentInfo> permissions = player.getEffectivePermissions();
+
+        // calculate base buildlimit permission first (highest number)
+        for(PermissionAttachmentInfo permInfo : permissions){
+            String perm = permInfo.getPermission();
+            // Skip if not a shop permission
+            if (!perm.startsWith("shop.")) { continue; }
+
+            // If it's a base build limit permission, parse the number
+            if (perm.startsWith("shop.buildlimit.")){
+                try {
+                    int tempNum = Integer.parseInt(perm.substring(perm.lastIndexOf(".") + 1));
+                    if(tempNum > baseBuildLimit) {
+                        baseBuildLimit = tempNum;
+                    }
+                } catch (NumberFormatException e) {}
+            }
+
+            // If it's an extra build limit permission, parse the number
+            else if (perm.startsWith("shop.buildlimitextra.")){
+                try {
+                    int extraNum = Integer.parseInt(perm.substring(perm.lastIndexOf(".") + 1));
+                    extraBuildLimit += extraNum;
+                } catch (NumberFormatException e) {}
             }
         }
-        // Check if we had a matching permission
-        if(buildPermissionNumber == -1) {
-            shopBuildLimits.put(player.getUniqueId(), 10000);
-        } else {
-            shopBuildLimits.put(player.getUniqueId(), buildPermissionNumber);
-        }
-    }
 
-    public int getBuildLimit(Player player){
-        boolean hasCachedBuildLimit = shopBuildLimits.containsKey(player.getUniqueId());
-        // Check if we need to calculate for the first time
-        // or if the players permissions have changed
-        if (!hasCachedBuildLimit) {
-            recalculateShopPerms(player);
-            return shopBuildLimits.get(player.getUniqueId());
+        // If no build limit was found, return 10000 (no limit)
+        if (baseBuildLimit == -1) {
+            return 10000;
         }
-        int cachedBuildLimit = shopBuildLimits.get(player.getUniqueId());
-        if (!player.hasPermission("shop.buildlimit." + cachedBuildLimit)) {
-            recalculateShopPerms(player);
-            return shopBuildLimits.get(player.getUniqueId());
-        }
-        // We have the latest build limit permissions for the user
-        return cachedBuildLimit;
+
+        // Add build limits together
+        int playerBuildLimit = baseBuildLimit + extraBuildLimit;
+        
+        return playerBuildLimit;
     }
 
     @EventHandler (ignoreCancelled = true, priority = EventPriority.LOW)
