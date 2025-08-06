@@ -1044,25 +1044,6 @@ public class ShopHandler {
 
     public int saveShops(final UUID player){ return saveShops(player, false); }
     public int saveShops(final UUID player, boolean force){
-        return saveShopsDriver(player, force);
-//        // async code
-//        if(playersSavingShops.contains(player))
-//            return 0;
-//
-//        playersSavingShops.add(player);
-//        saveShopsDriver(player, force);
-//
-//        BukkitScheduler scheduler = plugin.getServer().getScheduler();
-//        scheduler.runTaskAsynchronously(plugin, new Runnable() {
-//            @Override
-//            public void run() {
-//                playersSavingShops.add(player);
-//                saveShopsDriver(player, force);
-//            }
-//        });
-    }
-
-    private int saveShopsDriver(UUID player, boolean force) {
         // Check if any of the players shops want to be saved
         String playerName = player == this.getAdminUUID() ? "admin" : plugin.getServer().getOfflinePlayer(player).getName();
         int numWantingToUpdate = numShopsNeedSave(player);
@@ -1095,14 +1076,9 @@ public class ShopHandler {
 
             plugin.getLogger().trace("    current file " + currentFile);
 
-            if (!currentFile.exists()) // file doesn't exist
-                currentFile.createNewFile();
-            else{
-                currentFile.delete();
-                currentFile.createNewFile();
-            }
-            YamlConfiguration config = YamlConfiguration.loadConfiguration(currentFile);
-            plugin.getLogger().trace("    loaded yaml... " + currentFile);
+            // We will build the YAML in-memory and write via a temp file to avoid data loss.
+            YamlConfiguration config = new YamlConfiguration();
+            plugin.getLogger().trace("    preparing yaml for " + currentFile);
 
             List<AbstractShop> shopList = getShops(player);
             if (shopList.isEmpty()) {
@@ -1169,7 +1145,50 @@ public class ShopHandler {
                 plugin.getLogger().spam("    built config to save... \n" + config.saveToString());
             }
             
-            config.save(currentFile);
+            // ---------- Safe file write ----------
+            Path targetPath = currentFile.toPath();
+            Path tempFile = Files.createTempFile(targetPath.getParent(), owner + "_", ".tmp");
+            config.save(tempFile.toFile());
+            try {
+                // Atomic moves are very safe, so we use them if possible
+                Files.move(tempFile, targetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (Error | Exception ex) {
+                plugin.getLogger().debug("Error during atomic move", ex);
+                plugin.getLogger().debug("Filesystem does not support atomic move; using manual two-step replacement with backup...");
+                // Filesystem does not support atomic move; use manual two-step replacement with backup
+                Path backupPath = targetPath.resolveSibling(targetPath.getFileName().toString() + ".bak");
+                try {
+                    if (Files.exists(targetPath)) {
+                        plugin.getLogger().debug("Backing up existing shop file for " + playerName + " from (" + targetPath + ") to (" + backupPath + ")...");
+                        Files.move(targetPath, backupPath, StandardCopyOption.REPLACE_EXISTING);
+                        plugin.getLogger().debug("Successfully backed up existing shop file for " + playerName + " from (" + targetPath + ") to (" + backupPath + ")");
+                    }
+                    plugin.getLogger().debug("Moving new shop file for " + playerName + " from (" + tempFile + ") to (" + targetPath + ")");
+                    Files.move(tempFile, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    plugin.getLogger().debug("Successfully moved new shop file for " + playerName + " from (" + tempFile + ") to (" + targetPath + ")!");
+                    // New file written successfully – delete backup
+                    if (Files.exists(backupPath)) {
+                        plugin.getLogger().debug("Deleting temporary backup of old shop file for " + playerName + " from (" + backupPath + ")");
+                        Files.deleteIfExists(backupPath);
+                        plugin.getLogger().debug("Successfully deleted temporary backup of old shop file for " + playerName + " from (" + backupPath + ")!");
+                    }
+                } catch (Error | Exception moveEx) {
+                    // Attempt to restore from backup on failure
+                    plugin.getLogger().severe("Critical error writing updated shop file for " + playerName + " to (" + targetPath + ") – attempting to restore backup from (" + backupPath + ")... – " + moveEx.getMessage());
+                    try {
+                        if (Files.exists(backupPath)) {
+                            plugin.getLogger().warning("Restoring backup player shop file for " + playerName + " from (" + backupPath + ") to (" + targetPath + ")");
+                            Files.move(backupPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                            plugin.getLogger().info("Successfully restored backup player shop file for " + playerName + " from (" + backupPath + ") to (" + targetPath + ")!");
+                        } else {
+                            plugin.getLogger().severe("Failed to restore backup player shop file for " + playerName + ": " + backupPath + " does not exist!!!");
+                        }
+                    } catch (Error | Exception restoreEx) {
+                        plugin.getLogger().severe("Failed to restore backup player shop file for " + playerName + "!!! Exception: " + restoreEx.getMessage());
+                        plugin.getLogger().severe("You will need to manually restore this players backup file from (" + backupPath + ") to (" + targetPath + ")!");
+                    }
+                }
+            }
             plugin.getLogger().helpful("Saved " + shopNumber + " Shops for Player " + playerName + " to file: " + currentFile);
             return shopNumber;
         } catch (Exception e){
