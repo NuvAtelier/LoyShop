@@ -135,29 +135,41 @@ public abstract class AbstractShop {
 
     //this calls BlockData which loads the chunk the shop is in by doing so
     public boolean load() {
-        if (signLocation != null) {
-            try {
-                facing = ((WallSign) signLocation.getBlock().getBlockData()).getFacing();
-                chestLocation = signLocation.getBlock().getRelative(facing.getOppositeFace()).getLocation();
-
-                //if shop is made out of a container that is no longer enabled, delete it
-                if(chestLocation != null) {
-                    if (!Shop.getPlugin().getShopHandler().isChest(chestLocation.getBlock())){
-                        this.delete();
-                        return false;
-                    }
-                }
-                this.updateStock();
-                Shop.getPlugin().getLogger().debug("Loaded shop: " + this);
-                return true;
-            } catch (ClassCastException cce) {
-                //this shop has no sign on it. return false
-                Shop.getPlugin().getLogger().warning("Failed to load shop, no sign for chest: " + this);
+        if (signLocation == null) {
+            Shop.getPlugin().getLogger().warning("Error attempting to load shop! No sign location found for Shop, deleting shop: " + this);
+            this.delete();
+            return false;
+        }
+        
+        try {
+            Block signBlock = signLocation.getBlock();
+            if (signBlock.getType() == Material.AIR) {
+                Shop.getPlugin().getLogger().warning("Error attempting to load shop! No sign found for Shop (detected: AIR), deleting shop: " + this);
+                this.delete();
                 return false;
             }
-        } else {
-            //this shop has no sign location defined
-            Shop.getPlugin().getLogger().warning("Failed to load shop, no signLocation: " + this);
+            if (!(signBlock.getBlockData() instanceof WallSign)) {
+                Shop.getPlugin().getLogger().warning("Error attempting to load shop! Sign Block for Shop is not a WallSign (detected: " + signBlock.getType() + "), deleting shop: " + this);
+                this.delete();
+                return false;
+            }
+            facing = ((WallSign) signBlock.getBlockData()).getFacing();
+            chestLocation = signBlock.getRelative(facing.getOppositeFace()).getLocation();
+            Block chestBlock = chestLocation.getBlock();
+            
+            if (!Shop.getPlugin().getShopHandler().isChest(chestBlock)){
+                Shop.getPlugin().getLogger().warning("Error attempting to load shop! Invalid block type detected when trying to load Shop Chest (detected: " + chestBlock.getType() + "), deleting shop: " + this);
+                this.delete();
+                return false;
+            }
+            // Now that we are loaded, we can update the stock
+            this.updateStock();
+            Shop.getPlugin().getLogger().debug("Loaded shop successfully: " + this);
+            return true;
+        } catch (Error | Exception error) {
+            //this shop has no sign on it. return false
+            Shop.getPlugin().getLogger().warning("Unknown error while attempting to load Shop sign and/or chest! Deleting shop: " + this);
+            this.delete();
             return false;
         }
     }
@@ -522,7 +534,8 @@ public abstract class AbstractShop {
             try {
                 signBlock = (Sign) signLocation.getBlock().getState();
             } catch (ClassCastException e){
-                Shop.getPlugin().getShopHandler().removeShop(AbstractShop.this);
+                Shop.getPlugin().getLogger().warning("Error attempting to update Shop sign! Sign Block for Shop is not a Sign (detected: " + signLocation.getBlock().getType() + "), deleting shop: " + this);
+                this.delete();
                 return;
             }
 
