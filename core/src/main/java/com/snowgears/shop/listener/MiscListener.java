@@ -213,6 +213,10 @@ public class MiscListener implements Listener {
     }
 
     public boolean isChestInShopCreationProcess(Location location) {
+        for (ShopCreationProcess process : playerChatCreationSteps.values()) {
+            if (process.getClickedChest().getLocation().equals(location)) {
+                return true;
+            }
         }
         return false;
     }
@@ -270,7 +274,6 @@ public class MiscListener implements Listener {
                 if(!plugin.getAllowCreationMethodChest())
                     return;
 
-                //TODO also protect the chest if its in the middle of a chat creation process
                 //dont let players create shops via chest on shops that already exist
                 // This check is also required for chests to be destroyed properly without new shops getting created. This is because PlayerInteractEvent is called before BlockBreakEvent.
                 AbstractShop existingShop = plugin.getShopHandler().getShopByChest(clicked);
@@ -642,6 +645,13 @@ public class MiscListener implements Listener {
                     event.setCancelled(true);
             }
         } else if (plugin.getShopHandler().isChest(b)) {
+            // Shop will not exist in ShopHandler if it is in the middle of a shop creation process
+            // protect shops that are in the middle of a shop creation process from being destroyed
+            if (this.isChestInShopCreationProcess(b.getLocation())) {
+                ShopMessage.sendMessage("interactionIssue", "destroyUninitializedChest", player, null);
+                event.setCancelled(true); // don't break chest
+                return;
+            }
 
             AbstractShop shop = plugin.getShopHandler().getShopByChest(b);
             if (shop == null) {
