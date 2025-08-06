@@ -212,16 +212,24 @@ public class MiscListener implements Listener {
         }, 1);
     }
 
-    @EventHandler
-    public void onPreShopSignClick(PlayerInteractEvent event) {
-        if (event.isCancelled()) {
-            return;
+    public boolean isChestInShopCreationProcess(Location location) {
         }
+        return false;
+    }
+
+    // Fired anytime a player interacts with a block, air, or entity.
+    // This is used to handle shop creation and initialization.
+    // Generally, events shouldn't be cancelled here, as this is the first event in a chain, 
+    // and we should allow other event handlers down the chain to handle more specific situations.
+    @EventHandler
+    public void onBlockInteract(PlayerInteractEvent event) {
+        if (event.isCancelled()) { return; }
         try {
             if (event.getHand() == EquipmentSlot.OFF_HAND) {
                 return; // off hand version, ignore.
             }
         } catch (NoSuchMethodError error) {}
+        
         final Player player = event.getPlayer();
 
 
@@ -234,30 +242,28 @@ public class MiscListener implements Listener {
                 if(!plugin.getAllowCreationMethodSign())
                     return;
 
+                // We only want to handle shops that exist but are not initialized.
                 AbstractShop shop = plugin.getShopHandler().getShop(clicked.getLocation());
-                if (shop == null) {
-                    return;
-                } else if (shop.isInitialized()) {
+                if (shop == null || shop.isInitialized()) {
                     return;
                 }
 
                 //creative selection listener will handle if item is null
-                if(event.getItem() != null && event.getItem().getType() != Material.AIR){
+                if(event.getItem() == null || event.getItem().getType() == Material.AIR)
+                    return;
+                
+                boolean initializedShop;
+                if(shop.getType() == ShopType.BARTER && shop.getItemStack() != null && shop.getSecondaryItemStack() == null)
+                    initializedShop = plugin.getShopCreationUtil().initializeShop(shop, player, shop.getItemStack(), event.getItem());
+                else
+                    initializedShop = plugin.getShopCreationUtil().initializeShop(shop, player, event.getItem(), null);
 
-                    boolean initializedShop;
-                    if(shop.getType() == ShopType.BARTER && shop.getItemStack() != null && shop.getSecondaryItemStack() == null)
-                        initializedShop = plugin.getShopCreationUtil().initializeShop(shop, player, shop.getItemStack(), event.getItem());
-                    else
-                        initializedShop = plugin.getShopCreationUtil().initializeShop(shop, player, event.getItem(), null);
-
-                    if(initializedShop){
-                        plugin.getShopCreationUtil().sendCreationSuccess(player, shop);
-                        plugin.getLogHandler().logAction(player, shop, ShopActionType.INIT);
-                    }
+                if(initializedShop){
+                    plugin.getShopCreationUtil().sendCreationSuccess(player, shop);
+                    plugin.getLogHandler().logAction(player, shop, ShopActionType.INIT);
                 }
-                event.setCancelled(true); //cancel event regardless
-                Shop.getPlugin().getLogger().trace("[MiscListener.onPreShopSignClick] updateSign");
-                shop.updateSign();
+
+                return;
             }
             else if(plugin.getShopHandler().isChest(clicked)){
 
@@ -265,6 +271,19 @@ public class MiscListener implements Listener {
                     return;
 
                 //TODO also protect the chest if its in the middle of a chat creation process
+                //dont let players create shops via chest on shops that already exist
+                // This check is also required for chests to be destroyed properly without new shops getting created. This is because PlayerInteractEvent is called before BlockBreakEvent.
+                AbstractShop existingShop = plugin.getShopHandler().getShopByChest(clicked);
+                if (existingShop != null) {
+                    return;
+                }
+
+                //TODO come back to this and allow players to create double chest shops via chest creation method
+
+                // Make sure that the shop can be created at all, prior to checking whats in the players hand.
+                if(!plugin.getShopCreationUtil().shopCanBeCreated(player, clicked)){
+                    return;
+                }
 
                 if(event.getItem() == null || event.getItem().getType() == Material.AIR){
                     if(plugin.allowCreativeSelection()) {
@@ -273,12 +292,10 @@ public class MiscListener implements Listener {
                         // Check if last created process is within 80ms, if so, cancel the event
                         Long lastCreatedProcess = lastChatCreation.get(player.getUniqueId());
                         if (lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < 80) {
-                            event.setCancelled(true);
                             return;
                         }
                         if (currentProcess != null && currentProcess.getStep() == ShopCreationProcess.ChatCreationStep.BARTER_ITEM) {   
                             plugin.getCreativeSelectionListener().putPlayerInCreativeSelection(player, clicked.getLocation(), false);
-                            event.setCancelled(true);
                             return;
                         }
                         else if (currentProcess == null && player.isSneaking()){
@@ -286,17 +303,11 @@ public class MiscListener implements Listener {
                             //if the player has created a new process in the last 5 seconds, block them from creating another
                             if(lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < plugin.getDebug_shopCreateCooldown()) {
                                 ShopMessage.sendMessage("interactionIssue", "createCooldown", player, null);
-                                event.setCancelled(true);
                                 return;
                             }
 
-                            if(!plugin.getShopCreationUtil().shopCanBeCreated(player, clicked)){
-                                event.setCancelled(true);
-                                return;
-                            }
                             BlockFace signFacing = plugin.getShopCreationUtil().calculateBlockFaceForSign(player, clicked, event.getBlockFace());
                             if(signFacing == null) {
-                                event.setCancelled(true);
                                 return;
                             }
 
@@ -304,25 +315,19 @@ public class MiscListener implements Listener {
                             playerChatCreationSteps.put(player.getUniqueId(), process);
                             lastChatCreation.put(player.getUniqueId(), new Date().getTime());
                             plugin.getCreativeSelectionListener().putPlayerInCreativeSelection(player, clicked.getLocation(), false);
-                            event.setCancelled(true);
-                            return;
                         }
                     }
-                    else{
-                        return;
-                    }
+                    return;
                 }
                 else {
                     ShopCreationProcess currentProcess = playerChatCreationSteps.get(player.getUniqueId());
                     plugin.getLogger().debug("Current Shop Creation Process: " + currentProcess);
                     if (currentProcess != null && currentProcess.getStep() == ShopCreationProcess.ChatCreationStep.BARTER_ITEM) {
                         if (!plugin.getShopCreationUtil().itemsCanBeInitialized(player, currentProcess.getItemStack(), event.getItem())) {
-                            event.setCancelled(true);
                             return;
                         }
                         currentProcess.setBarterItemStack(event.getItem());
                         currentProcess.displayFloatingText(currentProcess.getShopType().toString(), "createHitChestBarterAmount");
-                        event.setCancelled(true);
                         return;
                     }
                 }
@@ -336,29 +341,17 @@ public class MiscListener implements Listener {
                     long diff = (new Date().getTime() - lastCreatedProcess);
                     if (diff < plugin.getDebug_shopCreateCooldown()) {
                         ShopMessage.sendMessage("interactionIssue", "createCooldown", player, null);
-                        event.setCancelled(true);
                         return;
                     }
                 }
                 // Cleanup the last process if needed and assume the player wants to start a new process
                 ShopCreationProcess lastProcess = playerChatCreationSteps.get(player.getUniqueId());
                 if (lastProcess != null) {
+                    // Send the player a message that the creation was cancelled so that they understand that a new one is starting
+                    ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
                     lastProcess.cleanup(); // removes floating displays
                 }
 
-                //dont let players create shops via chest on shops that already exist
-                //TODO come back to this and allow players to create double chest shops via chest creation method
-                AbstractShop existingShop = plugin.getShopHandler().getShopByChest(clicked);
-                if (existingShop != null) {
-                    return;
-                }
-
-                if(!plugin.getShopCreationUtil().shopCanBeCreated(player, clicked)){
-                    event.setCancelled(true);
-                    return;
-                }
-
-                event.setCancelled(true);
                 BlockFace signFacing = plugin.getShopCreationUtil().calculateBlockFaceForSign(player, clicked, event.getBlockFace());
                 if(signFacing == null)
                     return;
@@ -657,37 +650,43 @@ public class MiscListener implements Listener {
                 return;
             }
 
+            // since we are dealing with an existing shop, cancel the event so that
+            // we can explicitly "uncancel" it later if we want to allow the chest to be broken.
+            event.setCancelled(true);
+
             InventoryHolder ih = ((InventoryHolder)b.getState()).getInventory().getHolder();
 
             if (ih instanceof DoubleChest) {
                 if(shop.getOwnerUUID().equals(player.getUniqueId()) || player.isOp() || (plugin.usePerms() && player.hasPermission("shop.operator"))){
 
-                    //the broken block was the initial chest with the sign
+                    // the broken block was the initial chest with the sign
                     if(shop.getChestLocation().equals(b.getLocation())){
                         ShopMessage.sendMessage("interactionIssue", "destroyChest", player, shop);
-                        event.setCancelled(true);
+                        // event.setCancelled(true);
                         shop.sendEffects(false, player);
+                        return;
                     }
                     else {
                         PlayerResizeShopEvent e = new PlayerResizeShopEvent(player, shop, b.getLocation(), false);
                         Bukkit.getPluginManager().callEvent(e);
 
                         if(e.isCancelled()){
-                            event.setCancelled(true);
+                            // event.setCancelled(true);
                             return;
                         }
+                        // Explicitly allow the chest to be broken since it is the "Expansion" chest
+                        // we need to uncancel the event so that the chest can be broken.
+                        event.setCancelled(false);
                         return;
                     }
                 }
-                else
-                    event.setCancelled(true);
             }
             else{
                 if(shop.getOwnerUUID().equals(player.getUniqueId()) || player.isOp() || (plugin.usePerms() && player.hasPermission("shop.operator"))) {
                     ShopMessage.sendMessage("interactionIssue", "destroyChest", player, shop);
                     shop.sendEffects(false, player);
                 }
-                event.setCancelled(true);
+                // event.setCancelled(true);
             }
         }
     }
@@ -753,55 +752,4 @@ public class MiscListener implements Listener {
             }
         }
     }
-
-//    //allow players to place blocks that are occupied by large item displays
-//    @EventHandler
-//    public void onBlockPlaceAttempt(PlayerInteractEvent event) {
-//        try {
-//            if (event.getHand() == EquipmentSlot.OFF_HAND) {
-//                return; // off hand version, ignore.
-//            }
-//        } catch (NoSuchMethodError error) {}
-//
-//        if(plugin.getDisplayType() != DisplayType.LARGE_ITEM)
-//            return;
-//        final Player player = event.getPlayer();
-//
-//        if (event.isCancelled())
-//            return;
-//
-//        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-//            if(plugin.getShopHandler().isChest(event.getClickedBlock()))
-//                return;
-//            if(player.getItemInHand().getType().isBlock()){
-//                Block toChange = event.getClickedBlock().getRelative(event.getBlockFace());
-//                if(toChange.getType() != Material.AIR)
-//                    return;
-//                BlockFace[] directions = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
-//                Block[] checks = {toChange, toChange.getRelative(BlockFace.DOWN)};
-//                for(Block check : checks) {
-//                    for (BlockFace dir : directions) {
-//                        Block b = check.getRelative(dir);
-//                        if (plugin.getShopHandler().isChest(b)) {
-//                            AbstractShop shop = plugin.getShopHandler().getShopByChest(b);
-//                            if (shop != null) {
-//                                if (player.getUniqueId().equals(shop.getOwnerUUID()) || player.isOp() || (plugin.usePerms() && player.hasPermission("shop.operator"))) {
-//                                    toChange.setType(player.getItemInHand().getType());
-//                                    event.setCancelled(true);
-//                                    if (player.getGameMode() == GameMode.SURVIVAL) {
-//                                        ItemStack hand = player.getItemInHand();
-//                                        hand.setAmount(hand.getAmount() - 1);
-//                                        if (hand.getAmount() == 0)
-//                                            hand.setType(Material.AIR);
-//                                        event.getPlayer().setItemInHand(hand);
-//                                    }
-//                                }
-//                                return;
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
 }
