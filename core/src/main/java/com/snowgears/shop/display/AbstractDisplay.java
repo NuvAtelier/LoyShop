@@ -417,8 +417,10 @@ public abstract class AbstractDisplay {
     }
 
     public void remove(Player player) {
-        removeDisplayEntities(player, false);
-        removeDisplayEntities(player, true);
+        try {
+            removeDisplayEntities(player, false);
+            removeDisplayEntities(player, true);
+        } catch (Error | Exception e) { /** Allow other logic to continue even if this fails (non-critical) */ }
 
 //        if(player != null) {
 //            Shop.getPlugin().getShopHandler().removeActiveShopDisplay(player, this.shopSignLocation);

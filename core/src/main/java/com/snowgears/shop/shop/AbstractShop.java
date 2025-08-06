@@ -558,7 +558,8 @@ public abstract class AbstractShop {
     }
 
     public void delete() {
-        display.remove(null);
+        // First, remove the shop from the shop handler in case of any errors with later methods.
+        Shop.getPlugin().getShopHandler().removeShop(this);
 
         if(UtilMethods.isMCVersion17Plus() && Shop.getPlugin().getDisplayLightLevel() > 0) {
             Block displayBlock = this.getChestLocation().getBlock().getRelative(BlockFace.UP);
@@ -577,8 +578,8 @@ public abstract class AbstractShop {
             signBlock.update(true);
         }
 
-        //finally remove the shop from the shop handler
-        Shop.getPlugin().getShopHandler().removeShop(this);
+        // Finally, remove any active displays
+        display.remove(null);
         Shop.getPlugin().getLogger().debug("Deleted Shop " + this);
     }
 
