@@ -557,30 +557,41 @@ public abstract class AbstractShop {
         }, 2);
     }
 
-    public void delete() {
-        // First, remove the shop from the shop handler in case of any errors with later methods.
-        Shop.getPlugin().getShopHandler().removeShop(this);
+    public void delete() { this.delete(true); }
+    public void delete(boolean forceSave) {
+        try {
+            // First, remove the shop from the shop handler in case of any errors with later methods.
+            Shop.getPlugin().getShopHandler().removeShop(this, forceSave);
 
-        if(UtilMethods.isMCVersion17Plus() && Shop.getPlugin().getDisplayLightLevel() > 0) {
-            Block displayBlock = this.getChestLocation().getBlock().getRelative(BlockFace.UP);
-            if(UtilMethods.materialIsNonIntrusive(displayBlock.getType())) {
-                displayBlock.setType(Material.AIR);
+            if(UtilMethods.isMCVersion17Plus() && Shop.getPlugin().getDisplayLightLevel() > 0 && this.getChestLocation() != null) {
+                Block chestBlock = this.getChestLocation().getBlock();
+                if (chestBlock != null && Shop.getPlugin().getShopHandler().isChest(chestBlock)) {
+                    Block displayBlock = chestBlock.getRelative(BlockFace.UP);
+                    if(UtilMethods.materialIsNonIntrusive(displayBlock.getType())) {
+                        displayBlock.setType(Material.AIR);
+                    }
+                }
             }
-        }
 
-        Block b = this.getSignLocation().getBlock();
-        if (b.getBlockData() instanceof WallSign) {
-            Sign signBlock = (Sign) b.getState();
-            signBlock.setLine(0, "");
-            signBlock.setLine(1, "");
-            signBlock.setLine(2, "");
-            signBlock.setLine(3, "");
-            signBlock.update(true);
-        }
+            Block b = this.getSignLocation().getBlock();
+            if (b.getBlockData() instanceof WallSign) {
+                Sign signBlock = (Sign) b.getState();
+                signBlock.setLine(0, "");
+                signBlock.setLine(1, "");
+                signBlock.setLine(2, "");
+                signBlock.setLine(3, "");
+                signBlock.update(true);
+            }
 
-        // Finally, remove any active displays
-        display.remove(null);
-        Shop.getPlugin().getLogger().debug("Deleted Shop " + this);
+            // Finally, remove any active displays
+            if (display != null) {
+                display.remove(null);
+            }
+            Shop.getPlugin().getLogger().debug("Deleted Shop " + this);
+        } catch (Error | Exception e) {
+            Shop.getPlugin().getLogger().severe("Unknown error attempting to delete shop, deletion might not have fully completed successfully: " + e.getMessage());
+            Shop.getPlugin().getLogger().debug("Full stack trace for shop deletion error: ", e);
+        }
     }
 
     public void teleportPlayer(Player player){

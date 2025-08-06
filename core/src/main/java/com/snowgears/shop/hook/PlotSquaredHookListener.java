@@ -50,7 +50,7 @@ public class PlotSquaredHookListener implements Listener {
                         );
                         if (plot.getArea().contains(location)) {
                             plugin.getLogger().notice("Deleting Shop because PlotSquared Plot is being reset! " + shop);
-                            shop.delete();
+                            shop.delete(false); // delay the save and do it below
                             shopOwnersToSave.add(shopOwnerUUID);
                             shopsDeleted++;
                         }
@@ -59,6 +59,7 @@ public class PlotSquaredHookListener implements Listener {
             }
         }
 
+        // save any shop owner files (since we delayed save earlier)
         for(UUID shopOwner : shopOwnersToSave) {
             plugin.getShopHandler().saveShops(shopOwner, true);
         }

@@ -37,7 +37,7 @@ public class ARMHookListener implements Listener {
                 if (shop != null && shop.getSignLocation() != null && shop.getSignLocation().getWorld().getName().equals(region.getRegionworld().getName())) {
                     if (region.getRegion().contains(shop.getSignLocation().getBlockX(), shop.getSignLocation().getBlockY(), shop.getSignLocation().getBlockZ())) {
                         plugin.getLogger().notice("Deleting Shop because ARM region is being restored! " + shop);
-                        shop.delete();
+                        shop.delete(false); // delay the save and do it below
                         shopOwnersToSave.add(shopOwnerUUID);
                         shopsDeleted++;
                     }
@@ -45,6 +45,7 @@ public class ARMHookListener implements Listener {
             }
         }
 
+        // save any shop owner files (since we delayed save earlier)
         for(UUID shopOwner : shopOwnersToSave) {
             plugin.getShopHandler().saveShops(shopOwner, true);
         }

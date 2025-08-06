@@ -169,7 +169,7 @@ public class MiscListener implements Listener {
                 plugin.getFoliaLib().getScheduler().runLater(() -> {
                     //the shop has still not been initialized with an item from a player
                     if (!shop.isInitialized()) {
-                        plugin.getShopHandler().removeShop(shop);
+                        shop.delete();
                         if (b.getBlockData() instanceof WallSign) {
                             String[] lines = ShopMessage.getTimeoutSignLines(shop);
                             Sign sign = (Sign) b.getState();
@@ -612,7 +612,6 @@ public class MiscListener implements Listener {
                 ShopMessage.sendMessage(shop.getType().toString(), "destroy", player, shop);
                 // We already log on ShopActionType.DESTROY in the Log Handler, so don't log the shop destroy reason
                 shop.delete();
-                plugin.getShopHandler().saveShops(shop.getOwnerUUID(), true);
 
                 return;
             }
@@ -640,7 +639,6 @@ public class MiscListener implements Listener {
 
                     ShopMessage.sendMessage(shop.getType().toString(), "opDestroy", player, shop);
                     shop.delete();
-                    plugin.getShopHandler().saveShops(shop.getOwnerUUID(), true);
                 } else
                     event.setCancelled(true);
             }

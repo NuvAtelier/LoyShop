@@ -26,17 +26,18 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
 
 
 public class ShopHandler {
@@ -60,19 +61,11 @@ public class ShopHandler {
 
     private ArrayList<ItemStack> itemListItems = new ArrayList<>();
 
-    private ArrayList<UUID> playersSavingShops = new ArrayList<>();
-    
     // Map to track player last processed locations for movement-based display updates
     private ConcurrentHashMap<UUID, Location> lastProcessedLocations = new ConcurrentHashMap<>();
 
     // Cache for player connections to avoid expensive reflection calls
     private ConcurrentHashMap<UUID, Object> playerConnectionCache = new ConcurrentHashMap<>();
-
-    // Default chunk radius for shop location searches and maximum display distance
-    // these values come from the Shop class configuration - see getShopSearchRadius() and getMaxShopDisplayDistance()
-    
-    // Very close distance for immediate shop display
-    private static final double CLOSE_SHOP_DISPLAY_DISTANCE = 2.0;
 
     // Teleport cooldown map to prevent multiple display updates during teleportation
     private ConcurrentHashMap<UUID, Long> teleportCooldowns = new ConcurrentHashMap<>();
@@ -320,15 +313,22 @@ public class ShopHandler {
     }
 
     //This method should only be used by AbstractShop object to delete
-    public boolean removeShop(AbstractShop shop) {
+    public void removeShop(AbstractShop shop, boolean forceSave) {
+        boolean changed = false;
         if (allShops.containsKey(shop.getSignLocation())) {
             allShops.remove(shop.getSignLocation());
+            changed = true;
         }
         if(playerShops.containsKey(shop.getOwnerUUID())){
             List<Location> playerShopLocations = getShopLocations(shop.getOwnerUUID());
             if(playerShopLocations.contains(shop.getSignLocation())) {
                 playerShopLocations.remove(shop.getSignLocation());
-                playerShops.put(shop.getOwnerUUID(), playerShopLocations);
+                if (playerShopLocations.isEmpty()) {
+                    playerShops.remove(shop.getOwnerUUID());
+                } else {
+                    playerShops.put(shop.getOwnerUUID(), playerShopLocations);
+                }
+                changed = true;
             }
         }
         String chunkKey = getChunkKey(shop.getSignLocation());
@@ -336,11 +336,26 @@ public class ShopHandler {
             List<Location> chunkShopLocations = getShopLocations(chunkKey);
             if(chunkShopLocations.contains(shop.getSignLocation())) {
                 chunkShopLocations.remove(shop.getSignLocation());
-                chunkShops.put(chunkKey, chunkShopLocations);
+                if (chunkShopLocations.isEmpty()) {
+                    chunkShops.remove(chunkKey);
+                } else {
+                    chunkShops.put(chunkKey, chunkShopLocations);
+                }
+                changed = true;
             }
         }
 
-        return false;
+
+        if (changed) {
+            Shop.getPlugin().getLogger().debug("Removed Shop internally from ShopHandler: " + shop);
+            // Immediate force save if there were any changes since we deleted a shop 
+            // Note that we don't pass forceSave down, it is only a flag on if we should trigger the save attempt immediately
+            // we only hold off on doing this if we are bulk deleting shops for users to prevent repeated saves.
+            // The forceSave flag should rarely be `false`, and you should be careful when setting it to false.
+            if (forceSave) {
+                this.saveShops(shop.getOwnerUUID(), true);
+            }
+        }
     }
 
     public void processUnloadedShopsInChunk(Chunk chunk){
@@ -353,14 +368,11 @@ public class ShopHandler {
                 if(shop != null){
                     // Run at the shop's location to ensure it works in the correct region in Folia
                     plugin.getFoliaLib().getScheduler().runAtLocation(shopLocation, task -> {
-                        boolean signExists = shop.load();
-                        if(signExists) {
+                        boolean loadSuccess = shop.load();
+                        if(loadSuccess) {
                             if (!playerUUIDs.contains(shop.getOwnerUUID())) {
                                 playerUUIDs.add(shop.getOwnerUUID());
                             }
-                        }
-                        else{
-                            removeShop(shop);
                         }
                     });
                 }
@@ -1056,10 +1068,6 @@ public class ShopHandler {
         int numWantingToUpdate = numShopsNeedSave(player);
         if (!force && numWantingToUpdate == 0) {
             plugin.getLogger().trace("save shops for player (" + playerName + ") was called, but no shops for player need updating! " + player.toString());
-//            // async code
-//            if(playersSavingShops.contains(player)){
-//                playersSavingShops.remove(player);
-//            }
             return 0;
         }
 
@@ -1100,10 +1108,6 @@ public class ShopHandler {
             if (shopList.isEmpty()) {
                 currentFile.delete();
                 plugin.getLogger().debug("    no shops exist for player (" + playerName + "), deleting file... " + currentFile);
-//                // async code
-//                if(playersSavingShops.contains(player)){
-//                    playersSavingShops.remove(player);
-//                }
                 return 0;
             }
 
@@ -1383,14 +1387,15 @@ public class ShopHandler {
                         if(shop.getDisplay().isChunkLoaded()) {
                             //run this task synchronously
                             plugin.getFoliaLib().getScheduler().runAtLocation(shop.getSignLocation(), task -> {
-                                boolean signDefined = shop.load();
-                                if(signDefined)
+                                boolean loadSuccess = shop.load();
+                                if(loadSuccess)
                                     addShop(shop);
                             });
                         }
                         //if the chunk is not already loaded, add it to a list to calculate it at chunkloadevent later
                         else {
                             //System.out.println("[Shop] chunk not loaded. Adding to unloadedList");
+                            Shop.getPlugin().getLogger().debug("Chunk not loaded. Adding shop to unloadedList to load later: " + shop);
                             addUnloadedShopToChunkList(shop);
                             addShop(shop);
                         }
