@@ -344,12 +344,10 @@ public class MiscListener implements Listener {
                         return;
                     }
                 }
-                // Cleanup the last process if needed and assume the player wants to start a new process
-                ShopCreationProcess lastProcess = playerChatCreationSteps.get(player.getUniqueId());
-                if (lastProcess != null) {
-                    // Send the player a message that the creation was cancelled so that they understand that a new one is starting
-                    ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
-                    lastProcess.cleanup(); // removes floating displays
+                // Cleanup the last process if needed and cancel the existing shop creation process if it exists
+                if (playerChatCreationSteps.get(player.getUniqueId()) != null) {
+                    this.cancelShopCreationProcess(player);
+                    return;
                 }
 
                 BlockFace signFacing = plugin.getShopCreationUtil().calculateBlockFaceForSign(player, clicked, event.getBlockFace());
