@@ -877,7 +877,7 @@ public class UtilMethods {
 
     public static String cleanNumberText(String text){
         String cleaned = "";
-        String toClean = ChatColor.stripColor(text);
+        String toClean = ChatColor.stripColor(text).trim(); // remove color and whitespace not between characters
         for(int i=0; i<toClean.length(); i++) {
             if(Character.isDigit(toClean.charAt(i)))
                 cleaned += toClean.charAt(i);
