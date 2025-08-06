@@ -77,15 +77,9 @@ public class NMSBullshitHandler {
                     Shop.getPlugin().getLogger().warning("Failed to cache some reflection methods: " + e.getMessage());
                 }
             }
-        } catch (ClassNotFoundException e) {
-            Shop.getPlugin().getLogger().severe("Unable to retrieve a NMS class used for NBT data.");
-            e.printStackTrace();
-        } catch (Exception e) {
-            Shop.getPlugin().getLogger().severe("Unable to retrieve a NMS class used for NBT data.");
-            e.printStackTrace();
-        } catch (Error e) {
-            Shop.getPlugin().getLogger().severe("Unable to retrieve a NMS class used for NBT data.");
-            e.printStackTrace();
+        } catch (Error | Exception e) {
+            Shop.getPlugin().getLogger().log(java.util.logging.Level.SEVERE, "Unable to retrieve a NMS class used for NBT data. Are you using a supported server type/version? We suggest you use PaperMC for running Shop! Visual displays will now be disabled.");
+            Shop.getPlugin().getShopHandler().disableDisplayClass();
         }
     }
 
@@ -111,9 +105,11 @@ public class NMSBullshitHandler {
                 chatMessageFromStringMethod = craftChatMessageClass.getMethod("fromStringOrNull", String.class);
             }
             return (net.minecraft.network.chat.Component) chatMessageFromStringMethod.invoke(null, text);
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        } catch (Error | Exception e) { /** Suppress errors */ }
+
+        Shop.getPlugin().getLogger().log(java.util.logging.Level.SEVERE, "Unable to load CraftChatMessage class! Are you using a supported server type/version? We suggest you use PaperMC for running Shop! Visual displays will now be disabled.");
+        Shop.getPlugin().getShopHandler().disableDisplayClass();
+        return null;
     }
 
     public net.minecraft.world.item.ItemStack getMCItemStack(ItemStack is) {
@@ -122,9 +118,11 @@ public class NMSBullshitHandler {
                 asNMSCopyMethod = craftItemStackClass.getMethod("asNMSCopy", org.bukkit.inventory.ItemStack.class);
             }
             return (net.minecraft.world.item.ItemStack) asNMSCopyMethod.invoke(null, is);
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        } catch (Error | Exception e) { /** Suppress errors */ }
+
+        Shop.getPlugin().getLogger().log(java.util.logging.Level.SEVERE, "Unable to get MCItemStack! Are you using a supported server type/version? We suggest you use PaperMC for running Shop! Visual displays will now be disabled.");
+        Shop.getPlugin().getShopHandler().disableDisplayClass();
+        return null;
     }
 
     public net.minecraft.world.level.Level getMCLevel(Location location) {
@@ -136,9 +134,10 @@ public class NMSBullshitHandler {
                 }
                 return (net.minecraft.world.level.Level) getHandleWorldMethod.invoke(craftWorld);
             }
-        } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        } catch (Error | Exception e) { /** Suppress errors */ }
+
+        Shop.getPlugin().getLogger().log(java.util.logging.Level.SEVERE, "Unable to get ServerLevel! Are you using a supported server type/version? We suggest you use PaperMC for running Shop! Visual displays will now be disabled.");
+        Shop.getPlugin().getShopHandler().disableDisplayClass();
         return null;
     }
 
@@ -151,9 +150,10 @@ public class NMSBullshitHandler {
                 }
                 return (ServerLevel) getHandleWorldMethod.invoke(craftWorld);
             }
-        } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        } catch (Error | Exception e) { /** Suppress errors */ }
+
+        Shop.getPlugin().getLogger().log(java.util.logging.Level.SEVERE, "Unable to get ServerLevel! Are you using a supported server type/version? We suggest you use PaperMC for running Shop! Visual displays will now be disabled.");
+        Shop.getPlugin().getShopHandler().disableDisplayClass();
         return null;
     }
 
@@ -169,21 +169,20 @@ public class NMSBullshitHandler {
                     try {
                         Field playerConnection = entityPlayer.getClass().getDeclaredField("connection");
                         return (ServerPlayerConnection) playerConnection.get(entityPlayer);
-                    } catch (NoSuchFieldException e) {
+                    } catch (Error | Exception e) {
                         // Try to access the obfuscated field directly on CraftBukkit (for Spigot support)
                         try {
                             Field playerConnection = entityPlayer.getClass().getField("c");
                             return (ServerPlayerConnection) playerConnection.get(entityPlayer);
-                        } catch (NoSuchFieldException err) {
-                            Shop.getPlugin().getLogger().log(java.util.logging.Level.SEVERE, "Unable to get player connection! Are you using a supported Spigot version? We suggest you use PaperMC for running Shop!");
-                            err.printStackTrace();
-                        }
+                        } catch (Error | Exception err) { /** Suppress errors */ }
                     }
                 }
             }
-        } catch(NoSuchMethodException | IllegalAccessException | InvocationTargetException e){
-            e.printStackTrace();
-        }
+        } catch(Error | Exception e){ /** Suppress errors */ }
+        Shop.getPlugin().getLogger().log(java.util.logging.Level.SEVERE, "Unable to hook into internal ServerPlayerConnection to send Display packets to users! Are you using a supported server type/version? We suggest you use PaperMC for running Shop! Visual displays will now be disabled.");
+        // Disable the display class so that we don't try to use it anymore since we can't send packets to users.
+        Shop.getPlugin().getShopHandler().disableDisplayClass();
+
         return null;
     }
 }

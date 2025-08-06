@@ -29,10 +29,8 @@ mvn clean compile package -T 8C #-o
 resetVersion
 
 # Copy latest plugin in
-rm ../paper-test-1.21.6/plugins/Shop-*.jar 
-# rm -r ../paper-test-1.21.4/plugins/.paper-remapped
-cp target/Shop-*.jar ../paper-test-1.21.6/plugins
+rm ../paper-test-1.21.8/plugins/Shop-*.jar 
+cp target/Shop-*.jar ../paper-test-1.21.8/plugins
 
-cd ../paper-test-1.21.6/
-# rm -r plugins/.paper-remapped
-java -Xms4G -Xmx8G -jar paper-1.21.6*.jar --nogui
+cd ../paper-test-1.21.8/
+java -Xms4G -Xmx8G -jar paper*.jar --nogui

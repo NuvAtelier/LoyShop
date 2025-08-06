@@ -90,7 +90,7 @@ public class ShopHandler {
         }, 10);
     }
 
-    private void disableDisplayClass() {
+    public void disableDisplayClass() {
         try {
             final Class<?> clazz = Class.forName("com.snowgears.shop.display.DisplayDisabled");
             if (AbstractDisplay.class.isAssignableFrom(clazz))

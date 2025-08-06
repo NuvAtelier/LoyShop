@@ -164,22 +164,26 @@ public class Display extends AbstractDisplay {
     }
 
     private void sendPacket(Player player, Packet packet){
-        if (player != null) {
-            if(isSameWorld(player)) {
-                ServerPlayerConnection connection = (ServerPlayerConnection) Shop.getPlugin().getShopHandler().getCachedPlayerConnection(player);
-                if (connection != null) {
-                    connection.send(packet); //sendPacket()
-                    //System.out.println("Sending player a packet: "+packet.getClass().toString());
+        try {
+            if (player != null) {
+                if(isSameWorld(player)) {
+                    ServerPlayerConnection connection = (ServerPlayerConnection) Shop.getPlugin().getShopHandler().getCachedPlayerConnection(player);
+                    if (connection != null) {
+                        connection.send(packet); //sendPacket()
+                        //System.out.println("Sending player a packet: "+packet.getClass().toString());
+                    }
                 }
             }
-        }
-        else {
-            for (Player onlinePlayer : this.shopSignLocation.getWorld().getPlayers()) {
-                ServerPlayerConnection connection = (ServerPlayerConnection) Shop.getPlugin().getShopHandler().getCachedPlayerConnection(onlinePlayer);
-                if(connection != null) {
-                    connection.send(packet); //sendPacket
+            else {
+                for (Player onlinePlayer : this.shopSignLocation.getWorld().getPlayers()) {
+                    ServerPlayerConnection connection = (ServerPlayerConnection) Shop.getPlugin().getShopHandler().getCachedPlayerConnection(onlinePlayer);
+                    if(connection != null) {
+                        connection.send(packet); //sendPacket
+                    }
                 }
             }
+        } catch (Error | Exception e) {
+            Shop.getPlugin().getLogger().severe("Unknown error sending packet to player for Display (Item/Hologram text), error message: " + e.getMessage());
         }
     }
 
