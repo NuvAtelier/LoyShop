@@ -665,7 +665,7 @@ public class MiscListener implements Listener {
             InventoryHolder ih = ((InventoryHolder)b.getState()).getInventory().getHolder();
 
             if (ih instanceof DoubleChest) {
-                if(shop.getOwnerUUID().equals(player.getUniqueId()) || player.isOp() || (plugin.usePerms() && player.hasPermission("shop.operator"))){
+                if(shop.getOwnerUUID().equals(player.getUniqueId()) || player.isOp() || (plugin.usePerms() && (player.hasPermission("shop.operator") || player.hasPermission("shop.destroy.other")))){
 
                     // the broken block was the initial chest with the sign
                     if(shop.getChestLocation().equals(b.getLocation())){
@@ -690,7 +690,7 @@ public class MiscListener implements Listener {
                 }
             }
             else{
-                if(shop.getOwnerUUID().equals(player.getUniqueId()) || player.isOp() || (plugin.usePerms() && player.hasPermission("shop.operator"))) {
+                if(shop.getOwnerUUID().equals(player.getUniqueId()) || player.isOp() || (plugin.usePerms() && (player.hasPermission("shop.operator") || player.hasPermission("shop.destroy.other")))) {
                     ShopMessage.sendMessage("interactionIssue", "destroyChest", player, shop);
                     shop.sendEffects(false, player);
                 }
