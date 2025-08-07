@@ -34,7 +34,13 @@ public class LogHandler {
     public LogHandler(Shop plugin, YamlConfiguration shopConfig){
         this.plugin = plugin;
         // Setup database connection and check if we should enable database logging
-        defineDataSource(shopConfig);
+        try {
+            defineDataSource(shopConfig);
+        } catch (Error | Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Error initializing database connection. Database logging will not be used. Exception: " + e.getMessage());
+            this.enabled = false;
+            return;
+        }
 
         if(!enabled)
             return;

@@ -38,13 +38,19 @@ public class NMSBullshitHandler {
         String mcVersion = plugin.getServer().getClass().getPackage().getName();
         Shop.getPlugin().getLogger().debug("mcVersion: " + mcVersion);
 
+        // MockBukkit testing does not support NMS, so we need to just return early
+        if (mcVersion.contains("mockbukkit")) { 
+            return;
+        }
+
         // Check if we are on Paper 1.20.5 or later, it will not include the CB relocation version (i.e. "1_20_R3")
         if (!mcVersion.equals("org.bukkit.craftbukkit")) {
             Shop.getPlugin().getLogger().warning("Minecraft version is old or Spigot, loaded version is: " + mcVersion);
 
             String[] mcVersionSplit = mcVersion.replace(".", ",").split(",");
             // Convert mcVersion into a number like 120.4 (1_20_R4) or 121.1 (1_21_R1) so that we can use it later
-            serverVersion = Double.parseDouble(mcVersionSplit[mcVersionSplit.length-1].replace("_R", ".").replaceAll("[rvV_]*", ""));
+            String versionNumberString = mcVersionSplit[mcVersionSplit.length-1].replace("_R", ".").replaceAll("[rvV_]*", "");
+            serverVersion = Double.parseDouble(versionNumberString);
         }
 
         // log the server version we are on, it will be 0 when we are on a Paper server

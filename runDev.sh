@@ -22,6 +22,24 @@ function resetVersion() {
 
 # Temporarily update the version to the commit hash while we build the dev version
 updateVersion
+# Ensure Maven toolchain for JDK 21 is present so tests run with MockBukkit
+mkdir -p ~/.m2
+cat > ~/.m2/toolchains.xml <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<toolchains>
+  <toolchain>
+    <type>jdk</type>
+    <provides>
+      <version>21</version>
+      <vendor>any</vendor>
+    </provides>
+    <configuration>
+      <jdkHome>${JAVA_HOME}</jdkHome>
+    </configuration>
+  </toolchain>
+</toolchains>
+EOF
+
 # Build the plugin
 export MAVEN_OPTS="-Xms8g -Xmx16g"
 mvn clean compile package -T 8C #-o

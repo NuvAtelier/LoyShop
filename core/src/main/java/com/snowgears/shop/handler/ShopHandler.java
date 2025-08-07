@@ -128,6 +128,12 @@ public class ShopHandler {
             // We are still on an older version, so go ahead
             String nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
 
+            // MockBukkit testing does not support NMS, so we need to just return early
+            if (nmsVersion.equals("mockbukkit")) {
+                disableDisplayClass();
+                return false;
+            }
+
             // version did remap even though version number didn't increase
             String mcVersion = Bukkit.getBukkitVersion().substring(0, Bukkit.getBukkitVersion().indexOf('-'));
             //im not doing this right now. I'm only going to support 1.17.1 for now

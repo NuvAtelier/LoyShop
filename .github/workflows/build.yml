@@ -19,7 +19,7 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@v3
       with:
-        java-version: '22'  # Adjust based on your project requirements
+        java-version: '21'
         distribution: 'temurin'
         cache: maven
         
@@ -55,6 +55,25 @@ jobs:
         echo "Updated version from $CURRENT_VERSION to $NEW_VERSION"
         echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
         
+    - name: Generate Maven toolchains.xml (JDK 21)
+      run: |
+        mkdir -p ~/.m2
+        cat > ~/.m2/toolchains.xml <<'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <toolchains>
+          <toolchain>
+            <type>jdk</type>
+            <provides>
+              <version>21</version>
+              <vendor>any</vendor>
+            </provides>
+            <configuration>
+              <jdkHome>${JAVA_HOME}</jdkHome>
+            </configuration>
+          </toolchain>
+        </toolchains>
+        EOF
+
     - name: Build Maven Repository
       run: |
         chmod +x ./buildMavenRepo.sh

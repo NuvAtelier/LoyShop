@@ -93,6 +93,27 @@
             <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockbukkit.mockbukkit</groupId>
+            <artifactId>mockbukkit-v1.21</artifactId>
+            <version>4.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- (binds Hikari / other libs during MockBukkit runtime to prevent errors) -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.13</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- Paper API added for MockBukkit 4 runtime classes -->
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>${spigot.version}</version>
+            <scope>test</scope>
+        </dependency>
+
 
         <!-- Core Dependencies -->
         <dependency>
@@ -222,11 +243,49 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.1.2</version>
+                    <configuration>
+                        <!-- When we eventually drop the compile target to Java 8, MockBukkit (still on 21) may
+                             need reflective access to JDK internals.  Keep the add-opens flag now so we don’t
+                             forget later.  Harmless on 17+ runtimes. -->
+                        <argLine>--add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                        <!-- Parallel test execution -->
+                        <parallel>methods</parallel>
+                        <forkCount>1</forkCount>
+                        <reuseForks>true</reuseForks>
+                        <!-- Ensure JDK 21 is available for tests because MockBukkit 4 requires 21 -->
+                        <jdkToolchain>
+                            <version>21</version>
+                            <vendor>any</vendor>
+                        </jdkToolchain>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
+            <!-- Toolchains plugin: ensure JDK 21 is available for tests because MockBukkit 4 requires 21, but we still want to compile with a lower Java target in mind -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-toolchains-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>toolchain</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <toolchains>
+                        <jdk>
+                            <version>21</version>
+                            <vendor>any</vendor>
+                        </jdk>
+                    </toolchains>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
