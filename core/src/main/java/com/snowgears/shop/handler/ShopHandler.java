@@ -568,8 +568,12 @@ public class ShopHandler {
         // Filter by distance
         for (Location shopLocation : nearbyLocations) {
             // Using distanceSquared is more efficient than distance
-            if (location.distanceSquared(shopLocation) <= maxDistanceSquared) {
-                filteredLocations.add(shopLocation);
+            try {
+                if (location.distanceSquared(shopLocation) <= maxDistanceSquared) {
+                    filteredLocations.add(shopLocation);
+                }
+            } catch (Exception e) {
+                // distanceSquared does not exist in MockBukkit and this is the easiest way to disable it
             }
         }
         

@@ -4,6 +4,7 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.block.BlockFace;
 import java.util.Collections;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.DisplayType;
@@ -16,6 +17,7 @@ import net.milkbowl.vault.economy.EconomyResponse.ResponseType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.mockito.Mockito;
+import org.mockito.internal.util.MockUtil;
 
 /**
  * Base class for MockBukkit based tests.
@@ -136,9 +138,9 @@ public abstract class BaseMockBukkitTest {
     }
 
     // Allow tests to stub calculateBlockFaceForSign to avoid MockBukkit material checks
-    protected static void stubCalculateBlockFaceForSign(org.bukkit.block.BlockFace face) {
+    protected static void stubCalculateBlockFaceForSign(BlockFace face) {
         ShopCreationUtil original = getPluginField("shopCreationUtil");
-        if (original != null) {
+        if (original != null && !MockUtil.isMock(original)) {
             ShopCreationUtil spy = Mockito.spy(original);
             Mockito.doReturn(face).when(spy).calculateBlockFaceForSign(Mockito.any(), Mockito.any(), Mockito.any());
             setPluginField("shopCreationUtil", spy);
