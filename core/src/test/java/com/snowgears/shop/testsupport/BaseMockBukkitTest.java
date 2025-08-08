@@ -49,6 +49,8 @@ public abstract class BaseMockBukkitTest {
 
         // Disable displays to avoid NMS/NBT code paths in tests
         setConfig("displayType", DisplayType.NONE);
+        // No cooldown between shop creations to allow us to create multiple. We can change this in tests if needed.
+        setConfig("debug_shopCreateCooldown", 0);
 
         // Spy and stub NBTAdapter.getNBTforItem to return a static string
         NBTAdapter original = (NBTAdapter) getPluginField("nbtAdapter");

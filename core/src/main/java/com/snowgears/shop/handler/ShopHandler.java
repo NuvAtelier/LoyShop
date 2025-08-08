@@ -1052,12 +1052,28 @@ public class ShopHandler {
         }
     }
 
+    /**
+     * Saves the shops for a player.
+     * 
+     * @param player The UUID of the player to save the shops for.
+     * @return The number of shops saved.
+     * 1+: Total number of shops saved for player
+     * 0:  No shops need updating (file was not touched)
+     * -1: No shops for player exist (file was deleted)
+     * -2: Failed to save new shop file, left original file intact
+     * -3: Backup file exists, but needs to be manually restored
+     * -5: Critical error, total data loss for player, all files are missing
+     */
+    private boolean immediateShutdown = false;
     public int saveShops(final UUID player){ return saveShops(player, false); }
     public int saveShops(final UUID player, boolean force){
+        // If the plugin is in immediate shutdown mode, skip saving any new files to protect against data loss
+        if (this.immediateShutdown) return -5;
+
         // Check if any of the players shops want to be saved
         String playerName = player == this.getAdminUUID() ? "admin" : plugin.getServer().getOfflinePlayer(player).getName();
         int numWantingToUpdate = numShopsNeedSave(player);
-        if (!force && numWantingToUpdate == 0) {
+        if (!force && numWantingToUpdate == 0 && getNumberOfShops(player) > 0) {
             plugin.getLogger().trace("save shops for player (" + playerName + ") was called, but no shops for player need updating! " + player.toString());
             return 0;
         }
@@ -1094,18 +1110,18 @@ public class ShopHandler {
             if (shopList.isEmpty()) {
                 currentFile.delete();
                 plugin.getLogger().debug("    no shops exist for player (" + playerName + "), deleting file... " + currentFile);
-                return 0;
+                return -1;
             }
 
-            int shopNumber = 1;
+            int shopNumber = 0;
             for (AbstractShop shop : shopList) {
-
                 //this is to remove a bug that caused one shop to be saved to multiple files at one point
                 if(!shop.getOwnerUUID().equals(player))
                     continue;
 
                 //don't save shops that are not initialized with items
                 if (shop.isInitialized()) {
+                    shopNumber++;
                     config.set("shops." + owner + "." + shopNumber + ".id", shop.getId().toString());
                     config.set("shops." + owner + "." + shopNumber + ".location", locationToString(shop.getSignLocation()));
                     if(shop.getFacing() != null)
@@ -1146,7 +1162,9 @@ public class ShopHandler {
                     }
 
                     shop.setNeedsSave(false);
-                    shopNumber++;
+                }
+                else {
+                    plugin.getLogger().debug("    shop " + shop + " is not initialized, skipping...");
                 }
             }
             
@@ -1162,6 +1180,8 @@ public class ShopHandler {
             try {
                 // Atomic moves are very safe, so we use them if possible
                 Files.move(tempFile, targetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                plugin.getLogger().helpful("Saved " + shopNumber + " Shops for Player " + playerName + " to file: " + currentFile);
+                return shopNumber;
             } catch (Error | Exception ex) {
                 plugin.getLogger().debug("Error during atomic move", ex);
                 plugin.getLogger().debug("Filesystem does not support atomic move; using manual two-step replacement with backup...");
@@ -1182,29 +1202,54 @@ public class ShopHandler {
                         Files.deleteIfExists(backupPath);
                         plugin.getLogger().debug("Successfully deleted temporary backup of old shop file for " + playerName + " from (" + backupPath + ")!");
                     }
+
+                    plugin.getLogger().helpful("Saved " + shopNumber + " Shops for Player " + playerName + " to file: " + currentFile);
+                    return shopNumber;
                 } catch (Error | Exception moveEx) {
                     // Attempt to restore from backup on failure
-                    plugin.getLogger().severe("Critical error writing updated shop file for " + playerName + " to (" + targetPath + ") – attempting to restore backup from (" + backupPath + ")... – " + moveEx.getMessage());
+                    plugin.getLogger().severe("Critical error writing updated shop file for (" + playerName + ") to (" + targetPath + ")! This issue should not be ignored! Error message: " + moveEx.getMessage());
                     try {
-                        if (Files.exists(backupPath)) {
+                        if (Files.exists(targetPath)) {
+                            plugin.getLogger().warning("Original file was left untouched. Player shop updates were not saved!" );
+                        } else if (Files.exists(backupPath)) {
                             plugin.getLogger().warning("Restoring backup player shop file for " + playerName + " from (" + backupPath + ") to (" + targetPath + ")");
                             Files.move(backupPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
                             plugin.getLogger().info("Successfully restored backup player shop file for " + playerName + " from (" + backupPath + ") to (" + targetPath + ")!");
-                        } else {
-                            plugin.getLogger().severe("Failed to restore backup player shop file for " + playerName + ": " + backupPath + " does not exist!!!");
                         }
                     } catch (Error | Exception restoreEx) {
-                        plugin.getLogger().severe("Failed to restore backup player shop file for " + playerName + "!!! Exception: " + restoreEx.getMessage());
+                        plugin.getLogger().severe("Failed to restore backup player shop file for " + playerName + " from (" + backupPath + ") to (" + targetPath + ")! Exception: " + restoreEx.getMessage());
+                    }
+                    // Double check that the file was restored successfully and/or the current state of the files
+                    if (Files.exists(targetPath)) {
+                        plugin.getLogger().warning("Original file was left untouched. Player shop updates were not saved!" );
+                        return -2;
+                    }
+                    else if (Files.exists(backupPath)) {
+                        plugin.getLogger().severe("Failed to restore backup player shop file for " + playerName);
                         plugin.getLogger().severe("You will need to manually restore this players backup file from (" + backupPath + ") to (" + targetPath + ")!");
+                        return -3;
+                    } else {
+                        // uh... no files exist somehow? Should never get here, but just in case since this is a critical failure
+                        plugin.getLogger().severe("Possible data loss detected! Original file does not exist and Backup file does not exist for player (" + playerName + ")! Original MISSING: (" + targetPath + "), Backup MISSING: (" + backupPath + ")!!!");
+                        plugin.getLogger().severe("Do not startup the plugin again until you have traced and fixed the issue! You may delete a new player file with each startup if the issue is not fixed!");
+                        // Immediate shutdown of server. Something is very wrong.
+                        plugin.getLogger().severe("Shutting down plugin immediately to prevent Shop save data loss...");
+                        plugin.getPluginLoader().disablePlugin(plugin);
+                        this.immediateShutdown = true;
+                        return -5;
                     }
                 }
             }
-            plugin.getLogger().helpful("Saved " + shopNumber + " Shops for Player " + playerName + " to file: " + currentFile);
-            return shopNumber;
-        } catch (Exception e){
-            plugin.getLogger().severe("Unable to save player shop file: " + currentFile);
-            e.printStackTrace();
-            return 0;
+        } catch (Error | Exception e){
+            // log severe: the player file failed to be generated/saved
+            plugin.getLogger().severe("Unable to update/save player shop file for (" + playerName + ") at (" + currentFile + ")! Original file was left untouched. Error message: " + e.getMessage());
+            // log warning: Are these Shop files from an older version of the Minecraft? 
+            plugin.getLogger().warning("Are these Shop player files from an older version of the Minecraft? You can run into issues with Item NBT data not migrating correctly if you jump forward/skip too many MC versions at a time. You might be able to fix this error by copying the affected player(s) file(s) to a new test server (you do not have to copy the world, but should if you are able to) and starting up the server in each 'skipped' version of Minecraft with the Shop plugin's `debug_forceResaveAll` config option set to `true`. This will force a resave of all Shop files and will update any NBT changes between the last run version of Minecraft and the new one you are trying to use.");
+            // log about if they are unable to fix this error they might have to delete the Shop plugin data folder to start fresh
+            plugin.getLogger().severe("If you are unable to fix this error, you will need to delete or manually fix the affected player shop file at (" + currentFile + ") in order to allow them to create new Shops and make this error go away. This will delete all Shops for the player and will require the player to re-add their shops.");
+            // log stack trace at debug level
+            plugin.getLogger().debug("Stacktrace: ", e);
+            return -2;
         }
     }
 
