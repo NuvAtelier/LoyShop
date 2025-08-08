@@ -1,34 +1,41 @@
 package com.snowgears.shop.integration.features;
 
-import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.AbstractShop;
-import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.testsupport.BaseMockBukkitTest;
+import com.snowgears.shop.util.CurrencyType;
+import com.snowgears.shop.event.PlayerDestroyShopEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
-import org.bukkit.scheduler.BukkitTask;
 import org.mockbukkit.mockbukkit.simulate.entity.PlayerSimulation;
+import org.bukkit.Bukkit;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("integration")
 public class ShopDestroyTest extends BaseMockBukkitTest {
-
+    @BeforeEach
+    void resetConfig() {
+        setPluginField("currencyType", CurrencyType.ITEM);
+        setPluginField("creationCost", 0.0);
+        setPluginField("destructionCost", 0.0);
+        setPluginField("returnCreationCost", false);
+        setPluginField("destroyShopRequiresSneak", false);
+        setConfig("usePerms", false);
+    }
 
     @Test
     void destroyOwn_op() {
@@ -36,11 +43,12 @@ public class ShopDestroyTest extends BaseMockBukkitTest {
         World world = server.addSimpleWorld("world");
         PlayerMock player = server.addPlayer();
         // create the shop
-        AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), player, world, 10, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
+        AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), player, world, 8, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
 
         PlayerSimulation simulation = new PlayerSimulation(player);
         simulation.simulateBlockBreak(shop.getSignLocation().getBlock());
         assertEquals("§7You have destroyed your selling shop.", waitForNextMessage(player), "Player should be sent dialog after destroying shop sign");
+        assertEquals(Material.AIR, world.getBlockAt(shop.getSignLocation()).getType(), "Shop should be deleted when player has destroy permission");
     }
     @Test
     void destroyOwn_permissions() {
@@ -55,18 +63,21 @@ public class ShopDestroyTest extends BaseMockBukkitTest {
         player.addAttachment(getPlugin(), "shop.destroy", false);
         player.addAttachment(getPlugin(), "shop.operator", false);
         // create the shop
-        AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), player, world, 18, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
+        AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), player, world, 18, 65, 0, new ItemStack(Material.DIRT), "sell", 8, "1");
         PlayerSimulation simulation = new PlayerSimulation(player);
         simulation.simulateBlockBreak(shop.getSignLocation().getBlock());
         assertEquals("§cYou are not authorized to destroy your own shops.", waitForNextMessage(player), "Player should be sent dialog denying own shop destroy without shop.destroy permission");
-        
+        assertEquals(Material.OAK_WALL_SIGN, world.getBlockAt(shop.getSignLocation()).getType(), "Shop should still exist when player lacks destroy permission");
+
         player.addAttachment(getPlugin(), "shop.destroy", true);
         simulation.simulateBlockBreak(shop.getSignLocation().getBlock());
         assertEquals("§7You have destroyed your selling shop.", waitForNextMessage(player), "Player should be sent dialog after destroying shop sign");
+        assertEquals(Material.AIR, world.getBlockAt(shop.getSignLocation()).getType(), "Shop should be deleted when player has destroy permission");
     }
 
     @Test
     void destroyOther_noPermission() {
+        setConfig("usePerms", false);
         ServerMock server = getServer();
         World world = server.addSimpleWorld("world");
         PlayerMock player = server.addPlayer();
@@ -78,6 +89,8 @@ public class ShopDestroyTest extends BaseMockBukkitTest {
         PlayerSimulation simulationTwo = new PlayerSimulation(playerTwo);
         simulationTwo.simulateBlockBreak(shop.getSignLocation().getBlock());
         assertEquals("§cYou are not authorized to destroy other players shops.", waitForNextMessage(playerTwo), "Player two should be sent dialog denying shop destruction");
+        assertNotNull(getPlugin().getShopHandler().getShop(shop.getSignLocation()), "Shop should still exist when unauthorized player tries to break sign");
+        assertEquals(Material.OAK_WALL_SIGN, world.getBlockAt(shop.getSignLocation()).getType(), "Shop should still exist when unauthorized player tries to break sign");
     }
     @Test
     void destroyOther_op() {
@@ -93,6 +106,8 @@ public class ShopDestroyTest extends BaseMockBukkitTest {
         PlayerSimulation simulationTwo = new PlayerSimulation(playerTwo);
         simulationTwo.simulateBlockBreak(shop.getSignLocation().getBlock());
         assertEquals("§7You have destroyed a selling shop owned by Steve.", waitForNextMessage(playerTwo), "Player two should be sent dialog allowing shop destruction");
+        assertNull(getPlugin().getShopHandler().getShop(shop.getSignLocation()), "Shop should be deleted by operator");
+        assertEquals(Material.AIR, world.getBlockAt(shop.getSignLocation()).getType(), "Shop should be deleted by operator");
     }
 
     @Test
@@ -112,13 +127,166 @@ public class ShopDestroyTest extends BaseMockBukkitTest {
         PlayerSimulation simulationTwo = new PlayerSimulation(playerTwo);
         simulationTwo.simulateBlockBreak(shop.getSignLocation().getBlock());
         assertEquals("§cYou are not authorized to destroy other players shops.", waitForNextMessage(playerTwo), "Player two should be sent dialog denying shop destruction");
-        
+        assertNotNull(getPlugin().getShopHandler().getShop(shop.getSignLocation()), "Shop should still exist when player lacks destroy.other permission");
+        assertEquals(Material.OAK_WALL_SIGN, world.getBlockAt(shop.getSignLocation()).getType(), "Shop should still exist when player lacks destroy.other permission");
+
         PlayerMock playerThree = server.addPlayer();
         playerThree.setOp(false);
         playerThree.addAttachment(getPlugin(), "shop.destroy.other", true);
         PlayerSimulation simulationThree = new PlayerSimulation(playerThree);
         simulationThree.simulateBlockBreak(shop.getSignLocation().getBlock());
         assertEquals("§7You have destroyed a selling shop owned by Toby.", waitForNextMessage(playerThree), "Player three should be sent dialog allowing shop destruction");
+        assertNull(getPlugin().getShopHandler().getShop(shop.getSignLocation()), "Shop should be deleted when player has destroy.other permission");
+        assertEquals(Material.AIR, world.getBlockAt(shop.getSignLocation()).getType(), "Shop should be deleted when player has destroy.other permission");
+    }
+
+    @Test
+    void chestBreak_primary_prompts_sign_for_owner() {
+        ServerMock server = getServer();
+        World world = server.addSimpleWorld("world");
+        PlayerMock player = server.addPlayer();
+
+        // create the shop
+        AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), player, world, 20, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
+
+        Block chest = shop.getChestLocation().getBlock();
+        assertEquals(Material.CHEST, chest.getType());
+
+        PlayerSimulation simulation = new PlayerSimulation(player);
+        simulation.simulateBlockBreak(chest);
+        assertEquals("§cYou must remove the sign from this shop to break it.", waitForNextMessage(player), "Owner should be prompted to break sign first when breaking primary chest");
+        // Chest should remain since event is cancelled
+        assertEquals(Material.CHEST, chest.getType(), "Primary chest should not break");
+    }
+
+    @Test
+    void chestBreak_expansion_allowed_for_owner() {
+        ServerMock server = getServer();
+        World world = server.addSimpleWorld("world");
+        PlayerMock player = server.addPlayer();
+
+        // create the shop
+        AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), player, world, 22, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
+
+        // Place an adjacent chest to create a double chest (expansion chest)
+        Location primary = shop.getChestLocation();
+        Location expansionLoc = primary.clone().add(1, 0, 0);
+        Block expansion = world.getBlockAt(expansionLoc);
+        expansion.setType(Material.CHEST);
+
+        // Sanity: both halves are chests
+        assertEquals(Material.CHEST, primary.getBlock().getType());
+        assertEquals(Material.CHEST, expansion.getType());
+
+        PlayerSimulation simulation = new PlayerSimulation(player);
+        simulation.simulateBlockBreak(expansion);
+
+        // Expansion chest should be allowed to break
+        assertEquals(Material.AIR, expansion.getType(), "Expansion chest half should break for authorized owner");
+        // Primary chest should remain and shop should still exist
+        assertEquals(Material.CHEST, primary.getBlock().getType(), "Primary chest should remain");
+        assertNotNull(getPlugin().getShopHandler().getShopByChest(primary.getBlock()), "Shop should still exist after breaking expansion chest");
+    }
+
+    @Test
+    void breakBlockUnderShop_protection() {
+        ServerMock server = getServer();
+        World world = server.addSimpleWorld("world");
+        PlayerMock owner = server.addPlayer();
+
+        // create the shop
+        AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), owner, world, 24, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
+
+        // Place a block under the chest
+        Location under = shop.getChestLocation().clone().add(0, -1, 0);
+        Block underBlock = world.getBlockAt(under);
+        underBlock.setType(Material.STONE);
+        assertEquals(Material.STONE, underBlock.getType());
+
+        // Unauthorized player cannot break the block under the chest
+        PlayerMock random = server.addPlayer();
+        random.setOp(false);
+        PlayerSimulation simRandom = new PlayerSimulation(random);
+        simRandom.simulateBlockBreak(underBlock);
+        assertEquals(Material.STONE, underBlock.getType(), "Unauthorized player should not break block under shop chest");
+
+        // Owner can break the block under the chest
+        PlayerSimulation simOwner = new PlayerSimulation(owner);
+        simOwner.simulateBlockBreak(underBlock);
+        assertEquals(Material.AIR, underBlock.getType(), "Owner should be able to break block under shop chest");
+    }
+
+    @Test
+    void destroyRequiresSneak_mustSneakToDestroy() {
+        setConfig("destroyShopRequiresSneak", true);
+
+        ServerMock server = getServer();
+        World world = server.addSimpleWorld("world");
+        PlayerMock player = server.addPlayer();
+
+        // create the shop
+        AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), player, world, 26, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
+
+        // Not sneaking: should be cancelled and shop remains
+        player.setSneaking(false);
+        PlayerSimulation simulation = new PlayerSimulation(player);
+        simulation.simulateBlockBreak(shop.getSignLocation().getBlock());
+        assertNotNull(getPlugin().getShopHandler().getShop(shop.getSignLocation()), "Shop should remain when not sneaking with destroyShopRequiresSneak=true");
+
+        // Sneaking: should destroy the shop
+        player.setSneaking(true);
+        simulation.simulateBlockBreak(shop.getSignLocation().getBlock());
+        assertNull(getPlugin().getShopHandler().getShop(shop.getSignLocation()), "Shop should be destroyed when sneaking and destroyShopRequiresSneak=true");
+    }
+
+    // Cost-related tests moved to CreationDestructionCostTest
+
+    @Test
+    void destroy_event_cancellable_prevents_delete() {
+        ServerMock server = getServer();
+        World world = server.addSimpleWorld("world");
+        PlayerMock player = server.addPlayer();
+
+        AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), player, world, 34, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
+
+        // Register a listener that cancels PlayerDestroyShopEvent
+        Listener l = new Listener() {
+            @EventHandler
+            public void onDestroy(PlayerDestroyShopEvent e) {
+                e.setCancelled(true);
+            }
+        };
+        Bukkit.getPluginManager().registerEvents(l, getPlugin());
+
+        new PlayerSimulation(player).simulateBlockBreak(shop.getSignLocation().getBlock());
+        assertNotNull(getPlugin().getShopHandler().getShop(shop.getSignLocation()), "Shop should remain when PlayerDestroyShopEvent is cancelled");
+    }
+
+    @Test
+    void explosion_protects_shop_blocks() {
+        ServerMock server = getServer();
+        World world = server.addSimpleWorld("world");
+        PlayerMock player = server.addPlayer();
+
+        AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), player, world, 36, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
+
+        Block signBlock = shop.getSignLocation().getBlock();
+        Block chestBlock = shop.getChestLocation().getBlock();
+
+        List<Block> toBlow = new ArrayList<>();
+        toBlow.add(signBlock);
+        toBlow.add(chestBlock);
+
+        // Mock the event since direct construction is not part of the API contract
+        EntityExplodeEvent event = org.mockito.Mockito.mock(EntityExplodeEvent.class);
+        org.mockito.Mockito.when(event.blockList()).thenReturn(toBlow);
+
+        // Call listener directly
+        new com.snowgears.shop.listener.ShopListener(getPlugin()).onExplosion(event);
+
+        // Listener should have removed shop blocks from the list
+        assertFalse(toBlow.contains(signBlock), "Explosion should not include shop sign block");
+        assertFalse(toBlow.contains(chestBlock), "Explosion should not include shop chest block");
     }
 }
 

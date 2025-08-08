@@ -640,8 +640,8 @@ public class MiscListener implements Listener {
                     ShopMessage.sendMessage(shop.getType().toString(), "opDestroy", player, shop);
                     shop.delete();
                 } else {
-                    event.setCancelled(true);
                     ShopMessage.sendMessage("permission", "destroyOther", player, shop);
+                    event.setCancelled(true);
                 }
             }
         } else if (plugin.getShopHandler().isChest(b)) {
@@ -693,6 +693,8 @@ public class MiscListener implements Listener {
                 if(shop.getOwnerUUID().equals(player.getUniqueId()) || player.isOp() || (plugin.usePerms() && (player.hasPermission("shop.operator") || player.hasPermission("shop.destroy.other")))) {
                     ShopMessage.sendMessage("interactionIssue", "destroyChest", player, shop);
                     shop.sendEffects(false, player);
+                } else {
+                    ShopMessage.sendMessage("permission", "destroyOther", player, shop);
                 }
                 // event.setCancelled(true);
             }

@@ -16,6 +16,8 @@ import net.milkbowl.vault.economy.EconomyResponse;
 import net.milkbowl.vault.economy.EconomyResponse.ResponseType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.mockito.internal.util.MockUtil;
 
@@ -38,8 +40,8 @@ public abstract class BaseMockBukkitTest {
     private static ServerMock server;
     private static Shop plugin;
 
-    @BeforeAll
-    static void initServer() {
+    @BeforeEach
+    void initServer() {
         server = MockBukkit.mock();
         plugin = MockBukkit.load(Shop.class);
 
@@ -47,17 +49,6 @@ public abstract class BaseMockBukkitTest {
 
         // Disable displays to avoid NMS/NBT code paths in tests
         setConfig("displayType", DisplayType.NONE);
-
-        // Inject Economy mock if Vault currency is enabled
-        if (plugin.getCurrencyType() == CurrencyType.VAULT) {
-            Economy mockedEconomy = Mockito.mock(Economy.class);
-            Mockito.when(mockedEconomy.getBalance(Mockito.any(org.bukkit.OfflinePlayer.class))).thenReturn(10_000.0);
-            Mockito.when(mockedEconomy.withdrawPlayer(Mockito.any(org.bukkit.OfflinePlayer.class), Mockito.anyDouble()))
-                    .thenAnswer(inv -> new EconomyResponse(inv.getArgument(1), 10_000.0, ResponseType.SUCCESS, "ok"));
-            Mockito.when(mockedEconomy.depositPlayer(Mockito.any(org.bukkit.OfflinePlayer.class), Mockito.anyDouble()))
-                    .thenAnswer(inv -> new EconomyResponse(inv.getArgument(1), 10_000.0, ResponseType.SUCCESS, "ok"));
-            setPluginField("econ", mockedEconomy);
-        }
 
         // Spy and stub NBTAdapter.getNBTforItem to return a static string
         NBTAdapter original = (NBTAdapter) getPluginField("nbtAdapter");
@@ -68,8 +59,8 @@ public abstract class BaseMockBukkitTest {
         }
     }
 
-    @AfterAll
-    static void tearDownServer() {
+    @AfterEach
+    void tearDownServer() {
         MockBukkit.unmock();
         server = null;
         plugin = null;
@@ -129,7 +120,19 @@ public abstract class BaseMockBukkitTest {
         }
     }
 
+    protected static void setConfig(String fieldName, Object value) {
+        setPluginField(fieldName, value);
+    }
+
     protected static void setConfig(String fieldName, boolean value) {
+        setPluginField(fieldName, value);
+    }
+
+    protected static void setConfig(String fieldName, int value) {
+        setPluginField(fieldName, value);
+    }
+
+    protected static void setConfig(String fieldName, double value) {
         setPluginField(fieldName, value);
     }
 
@@ -145,5 +148,17 @@ public abstract class BaseMockBukkitTest {
             Mockito.doReturn(face).when(spy).calculateBlockFaceForSign(Mockito.any(), Mockito.any(), Mockito.any());
             setPluginField("shopCreationUtil", spy);
         }
+    }
+    protected static void setupEconomy() {
+        // Inject Economy mock if Vault currency is enabled
+        if (plugin.getCurrencyType() == CurrencyType.VAULT) {
+            Economy mockedEconomy = Mockito.mock(Economy.class);
+            Mockito.when(mockedEconomy.getBalance(Mockito.any(org.bukkit.OfflinePlayer.class))).thenReturn(10_000.0);
+            Mockito.when(mockedEconomy.withdrawPlayer(Mockito.any(org.bukkit.OfflinePlayer.class), Mockito.anyDouble()))
+                    .thenAnswer(inv -> new EconomyResponse(inv.getArgument(1), 10_000.0, ResponseType.SUCCESS, "ok"));
+            Mockito.when(mockedEconomy.depositPlayer(Mockito.any(org.bukkit.OfflinePlayer.class), Mockito.anyDouble()))
+                    .thenAnswer(inv -> new EconomyResponse(inv.getArgument(1), 10_000.0, ResponseType.SUCCESS, "ok"));
+            setPluginField("econ", mockedEconomy);
+        } 
     }
 }
