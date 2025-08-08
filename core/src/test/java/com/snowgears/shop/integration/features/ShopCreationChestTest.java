@@ -2,7 +2,6 @@ package com.snowgears.shop.integration.features;
 
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.shop.AbstractShop;
-import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.testsupport.BaseMockBukkitTest;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -10,7 +9,6 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -18,11 +16,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
-import org.bukkit.scheduler.BukkitTask;
-import org.mockbukkit.mockbukkit.simulate.entity.PlayerSimulation;
 
-import java.util.List;
-import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -111,6 +105,78 @@ public class ShopCreationChestTest extends BaseMockBukkitTest {
         // wait for all async tasks to complete
         server.getScheduler().waitAsyncTasksFinished();
         return created;
+    }
+
+    @Test
+    void preventCreationOnExistingChest_interactEarlyReturn() {
+        ServerMock server = getServer();
+        World world = server.addSimpleWorld("world");
+        PlayerMock player = server.addPlayer();
+
+        // Arrange: an existing shop on a chest
+        AbstractShop existing = createShop(server, getPlugin(), player, world, 50, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
+        assertNotNull(existing);
+
+        // Act: attempt to start a new creation on the same chest via interact
+        player.setSneaking(true);
+        ItemStack item = new ItemStack(Material.COBBLESTONE);
+        player.getInventory().setItemInMainHand(item);
+        PlayerInteractEvent attempt = new PlayerInteractEvent(
+                player,
+                Action.LEFT_CLICK_BLOCK,
+                item,
+                world.getBlockAt(existing.getChestLocation()),
+                BlockFace.NORTH,
+                EquipmentSlot.HAND
+        );
+        server.getPluginManager().callEvent(attempt);
+
+        // Assert: no creation prompts/messages should be sent
+        server.getScheduler().performTicks(5);
+        assertNull(player.nextMessage(), "No creation messages should be sent when interacting with an existing shop chest");
+    }
+
+    @Test
+    void creationTimesOutAfter30Seconds_withoutFinishing() {
+        ServerMock server = getServer();
+        World world = server.addSimpleWorld("world");
+        PlayerMock player = server.addPlayer();
+        player.setOp(true);
+
+        // Enable chest creation
+        setConfig("allowCreateMethodChest", true);
+
+        // Place chest with free space to the NORTH for sign placement
+        Location chestLoc = new Location(world, 52, 65, 10);
+        Block chestBlock = world.getBlockAt(chestLoc);
+        chestBlock.setType(Material.CHEST);
+        world.getBlockAt(chestLoc.clone().add(0, 0, -1)).setType(Material.AIR);
+        stubCalculateBlockFaceForSign(BlockFace.NORTH);
+
+        // Start creation by sneaking and left-clicking the chest with an item in hand
+        player.setSneaking(true);
+        ItemStack item = new ItemStack(Material.DIRT);
+        player.getInventory().setItemInMainHand(item);
+        PlayerInteractEvent startCreate = new PlayerInteractEvent(
+                player,
+                Action.LEFT_CLICK_BLOCK,
+                item,
+                chestBlock,
+                BlockFace.NORTH,
+                EquipmentSlot.HAND
+        );
+        server.getPluginManager().callEvent(startCreate);
+
+        // Drain initial creation messages
+        while (player.nextMessage() != null) {}
+
+        // Ensure any async tasks triggered by scheduler are processed (timeout check is an async task)
+        server.getScheduler().waitAsyncTasksFinished();
+
+        assertEquals("§7The shop you started to create at (52, 65, 10) has timed out.", player.nextMessage(), "Player should be sent timeout message");
+
+        // Ensure no shop was created/registered for chest
+        assertNull(getPlugin().getShopHandler().getShopByChest(chestBlock), "Shop should not be created when creation times out");
     }
 }
 
