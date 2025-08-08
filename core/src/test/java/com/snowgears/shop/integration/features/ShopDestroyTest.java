@@ -111,6 +111,7 @@ public class ShopDestroyTest extends BaseMockBukkitTest {
         playerTwo.setOp(false);
         PlayerSimulation simulationTwo = new PlayerSimulation(playerTwo);
         simulationTwo.simulateBlockBreak(shop.getSignLocation().getBlock());
+        assertEquals("§cYou are not authorized to destroy other players shops.", waitForNextMessage(playerTwo), "Player two should be sent dialog denying shop destruction");
         
         PlayerMock playerThree = server.addPlayer();
         playerThree.setOp(false);

@@ -639,8 +639,10 @@ public class MiscListener implements Listener {
 
                     ShopMessage.sendMessage(shop.getType().toString(), "opDestroy", player, shop);
                     shop.delete();
-                } else
+                } else {
                     event.setCancelled(true);
+                    ShopMessage.sendMessage("permission", "destroyOther", player, shop);
+                }
             }
         } else if (plugin.getShopHandler().isChest(b)) {
             // Shop will not exist in ShopHandler if it is in the middle of a shop creation process
