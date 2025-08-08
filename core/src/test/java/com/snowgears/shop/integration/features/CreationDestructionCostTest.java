@@ -8,7 +8,6 @@ import com.snowgears.shop.util.EconomyUtils;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.inventory.ItemStack;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.ServerMock;
@@ -28,7 +27,6 @@ public class CreationDestructionCostTest extends BaseMockBukkitTest {
         ServerMock server = getServer();
         World world = server.addSimpleWorld("world");
         PlayerMock player = server.addPlayer();
-
 
         AbstractShop shop = ShopCreationChestTest.createShop(server, getPlugin(), player, world, 28, 65, 10, new ItemStack(Material.DIRT), "sell", 8, "1");
 

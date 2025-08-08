@@ -2,7 +2,6 @@ package com.snowgears.shop.integration.features;
 
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.testsupport.BaseMockBukkitTest;
-import com.snowgears.shop.util.CurrencyType;
 import com.snowgears.shop.event.PlayerDestroyShopEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -11,10 +10,15 @@ import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockbukkit.mockbukkit.simulate.entity.PlayerSimulation;
@@ -27,16 +31,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("integration")
 public class ShopDestroyTest extends BaseMockBukkitTest {
-    @BeforeEach
-    void resetConfig() {
-        setPluginField("currencyType", CurrencyType.ITEM);
-        setPluginField("creationCost", 0.0);
-        setPluginField("destructionCost", 0.0);
-        setPluginField("returnCreationCost", false);
-        setPluginField("destroyShopRequiresSneak", false);
-        setConfig("usePerms", false);
-    }
-
     @Test
     void destroyOwn_op() {
         ServerMock server = getServer();
@@ -287,6 +281,51 @@ public class ShopDestroyTest extends BaseMockBukkitTest {
         // Listener should have removed shop blocks from the list
         assertFalse(toBlow.contains(signBlock), "Explosion should not include shop sign block");
         assertFalse(toBlow.contains(chestBlock), "Explosion should not include shop chest block");
+    }
+
+    @Test
+    void destroyChest_while_creation_denied() {
+        ServerMock server = getServer();
+        World world = server.addSimpleWorld("world");
+        PlayerMock player = server.addPlayer();
+        player.setOp(true);
+
+        // Place chest with free space to the NORTH for sign placement
+        Location chestLoc = new Location(world, 40, 65, 10);
+        Block chestBlock = world.getBlockAt(chestLoc);
+        chestBlock.setType(Material.CHEST);
+        world.getBlockAt(chestLoc.clone().add(0, 0, -1)).setType(Material.AIR);
+
+        // Start creation by sneaking and left-clicking the chest with an item in hand (do not finish chat)
+        stubCalculateBlockFaceForSign(BlockFace.NORTH);
+        player.setSneaking(true);
+        ItemStack item = new ItemStack(Material.DIRT);
+        player.getInventory().setItemInMainHand(item);
+        PlayerInteractEvent startCreate = new PlayerInteractEvent(
+                player,
+                Action.LEFT_CLICK_BLOCK,
+                item,
+                chestBlock,
+                BlockFace.NORTH,
+                EquipmentSlot.HAND
+        );
+        server.getPluginManager().callEvent(startCreate);
+        server.getScheduler().performTicks(2);
+        sendChatMessage(player, "sell");
+        while (player.nextMessage() != null) {}
+
+        // Attempt to break the chest while creation is in progress
+        new PlayerSimulation(player).simulateBlockBreak(chestBlock);
+        assertEquals("§cThis chest cannot be destroyed while a shop is being created for it.", waitForNextMessage(player),
+                "Player should be warned chest cannot be destroyed during shop creation");
+        assertEquals(Material.CHEST, chestBlock.getType(), "Chest should not break during creation process");
+    
+        // Attempt to break the chest while creation is in progress
+        PlayerMock other = server.addPlayer();
+        new PlayerSimulation(other).simulateBlockBreak(chestBlock);
+        assertEquals("§cThis chest cannot be destroyed while a shop is being created for it.", waitForNextMessage(other),
+                "Player should be warned chest cannot be destroyed during shop creation");
+        assertEquals(Material.CHEST, chestBlock.getType(), "Chest should not break during creation process");
     }
 }
 
