@@ -13,6 +13,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      checks: write
     
     steps:
     - uses: actions/checkout@v3
@@ -82,20 +83,24 @@ jobs:
         chmod +x ./buildMavenRepo.sh
         ./buildMavenRepo.sh
       
-    - name: Build with Maven (with coverage)
+    - name: Build with Maven
       run: mvn -B -Pcoverage clean verify
 
     - name: Publish Test Results
-      if: always()
+      if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
       uses: dorny/test-reporter@v1
+      continue-on-error: true
       with:
         name: JUnit Tests
         path: '**/target/surefire-reports/*.xml'
         reporter: java-junit
+        fail-on-error: false
+        fail-on-empty: false
 
     - name: Comment PR with JaCoCo Coverage Report
-      if: github.event_name == 'pull_request'
+      if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
       uses: madrapps/jacoco-report@v1.6.1
+      continue-on-error: true
       with:
         paths: |
           **/target/site/jacoco/jacoco.xml
