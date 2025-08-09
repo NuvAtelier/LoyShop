@@ -134,13 +134,11 @@ jobs:
       run: |
         echo "# Build Completed Successfully! 🎉" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## Download" >> $GITHUB_STEP_SUMMARY
         echo "**Version:** ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Direct Download Link" >> $GITHUB_STEP_SUMMARY
-        echo "⬇️ [Download Bleeding Edge build: ${{ env.JAR_FILENAME }}](${{ steps.upload-shop-jar.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
+        echo "### Download Build" >> $GITHUB_STEP_SUMMARY
+        echo "⬇️ [${{ env.JAR_FILENAME }}](${{ steps.upload-shop-jar.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "To download, click the link above, then click on the 'Artifacts' dropdown and select '${{ env.JAR_FILENAME }}'." >> $GITHUB_STEP_SUMMARY
         
     - name: Create Release
       uses: softprops/action-gh-release@v1
