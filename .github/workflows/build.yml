@@ -32,31 +32,22 @@ jobs:
       with:
         path: |
           ./SpigotBuildTools
-          ./m2repo
         key: ${{ runner.os }}-spigot-${{ hashFiles('buildMavenRepo.sh', 'buildMavenRepo.Dockerfile') }}
         restore-keys: |
           ${{ runner.os }}-spigot-
         
-    - name: Update version with commit hash
+    - name: Compute version with commit hash
       run: |
-        # Get the commit hash based on the event type
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           COMMIT_HASH=${{ github.event.pull_request.head.sha }}
         else
           COMMIT_HASH=${{ github.sha }}
         fi
         COMMIT_HASH=${COMMIT_HASH:0:7}
-        
-        # Read the current version from pom.xml
+
         CURRENT_VERSION=$(grep -m 1 "<revision>" pom.xml | sed 's/.*<revision>\(.*\)<\/revision>.*/\1/')
-        
-        # Create new version with commit hash
         NEW_VERSION="${CURRENT_VERSION}-${COMMIT_HASH}"
-        
-        # Update the version in pom.xml
-        sed -i "s/<revision>$CURRENT_VERSION<\/revision>/<revision>$NEW_VERSION<\/revision>/" pom.xml
-        
-        echo "Updated version from $CURRENT_VERSION to $NEW_VERSION"
+
         echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
         
     - name: Generate Maven toolchains.xml (JDK 21)
@@ -84,7 +75,7 @@ jobs:
         ./buildMavenRepo.sh
       
     - name: Build with Maven
-      run: mvn -B -Pcoverage clean verify
+      run: mvn -B -Pcoverage -Drevision=${{ env.VERSION }} clean verify
 
     - name: Publish Test Results
       if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
