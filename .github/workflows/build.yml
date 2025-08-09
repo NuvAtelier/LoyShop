@@ -25,7 +25,14 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
-        cache: maven
+
+    - name: Cache Maven repository (~/.m2/repository)
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-jdk21-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-jdk21-
         
     - name: Cache SpigotBuildTools
       uses: actions/cache@v3
@@ -74,9 +81,13 @@ jobs:
       run: |
         chmod +x ./buildMavenRepo.sh
         ./buildMavenRepo.sh
+    
+    - name: Pre-fetch Maven dependencies (go-offline)
+      run: |
+        mvn -B -Pcoverage -nsu -Drevision=${{ env.VERSION }} -DskipTests dependency:go-offline
       
     - name: Build with Maven
-      run: mvn -B -Pcoverage -Drevision=${{ env.VERSION }} clean verify
+      run: mvn -B -Pcoverage -nsu -T 1C -Drevision=${{ env.VERSION }} clean verify
 
     - name: Publish Test Results
       if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
