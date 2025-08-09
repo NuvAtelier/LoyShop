@@ -47,6 +47,8 @@ public abstract class BaseMockBukkitTest {
 
         server.getScheduler().waitAsyncTasksFinished();
 
+        setConfig("checkUpdates", false);
+        // setRawConfig("logging.type", "OFF"); // happens after the plugin is loaded so kinda useless...
         // Disable displays to avoid NMS/NBT code paths in tests
         setConfig("displayType", DisplayType.NONE);
         // No cooldown between shop creations to allow us to create multiple. We can change this in tests if needed.
@@ -63,7 +65,13 @@ public abstract class BaseMockBukkitTest {
 
     @AfterEach
     void tearDownServer() {
+        // Must disable, otherwise shutdown is slow at test end
+        plugin.onDisable();
+        server.getScheduler().waitAsyncTasksFinished();
+
+        // Unmock the server to cleanup after ourselves
         MockBukkit.unmock();
+
         server = null;
         plugin = null;
     }
@@ -100,6 +108,10 @@ public abstract class BaseMockBukkitTest {
         }
         System.out.println("ticks: " + attempts + ", message: `" + nextMessage + "`");
         return nextMessage;
+    }
+
+    protected static void setRawConfig(String fieldName, String value) {
+        plugin.getConfig().set(fieldName, value);
     }
 
     protected static <T> T getPluginField(String fieldName) {
