@@ -185,7 +185,11 @@ public class ShopCreationUtil {
             signBlockState.update();
 
             shop.setAdmin(isAdmin);
-            shop.load();
+            boolean loaded = shop.load();
+            if (!loaded) {
+                plugin.getLogger().warning("Shop creation failed, unable to load the shop. Aborting shop creation."); // only seen this happen in tests
+                return null;
+            }
 
             PlayerCreateShopEvent e = new PlayerCreateShopEvent(player, shop);
             plugin.getServer().getPluginManager().callEvent(e);
