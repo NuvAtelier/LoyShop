@@ -376,7 +376,8 @@
 
     <properties>
         <spigot.version>1.21.1-R0.1-SNAPSHOT</spigot.version>
-        <argLine></argLine>
+        <!-- need to uncomment if you run without the `-Pcoverage` flag -->
+        <!-- <argLine></argLine> -->
     </properties>
 
     <profiles>
