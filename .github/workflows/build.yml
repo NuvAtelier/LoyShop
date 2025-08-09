@@ -49,6 +49,7 @@ jobs:
         NEW_VERSION="${CURRENT_VERSION}-${COMMIT_HASH}"
 
         echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        echo "JAR_FILENAME=shop-${NEW_VERSION}.jar" >> $GITHUB_ENV
         
     - name: Generate Maven toolchains.xml (JDK 21)
       run: |
@@ -101,34 +102,22 @@ jobs:
         title: Coverage Report
         update-comment: true
 
-    - name: Upload JaCoCo XML
-      uses: actions/upload-artifact@v4
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      continue-on-error: true
       with:
-        name: jacoco-xml
-        path: '**/target/site/jacoco/jacoco.xml'
-        if-no-files-found: warn
-
-    - name: Coverage Summary (Job Summary)
-      uses: irongut/CodeCoverageSummary@v1.3.0
-      with:
-        filename: '**/target/site/jacoco/jacoco.xml'
-        badge: true
-        format: markdown
-        output: both
+        files: '**/target/site/jacoco/jacoco.xml'
+        flags: java
+        fail_ci_if_error: false
+        verbose: true
+        # no need for token, it's not required for our use case
       
     - name: Upload Artifact
-      id: upload-artifact
+      id: upload-shop-jar
       uses: actions/upload-artifact@v4
       with:
-        name: shop-plugin
+        name: ${{ env.JAR_FILENAME }}
         path: target/Shop-*.jar
-        
-    - name: Find JAR filename
-      id: find-jar
-      run: |
-        JAR_FILE=$(find target -name "Shop-*.jar" -not -name "original-Shop-*.jar" | head -n 1)
-        JAR_FILENAME=$(basename "$JAR_FILE")
-        echo "JAR_FILENAME=$JAR_FILENAME" >> $GITHUB_ENV
         
     - name: Create workflow summary
       run: |
@@ -138,9 +127,9 @@ jobs:
         echo "**Version:** ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Direct Download Link" >> $GITHUB_STEP_SUMMARY
-        echo "⬇️ [Download ${{ env.JAR_FILENAME }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+        echo "⬇️ [Download Bleeding Edge build: ${{ env.JAR_FILENAME }}](${{ steps.upload-shop-jar.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "To download, click the link above, then click on the 'Artifacts' dropdown and select 'shop-plugin'." >> $GITHUB_STEP_SUMMARY
+        echo "To download, click the link above, then click on the 'Artifacts' dropdown and select '${{ env.JAR_FILENAME }}'." >> $GITHUB_STEP_SUMMARY
         
     - name: Create Release
       uses: softprops/action-gh-release@v1
