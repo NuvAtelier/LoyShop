@@ -111,8 +111,7 @@ jobs:
     - name: Coverage Summary (Job Summary)
       uses: irongut/CodeCoverageSummary@v1.3.0
       with:
-        filename: |
-          **/target/site/jacoco/jacoco.xml
+        filename: '**/target/site/jacoco/jacoco.xml'
         badge: true
         format: markdown
         output: both
