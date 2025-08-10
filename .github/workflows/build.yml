@@ -134,21 +134,23 @@ jobs:
 
     - name: Create workflow summary
       run: |
-        echo "# Build Completed Successfully! 🎉" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Version:** ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+        touch build-summary.md
+        echo "# Build Completed Successfully! 🎉" > build-summary.md
+        echo "" >> build-summary.md
+        echo "**Version:** ${{ env.VERSION }}" >> build-summary.md
         if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
-          echo "**Diff Cover:** [View report](${{ steps.upload-diff-cover-report.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
+          echo "**Diff Cover:** [View report](${{ steps.upload-diff-cover-report.outputs.artifact-url }})" >> build-summary.md
         fi
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Download Build" >> $GITHUB_STEP_SUMMARY
-        echo "⬇️ [${{ env.JAR_FILENAME }}](${{ steps.upload-shop-jar.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "" >> build-summary.md
+        echo "### Download Build" >> build-summary.md
+        echo "⬇️ [${{ env.JAR_FILENAME }}](${{ steps.upload-shop-jar.outputs.artifact-url }})" >> build-summary.md
+        echo "" >> build-summary.md
+        cat build-summary.md >> $GITHUB_STEP_SUMMARY
 
     - name: Build Summary
       uses: marocchino/sticky-pull-request-comment@v2
       with:
-        path: $GITHUB_STEP_SUMMARY
+        path: build-summary.md
 
     - name: Comment PR with JaCoCo Coverage Report
       if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
