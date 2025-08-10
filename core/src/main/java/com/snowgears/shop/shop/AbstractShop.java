@@ -135,12 +135,6 @@ public abstract class AbstractShop {
 
     //this calls BlockData which loads the chunk the shop is in by doing so
     public boolean load() {
-        if (signLocation == null) {
-            Shop.getPlugin().getLogger().warning("Error attempting to load shop! No sign location found for Shop, deleting shop: " + this);
-            this.delete();
-            return false;
-        }
-        
         try {
             Block signBlock = signLocation.getBlock();
             if (signBlock.getType() == Material.AIR) {
@@ -154,9 +148,9 @@ public abstract class AbstractShop {
                 return false;
             }
             facing = ((WallSign) signBlock.getBlockData()).getFacing();
-            chestLocation = signBlock.getRelative(facing.getOppositeFace()).getLocation();
-            Block chestBlock = chestLocation.getBlock();
-            
+            Block chestBlock = signBlock.getRelative(facing.getOppositeFace());
+            chestLocation = chestBlock.getLocation();
+
             if (!Shop.getPlugin().getShopHandler().isChest(chestBlock)){
                 Shop.getPlugin().getLogger().warning("Error attempting to load shop! Invalid block type detected when trying to load Shop Chest (detected: " + chestBlock.getType() + "), deleting shop: " + this);
                 this.delete();

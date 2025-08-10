@@ -28,8 +28,7 @@ EOF
 
 # Build the plugin
 export MAVEN_OPTS="-Xms8g -Xmx16g"
-mvn -B -Pcoverage -Drevision="$NEW_VERSION" clean verify -T 8C #-o
-# mvn clean compile package -T 8C #-o
+mvn -Drevision="$NEW_VERSION" clean package -T 8C #-o
 
 # Copy latest plugin in
 rm ../paper-test-1.21.8/plugins/Shop-*.jar 
