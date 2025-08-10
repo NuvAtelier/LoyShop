@@ -100,28 +100,15 @@ jobs:
         fail-on-error: false
         fail-on-empty: false
 
-    - name: Comment PR with JaCoCo Coverage Report
-      if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-      uses: madrapps/jacoco-report@v1.6.1
-      continue-on-error: true
-      with:
-        paths: |
-          **/target/site/jacoco/jacoco.xml
-        token: ${{ secrets.GITHUB_TOKEN }}
-        min-coverage-overall: 0
-        min-coverage-changed-files: 0
-        title: Coverage Report
-        update-comment: true
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      continue-on-error: true
-      with:
-        files: '**/target/site/jacoco/jacoco.xml'
-        flags: java
-        fail_ci_if_error: false
-        verbose: true
-        # no need for token, it's not required for our use case
+    # - name: Upload coverage to Codecov
+    #   uses: codecov/codecov-action@v4
+    #   continue-on-error: true
+    #   with:
+    #     files: '**/target/site/jacoco/jacoco.xml'
+    #     flags: java
+    #     fail_ci_if_error: false
+    #     verbose: true
+    #     # no need for token, it's not required for our use case
       
     - name: Generate diff-cover report
       if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
@@ -157,12 +144,24 @@ jobs:
         echo "### Download Build" >> $GITHUB_STEP_SUMMARY
         echo "⬇️ [${{ env.JAR_FILENAME }}](${{ steps.upload-shop-jar.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo $GITHUB_STEP_SUMMARY > build-summary.md
 
     - name: Build Summary
       uses: marocchino/sticky-pull-request-comment@v2
       with:
-        path: build-summary.md
+        path: $GITHUB_STEP_SUMMARY
+
+    - name: Comment PR with JaCoCo Coverage Report
+      if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      uses: madrapps/jacoco-report@v1.6.1
+      continue-on-error: true
+      with:
+        paths: |
+          **/target/site/jacoco/jacoco.xml
+        token: ${{ secrets.GITHUB_TOKEN }}
+        min-coverage-overall: 0
+        min-coverage-changed-files: 0
+        title: Coverage Report
+        update-comment: true
       
     - name: Create Release
       uses: softprops/action-gh-release@v1
