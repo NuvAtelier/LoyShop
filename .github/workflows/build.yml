@@ -123,6 +123,21 @@ jobs:
         verbose: true
         # no need for token, it's not required for our use case
       
+    - name: Generate diff-cover report
+      if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+      run: |
+        chmod +x ./scripts/run-diff-cover.sh
+        ./scripts/run-diff-cover.sh "origin/${{ github.base_ref }}" ./scripts/diff-cover.md ./scripts/diff-cover.html
+      continue-on-error: true
+
+    - name: Upload diff-cover HTML artifact
+      if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+      id: upload-diff-cover-report
+      uses: actions/upload-artifact@v4
+      with:
+        name: diff-cover-report.html
+        path: scripts/diff-cover.html
+
     - name: Upload Artifact
       id: upload-shop-jar
       uses: actions/upload-artifact@v4
@@ -135,11 +150,14 @@ jobs:
         echo "# Build Completed Successfully! 🎉" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Version:** ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
+          echo "**Diff Cover:** [View report](${{ steps.upload-diff-cover-report.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
+        fi
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Download Build" >> $GITHUB_STEP_SUMMARY
         echo "⬇️ [${{ env.JAR_FILENAME }}](${{ steps.upload-shop-jar.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
+      
     - name: Create Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
