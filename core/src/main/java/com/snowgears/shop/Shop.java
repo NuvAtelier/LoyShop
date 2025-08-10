@@ -1010,6 +1010,13 @@ public class Shop extends JavaPlugin {
         return offlinePurchaseNotificationsEnabled;
     }
 
+    private Boolean isMockBukkit = null;
+    public boolean isMockBukkit() { 
+        if (this.isMockBukkit == null) {
+            this.isMockBukkit = plugin.getServer().getClass().getPackage().getName().contains("mockbukkit");
+        }
+        return this.isMockBukkit;
+    }
     public boolean getDebug_allowUseOwnShop() { return debug_allowUseOwnShop; }
     public boolean getDebug_transactionDebugLogs() { return debug_transactionDebugLogs; }
     public int getDebug_shopCreateCooldown() { return debug_shopCreateCooldown; }

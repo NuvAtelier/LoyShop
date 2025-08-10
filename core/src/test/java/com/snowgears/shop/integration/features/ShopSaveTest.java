@@ -315,16 +315,6 @@ public class ShopSaveTest extends BaseMockBukkitTest {
         assertFalse(playerFile.exists(), "Player save should be removed when player has no shops");
     }
 
-    private static int countMatches(String haystack, String needle) {
-        int count = 0;
-        int idx = 0;
-        while ((idx = haystack.indexOf(needle, idx)) != -1) {
-            count++;
-            idx += needle.length();
-        }
-        return count;
-    }
-
     private static Object getAtPath(java.util.Map<String, Object> root, String path) {
         String[] parts = path.split("\\.");
         Object current = root;
@@ -339,7 +329,6 @@ public class ShopSaveTest extends BaseMockBukkitTest {
     }
     @Test
     void saveShops_withNoShops_deletesExistingFile() throws IOException {
-        ServerMock server = getServer();
         Shop plugin = getPlugin();
         // Use a random UUID that has no shops registered in the handler
         UUID randomPlayer = UUID.randomUUID();

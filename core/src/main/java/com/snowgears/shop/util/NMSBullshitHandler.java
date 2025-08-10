@@ -39,7 +39,7 @@ public class NMSBullshitHandler {
         Shop.getPlugin().getLogger().debug("mcVersion: " + mcVersion);
 
         // MockBukkit testing does not support NMS, so we need to just return early
-        if (mcVersion.contains("mockbukkit")) { 
+        if (plugin.isMockBukkit()) { 
             return;
         }
 

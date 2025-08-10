@@ -129,7 +129,7 @@ public class ShopHandler {
             String nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
 
             // MockBukkit testing does not support NMS, so we need to just return early
-            if (nmsVersion.equals("mockbukkit")) {
+            if (plugin.isMockBukkit()) {
                 disableDisplayClass();
                 return false;
             }
