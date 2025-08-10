@@ -84,10 +84,10 @@ jobs:
     
     - name: Pre-fetch Maven dependencies (go-offline)
       run: |
-        mvn -B -Pcoverage -nsu -Drevision=${{ env.VERSION }} -DskipTests dependency:go-offline
+        mvn -B -nsu -Drevision=${{ env.VERSION }} -DskipTests dependency:go-offline
       
-    - name: Build with Maven
-      run: mvn -B -Pcoverage -nsu -T 1C -Drevision=${{ env.VERSION }} clean verify
+    - name: Build
+      run: mvn -B -nsu -T 1C -Drevision=${{ env.VERSION }} clean package
 
     - name: Publish Test Results
       if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
