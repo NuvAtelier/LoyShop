@@ -687,6 +687,9 @@ public class MiscListener implements Listener {
                         event.setCancelled(false);
                         return;
                     }
+                } else {
+                    ShopMessage.sendMessage("permission", "destroyOther", player, shop);
+                    event.setCancelled(true);
                 }
             }
             else{
