@@ -145,26 +145,24 @@ jobs:
         name: diff-cover-report.html
         path: scripts/diff-cover.html
 
-    - name: HTML Preview
-      if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-      id: html_preview
-      uses: pavi2410/html-preview-action@v4
-      with:
-        html_file: 'scripts/diff-cover.html'
-        job_summary: true
-
     - name: Create workflow summary
       run: |
         echo "# Build Completed Successfully! 🎉" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Version:** ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
         if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
-          echo "**Diff Cover:** [View report](${{ steps.html_preview.outputs.url }})" >> $GITHUB_STEP_SUMMARY
+          echo "**Diff Cover:** [View report](${{ steps.upload-diff-cover-report.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
         fi
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Download Build" >> $GITHUB_STEP_SUMMARY
         echo "⬇️ [${{ env.JAR_FILENAME }}](${{ steps.upload-shop-jar.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
+        echo $GITHUB_STEP_SUMMARY > build-summary.md
+
+    - name: Build Summary
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        path: build-summary.md
       
     - name: Create Release
       uses: softprops/action-gh-release@v1
