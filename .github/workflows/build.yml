@@ -130,6 +130,13 @@ jobs:
         ./scripts/run-diff-cover.sh "origin/${{ github.base_ref }}" ./scripts/diff-cover.md ./scripts/diff-cover.html
       continue-on-error: true
 
+    - name: Upload Artifact
+      id: upload-shop-jar
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.JAR_FILENAME }}
+        path: target/Shop-*.jar
+        
     - name: Upload diff-cover HTML artifact
       if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
       id: upload-diff-cover-report
@@ -138,20 +145,21 @@ jobs:
         name: diff-cover-report.html
         path: scripts/diff-cover.html
 
-    - name: Upload Artifact
-      id: upload-shop-jar
-      uses: actions/upload-artifact@v4
+    - name: HTML Preview
+      if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+      id: html_preview
+      uses: pavi2410/html-preview-action@v4
       with:
-        name: ${{ env.JAR_FILENAME }}
-        path: target/Shop-*.jar
-        
+        html_file: 'scripts/diff-cover.html'
+        job_summary: true
+
     - name: Create workflow summary
       run: |
         echo "# Build Completed Successfully! 🎉" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Version:** ${{ env.VERSION }}" >> $GITHUB_STEP_SUMMARY
         if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
-          echo "**Diff Cover:** [View report](${{ steps.upload-diff-cover-report.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
+          echo "**Diff Cover:** [View report](${{ steps.html_preview.outputs.url }})" >> $GITHUB_STEP_SUMMARY
         fi
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Download Build" >> $GITHUB_STEP_SUMMARY
