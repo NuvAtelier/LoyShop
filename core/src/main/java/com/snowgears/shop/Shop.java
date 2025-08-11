@@ -28,11 +28,9 @@ import com.tcoded.folialib.FoliaLib;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Logger;
 
 public class Shop extends JavaPlugin {
 
-    private static final Logger log = Logger.getLogger("Minecraft");
     private static Shop plugin;
     private ShopLogger logger = new ShopLogger(this, true);
     private FoliaLib foliaLib;
@@ -54,10 +52,7 @@ public class Shop extends JavaPlugin {
     private PlotSquaredHookListener plotSquaredHookListener;
 
     private ShopHandler shopHandler;
-    private CommandHandler commandHandler;
     private ShopGuiHandler guiHandler;
-    private EnderChestHandler enderChestHandler;
-    private ShopMessage shopMessage;
     private ItemNameUtil itemNameUtil;
     private ShopCreationUtil shopCreationUtil;
 
@@ -299,7 +294,8 @@ public class Shop extends JavaPlugin {
             }
         } catch (Exception e){ e.printStackTrace(); }
 
-        shopMessage = new ShopMessage(this);
+        // Load ShopMessage by initializing it once
+        new ShopMessage(this);
         itemNameUtil = new ItemNameUtil();
 
         File fileDirectory = new File(this.getDataFolder(), "Data");
@@ -478,12 +474,12 @@ public class Shop extends JavaPlugin {
             this.getLogger().info("Shops will use " + itemNameUtil.getName(itemCurrency).toPlainText() + "(s) as the currency on the server.");
         }
 
-        commandHandler = new CommandHandler(this, null, commandAlias, "Base command for the Shop plugin", "/shop", new ArrayList(Arrays.asList(commandAlias)));
+        // Load CommandHandler by initializing it once
+        new CommandHandler(this, null, commandAlias, "Base command for the Shop plugin", "/shop", new ArrayList(Arrays.asList(commandAlias)));
 
         guiHandler = new ShopGuiHandler(plugin);
         shopHandler = new ShopHandler(plugin);
         guiHandler.loadIconsAndTitles();
-        enderChestHandler = new EnderChestHandler(plugin);
         logHandler = new LogHandler(plugin, config);
 
         getServer().getPluginManager().registerEvents(displayListener, this);
@@ -641,11 +637,6 @@ public class Shop extends JavaPlugin {
             boolean hasBarrel = enabledContainers.contains(Material.BARREL);
             valueMap.put("Barrels Allowed", hasBarrel ? 1 : 0);
             valueMap.put("Barrels Disabled", hasBarrel ? 0 : 1);
-            
-            // Track ender chests
-            boolean hasEnderChest = enabledContainers.contains(Material.ENDER_CHEST);
-            valueMap.put("Ender Chests Allowed", hasEnderChest ? 1 : 0);
-            valueMap.put("Ender Chests Disabled", hasEnderChest ? 0 : 1);
             
             // Track if any shulker box is enabled
             boolean hasShulker = enabledContainers.stream()
@@ -828,10 +819,6 @@ public class Shop extends JavaPlugin {
 
     public ShopGuiHandler getGuiHandler(){
         return guiHandler;
-    }
-
-    public EnderChestHandler getEnderChestHandler(){
-        return enderChestHandler;
     }
 
     public boolean usePerms() {
@@ -1058,10 +1045,6 @@ public class Shop extends JavaPlugin {
 
     public List<Material> getEnabledContainers(){
         return enabledContainers;
-    }
-
-    public boolean useEnderChests(){
-        return enabledContainers.contains(Material.ENDER_CHEST);
     }
 
     public boolean inverseComboShops(){

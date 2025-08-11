@@ -863,21 +863,18 @@ public class ShopHandler {
     public Map<String, Integer> getShopContainerCounts() {
         int chestShops = 0;
         int barrelShops = 0;
-        int enderChestShops = 0;
         int shulkerBoxShops = 0;
         for (AbstractShop shop : allShops.values()) {
             Material containerType = shop.getContainerType();
             if (containerType == null) continue;
             if (containerType == Material.CHEST || containerType == Material.TRAPPED_CHEST) { chestShops++; }
             if (containerType == Material.BARREL) { barrelShops++; }
-            if (containerType == Material.ENDER_CHEST) { enderChestShops++; }
             if (containerType.name().endsWith("SHULKER_BOX")) { shulkerBoxShops++; }
         }
         // Return a map of the container types
         Map<String, Integer> containerTypes = new HashMap<>();
         containerTypes.put("Chest Shops", chestShops);
         containerTypes.put("Barrel Shops", barrelShops);
-        containerTypes.put("Ender Chest Shops", enderChestShops);
         containerTypes.put("Shulker Box Shops", shulkerBoxShops);
         return containerTypes;
     }
@@ -1143,7 +1140,6 @@ public class ShopHandler {
         for (File file : fileDirectory.listFiles()) {
             if (file.isFile()) {
                 if (file.getName().endsWith(".yml")
-                        && !file.getName().contains("enderchests")
                         && !file.getName().contains("itemCurrency")
                         && !file.getName().contains("gambleDisplay")) {
                     YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -1171,7 +1167,6 @@ public class ShopHandler {
                 try {
                     if (file.isFile()) {
                         if (file.getName().endsWith(".yml")
-                                && !file.getName().contains("enderchests")
                                 && !file.getName().contains("itemCurrency")
                                 && !file.getName().contains("gambleDisplay")
                                 && !file.getName().contains("playerNameCache")) {

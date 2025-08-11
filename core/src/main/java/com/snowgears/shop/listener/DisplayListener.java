@@ -196,20 +196,6 @@ public class DisplayListener implements Listener {
                     ((GambleShop)shop).setGambleItem();
                 }
             }
-            //for some reason, EnderChest also does not extend Container
-            else if(event.getInventory().getType() == InventoryType.ENDER_CHEST){
-                AbstractShop shop;
-                if(event.getInventory().getLocation() == null){ return; }
-                shop = plugin.getShopHandler().getShopByChest(event.getInventory().getLocation().getBlock());
-                if(shop == null) { return; }
-
-                shop.updateStock();
-
-                //make sure to set gamble item again if player set it to new custom items
-                if(shop.getType() == ShopType.GAMBLE){
-                    ((GambleShop)shop).setGambleItem();
-                }
-            }
         } catch (NoClassDefFoundError e) {}
     }
 

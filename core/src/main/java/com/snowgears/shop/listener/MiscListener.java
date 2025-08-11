@@ -718,8 +718,6 @@ public class MiscListener implements Listener {
             AbstractShop shop = plugin.getShopHandler().getShopTouchingBlock(b);
             if (shop == null || (b.getType() != shop.getChestLocation().getBlock().getType()))
                 return;
-            else if(b.getType() == Material.ENDER_CHEST)
-                return;
 
             //owner is trying to
             if (shop.getOwnerUUID().equals(player.getUniqueId())) {

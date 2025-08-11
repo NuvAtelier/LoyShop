@@ -965,7 +965,6 @@ This setting defines which block types can be used as shop containers.
 enabledContainers:
    - BARREL
    - CHEST
-   - ENDER_CHEST
    - TRAPPED_CHEST
    - SHULKER_BOX
    - BLACK_SHULKER_BOX
@@ -992,14 +991,12 @@ By default, the following container types are enabled:
 - `CHEST`: Standard chest blocks
 - `TRAPPED_CHEST`: Trapped chests (generates redstone signal when opened)
 - `BARREL`: Barrel blocks (added in 1.14)
-- `ENDER_CHEST`: Ender chests for personal shops
 - All 16 colored `SHULKER_BOX` variants plus the standard `SHULKER_BOX`
 
 Key considerations for container types:
 - **Chests**: The most common choice, unlimited storage
 - **Trapped Chests**: Allow for redstone integration
 - **Barrels**: Don't require space above them to open
-- **Ender Chests**: Enable personal shop access from anywhere (inventory is tied to player)
 - **Shulker Boxes**: Can be placed in any orientation
 
 Changing this setting affects:

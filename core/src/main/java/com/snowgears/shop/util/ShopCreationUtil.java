@@ -155,7 +155,7 @@ public class ShopCreationUtil {
 
         //removed all the direction checking code. just make sure its a container
         //make sure that the sign is in front of the chest, unless it is a shulker box
-        if (chestBlock.getState() instanceof Container || (plugin.useEnderChests() && chestBlock.getType() == Material.ENDER_CHEST)) {
+        if (chestBlock.getState() instanceof Container) {
             existingShop = plugin.getShopHandler().getShopByChest(chestBlock);
             if (existingShop != null) {
                 //if the block they are adding a sign to is already a shop, do not let them

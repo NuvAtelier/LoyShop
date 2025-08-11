@@ -237,12 +237,7 @@ public abstract class AbstractShop {
         if(chestLocation == null || signLocation == null || !this.isChunkLoaded())
             return null;
         Block chestBlock = chestLocation.getBlock();
-        if(chestBlock.getType() == Material.ENDER_CHEST) {
-            OfflinePlayer ownerPlayer = this.getOwner();
-            if(ownerPlayer != null)
-                return Shop.getPlugin().getEnderChestHandler().getInventory(ownerPlayer);
-        }
-        else if(chestBlock.getState() instanceof InventoryHolder){
+        if(chestBlock.getState() instanceof InventoryHolder){
             return ((InventoryHolder)(chestBlock.getState())).getInventory();
         }
         return null;

@@ -411,7 +411,7 @@ public abstract class AbstractDisplay {
         //calculate which x,z to drop items at depending on direction of the shop sign
         double dropY = 0.98; // 1 - 0.02 to account for dropped item shadow
         Material blockType = shop.getChestLocation().getBlock().getType();
-        if (blockType == Material.CHEST || blockType == Material.TRAPPED_CHEST || blockType == Material.ENDER_CHEST) {
+        if (blockType == Material.CHEST || blockType == Material.TRAPPED_CHEST) {
             dropY = 0.9;
         }
         double dropX = 0.5;
