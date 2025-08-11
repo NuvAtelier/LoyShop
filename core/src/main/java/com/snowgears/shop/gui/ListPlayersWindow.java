@@ -28,10 +28,6 @@ public class ListPlayersWindow extends ShopGuiWindow {
 
         //TODO make a more efficient method to sort players by name
         //this current method is way too resource intensive on large servers
-        //List<OfflinePlayer> owners = Shop.getPlugin().getShopHandler().getShopOwners();
-        //owners.sort(new OfflinePlayerNameComparator());
-
-        //List<UUID> owners = Shop.getPlugin().getShopHandler().getShopOwnerUUIDs();
         ArrayList<ItemStack> shopOwnerHeads = Shop.getPlugin().getGuiHandler().getShopOwnerHeads();
         shopOwnerHeads.sort(new ComparatorItemstackName());
 
@@ -54,32 +50,6 @@ public class ListPlayersWindow extends ShopGuiWindow {
         else{
             page.setItem(53, this.getNextPageIcon());
         }
-    }
-
-    private ItemStack getPlayerIcon(UUID ownerUUID){
-        //System.out.println("[Shop] creating icon for "+ownerUUID);
-        if(Shop.getPlugin().getShopHandler().getAdminUUID().equals(ownerUUID)) {
-            return Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, ownerUUID, null);
-        }
-        return Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER, ownerUUID, null);
-    }
-
-    @Override
-    protected void makeMenuBarUpper(){
-        super.makeMenuBarUpper();
-
-//        ItemStack searchIcon = new ItemStack(Material.COMPASS);
-//        ItemMeta meta = searchIcon.getItemMeta();
-//        meta.setDisplayName("Search");
-//        searchIcon.setItemMeta(meta);
-//
-//        page.setItem(8, searchIcon);
-    }
-
-    @Override
-    protected void makeMenuBarLower(){
-        super.makeMenuBarLower();
-
     }
 }
 

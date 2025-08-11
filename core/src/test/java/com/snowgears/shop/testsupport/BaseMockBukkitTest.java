@@ -13,7 +13,6 @@ import java.util.Collections;
 import com.snowgears.shop.Shop;
 import com.snowgears.shop.display.DisplayType;
 import com.snowgears.shop.util.CurrencyType;
-import com.snowgears.shop.util.NBTAdapter;
 import com.snowgears.shop.util.ShopCreationUtil;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
@@ -56,14 +55,6 @@ public abstract class BaseMockBukkitTest {
         // No cooldown between shop creations to allow us to create multiple. We can change this in tests if needed.
         setConfig("debug_shopCreateCooldown", 0);
 
-        // Spy and stub NBTAdapter.getNBTforItem to return a static string
-        NBTAdapter original = (NBTAdapter) getPluginField("nbtAdapter");
-        if (original != null) {
-            NBTAdapter spy = Mockito.spy(original);
-            Mockito.doReturn("{count:1,id:\"minecraft:dirt\"}").when(spy).getNBTforItem(Mockito.any());
-            setPluginField("nbtAdapter", spy);
-        }
-
         // Test worlds can opt into a chunk auto-load patch via addSimpleWorldPatched(name)
     }
 
@@ -91,8 +82,6 @@ public abstract class BaseMockBukkitTest {
     // ---------- Test tooling helpers ----------
     protected static void sendChatMessage(PlayerMock player, String message) {
         AsyncPlayerChatEvent amountEvent = new AsyncPlayerChatEvent(true, player, message, Collections.emptySet());
-        // server.getPluginManager().callEventAsynchronously(amountEvent);
-        // server.getScheduler().executeAsyncEvent(amountEvent);
         try {
             server.getScheduler().executeAsyncEvent(amountEvent).get();
         } catch (Error | Exception e) {

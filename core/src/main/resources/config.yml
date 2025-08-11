@@ -204,7 +204,6 @@ worldBlacklist:
 enabledContainers:
    - BARREL
    - CHEST
-   - ENDER_CHEST
    - TRAPPED_CHEST
    - SHULKER_BOX
    - BLACK_SHULKER_BOX

@@ -78,7 +78,6 @@ public class PlayerExperience {
         if(player == null)
             return;
         EconomyUtils.setTotalExperience(player, this.experience);
-        //System.out.println("[Shop] set old gamemode to "+oldGameMode.toString());
         removeFile();
     }
 

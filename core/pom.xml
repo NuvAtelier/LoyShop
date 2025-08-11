@@ -40,6 +40,11 @@
             <url>https://repo.codemc.org/repository/maven-public/</url>
         </repository>
         <repository>
+            <id>minecraft-libraries</id>
+            <name>Minecraft Libraries</name>
+            <url>https://libraries.minecraft.net</url>
+        </repository>
+        <repository>
             <id>sk89q-repo</id>
             <url>https://maven.enginehub.org/repo/</url>
         </repository>
@@ -201,17 +206,6 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>de.tr7zw</groupId>
-            <artifactId>item-nbt-api-plugin</artifactId>
-            <version>2.15.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>de.tr7zw</groupId>
-            <artifactId>item-nbt-api</artifactId>
-            <version>2.15.1</version>
-        </dependency>
-        <dependency>
             <groupId>com.intellectualsites.plotsquared</groupId>
             <artifactId>plotsquared-core</artifactId>
             <scope>provided</scope>
@@ -235,6 +229,17 @@
             <artifactId>FoliaLib</artifactId>
             <version>0.4.4</version>
             <scope>compile</scope>
+        </dependency>
+        <!-- DataFixerUpper & brigadier dependencies (needed for the Display class... for now...) -->
+        <dependency>
+            <groupId>com.mojang</groupId>
+            <artifactId>datafixerupper</artifactId>
+            <version>6.0.8</version>
+        </dependency>
+        <dependency>
+            <groupId>com.mojang</groupId>
+            <artifactId>brigadier</artifactId>
+            <version>1.0.500</version>
         </dependency>
     </dependencies>
 
@@ -332,15 +337,11 @@
                             <relocations>
                                 <relocation>
                                     <pattern>com.zaxxer.hikari</pattern>
-                                    <shadedPattern>com.snowgears.shop.artifact.hikari</shadedPattern>
+                                    <shadedPattern>ShopDB</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.mariadb.jdbc</pattern>
                                     <shadedPattern>com.snowgears.shop.artifact.mariadbjdbc</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>de.tr7zw.changeme.nbtapi</pattern>
-                                    <shadedPattern>com.snowgears.shop.artifact.nbtapi</shadedPattern>
                                 </relocation>
                                 <!-- FoliaLib relocation -->
                                 <relocation>

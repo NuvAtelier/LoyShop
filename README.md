@@ -20,7 +20,7 @@ By focusing on ease of use, players of any skill level can create in-game shops 
 - **Holographic Displays:** Optional and fully configurable displays above shops
 - **Find Shops:** Easily find shops selling specific items and teleport to them (optional)
 - **Integration Support:** Works with WorldGuard, Towny, AdvancedRegionMarket, DynMap, BlueMap, and more
-- **Container Support:** Works with chests, double chests, barrels, shulker boxes, even ender chests
+- **Container Support:** Works with chests, double chests, barrels, even shulker boxes!
 
 ## Shop Types
 - **Sell Shops:** Sell items to other players

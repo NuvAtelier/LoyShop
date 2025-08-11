@@ -162,16 +162,7 @@ public class ShopListener implements Listener {
                     shop.delete();
                     return;
                 }
-
-                //TODO maybe put this back in to the AbstractShop action method
-//                if(shop.getChestLocation().getBlock().getType() == Material.ENDER_CHEST) {
-//                    if(player.isSneaking()){
-//                        shop.printSalesInfo(player);
-//                        event.setCancelled(true);
-//                    }
-//                    return;
-//                }
-
+                
                 //player is sneaking and clicks a chest of a shop
                 if(player.isSneaking()){
                     //don't execute the action and cancel event if player is holding a sign (may be trying to place directly onto chest)
@@ -265,21 +256,6 @@ public class ShopListener implements Listener {
         }
     }
 
-    //THIS CODE IS BEING TEMPORARILY SUSPENDED
-    //it causes a lot of timing issues but may be needed for checking signs falling off of chests
-//    @EventHandler(priority = EventPriority.HIGHEST)
-//    public void signDetachCheck(BlockPhysicsEvent event) {
-//        Block b = event.getBlock();
-//        if (b.getBlockData() instanceof WallSign) {
-//            if(plugin.getShopHandler() != null) {
-//                AbstractShop shop = plugin.getShopHandler().getShop(b.getLocation());
-//                if (shop != null) {
-//                    event.setCancelled(true);
-//                }
-//            }
-//        }
-//    }
-
     @EventHandler
     public void onShopExpansion(BlockPlaceEvent event) {
         Block b = event.getBlockPlaced();
@@ -296,46 +272,10 @@ public class ShopListener implements Listener {
     }
 
         //REMOVING AND REPLACING WITH CHECK FOR PLACING HOPPERS (was slowing down servers with many hoppers)
-    //prevent hoppers from stealing inventory from shops
 //    @EventHandler (priority = EventPriority.HIGHEST)
 //    public void onInventoryMoveItem(InventoryMoveItemEvent event) {
-//        AbstractShop shop = null;
-//        if(event.getSource().getHolder() instanceof Chest){
-//            Chest container = (Chest) event.getSource().getHolder();
-//            shop = plugin.getShopHandler().getShopByChest(container.getBlock());
-//        }
-//        else if(event.getSource().getHolder() instanceof DoubleChest){
-//            DoubleChest container = (DoubleChest) event.getSource().getHolder();
-//            shop = plugin.getShopHandler().getShopByChest(container.getLocation().getBlock());
-//        }
-//        else if(event.getSource().getHolder() instanceof ShulkerBox){
-//            ShulkerBox container = (ShulkerBox) event.getSource().getHolder();
-//            shop = plugin.getShopHandler().getShopByChest(container.getBlock());
-//        }
-//
-//        if(shop != null){
-//            if(event.getDestination().getType() != InventoryType.PLAYER)
-//                event.setCancelled(true);
-//        }
+//        /* DO NOT USE InventoryMoveItemEvent IT CAUSES SO MUCH LAG */
 //    }
-
-
-    //===================================================================================//
-    //              ENDER CHEST HANDLING EVENTS
-    //===================================================================================//
-
-//    @EventHandler
-//    public void onCloseEnderChest(InventoryCloseEvent event){
-//        if(event.getPlayer() instanceof Player) {
-//            Player player = (Player)event.getPlayer();
-//            if (event.getInventory().getType() == InventoryType.ENDER_CHEST) {
-//                if(plugin.useEnderChests()) {
-//                    plugin.getEnderChestHandler().saveInventory(player, event.getInventory());
-//                }
-//            }
-//        }
-//    }
-
     @EventHandler
     public void onLogin(PlayerJoinEvent event){
         //delete all shops from players that have not played in X amount of hours (if configured)
@@ -356,8 +296,6 @@ public class ShopListener implements Listener {
         }
         final Player player = event.getPlayer();
 
-        //final Inventory inv = plugin.getEnderChestHandler().getInventory(player);
-
         plugin.getFoliaLib().getScheduler().runLater(() -> {
             if(plugin.getCurrencyType() == CurrencyType.EXPERIENCE) {
                 PlayerExperience exp = PlayerExperience.loadFromFile(player);
@@ -365,11 +303,6 @@ public class ShopListener implements Listener {
                     exp.apply();
                 }
             }
-//                if(plugin.useEnderChests() && inv != null){
-//                    player.getEnderChest().setContents(inv.getContents());
-//                    plugin.getEnderChestHandler().saveInventory(player, inv);
-//                }
-
             plugin.getShopHandler().clearShopDisplaysNearPlayer(player);
             // Force process shop displays on login - ignore movement threshold
             plugin.getShopHandler().forceProcessShopDisplaysNearPlayer(player);

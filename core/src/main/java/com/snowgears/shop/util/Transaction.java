@@ -6,9 +6,7 @@ import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.GambleShop;
 import com.snowgears.shop.shop.ShopType;
-import net.alex9849.arm.regions.price.Price;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -242,11 +240,6 @@ public class Transaction {
             return this.setError(TransactionError.NONE);
         }
 
-        // Misc shop handling tasks
-        // if the shop is connected to an ender inventory, save the contents as needed
-        if(shop.getChestLocation() != null && shop.getChestLocation().getBlock().getType() == Material.ENDER_CHEST){
-            Shop.getPlugin().getEnderChestHandler().saveInventory(shop.getOwner());
-        }
         shop.updateStock();
 
         // Successful!

@@ -14,8 +14,6 @@ public class OptionsWindow extends ShopGuiWindow {
     }
 
     @Override
-    protected void initInvContents(){
-
-    }
+    protected void initInvContents(){/* no-op */}
 }
 

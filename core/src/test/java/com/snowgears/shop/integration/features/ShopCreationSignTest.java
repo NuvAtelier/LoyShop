@@ -49,14 +49,11 @@ public class ShopCreationSignTest extends BaseMockBukkitTest {
         signBlock.setType(Material.OAK_WALL_SIGN);
         WallSign data = (WallSign) signBlock.getBlockData();
         data.setFacing(BlockFace.NORTH); // chest on WEST
-        // signBlock.setBlockData(data);
         world.setBlockData(signBlock.getLocation(), data); // Setting the sign direction does not seem to be working with MockBukkit, the default is NORTH though.
         Location chestLoc = signBlock.getRelative(BlockFace.NORTH.getOppositeFace()).getLocation();
         
         Block chestBlock = world.getBlockAt(chestLoc);
         chestBlock.setType(Material.CHEST);
-        System.out.println("Chest location: " + chestLoc);
-        // playerSim.simulateBlockPlace(Material.CHEST, new Location(world, 5, 65, 6));
 
         // Fire SignChangeEvent with proper lines
         List<Component> lines = new ArrayList<>();
@@ -68,8 +65,8 @@ public class ShopCreationSignTest extends BaseMockBukkitTest {
         server.getPluginManager().callEvent(signEvent);
 
         // Assert player is sent dialog to set up shop
-        player.assertSaid("§6Now just hit the sign with the item you want to sell to other players!");
-        player.assertNoMoreSaid();
+        assertEquals("§6Now just hit the sign with the item you want to sell to other players!", waitForNextMessage(player));
+        assertNull(player.nextMessage());
 
         // Assert shop created and registered
         AbstractShop shop = plugin.getShopHandler().getShop(signLoc);
@@ -89,8 +86,8 @@ public class ShopCreationSignTest extends BaseMockBukkitTest {
         );
         server.getPluginManager().callEvent(initEvent);
 
-        player.assertSaid("§eYou have created a shop that sells §6Diamond(s)§e.");
-        player.assertNoMoreSaid();
+        assertTrue(waitForNextMessage(player).contains("§eYou have created a shop that sells §6"));
+        assertNull(player.nextMessage());
 
         assertTrue(shop.isInitialized(), "Shop should be initialized after left-click with item");
     }

@@ -72,41 +72,6 @@ public abstract class AbstractShop {
             owner = Shop.getPlugin().getShopHandler().getAdminUUID();
     }
 
-    //TODO move all this calculation to an load() method something to call later
-//    public AbstractShop(Location signLoc, UUID player, double pri, int amt, Boolean admin, BlockFace facing) {
-//        signLocation = signLoc;
-//        owner = player;
-//        price = pri;
-//        amount = amt;
-//        isAdmin = admin;
-//        item = null;
-//
-//        if(facing == null){
-//            if(signLocation != null) {
-//                try {
-//                    facing = ((WallSign) signLocation.getBlock().getBlockData()).getFacing();
-//                } catch(ClassCastException cce){}
-//            }
-//        }
-//        this.facing = facing;
-//
-//        display = DisplayUtil.getDisplayForNMSVersion(this.signLocation);
-//
-//        if(isAdmin){
-//            owner = Shop.getPlugin().getShopHandler().getAdminUUID();
-//        }
-//
-//        if(signLocation != null) {
-//            try {
-//                WallSign sign = (WallSign) signLocation.getBlock().getBlockData();
-//                chestLocation = signLocation.getBlock().getRelative(sign.getFacing().getOppositeFace()).getLocation();
-//            } catch(ClassCastException cce){
-//                signLocation = null;
-//                chestLocation = null;
-//            }
-//        }
-//    }
-
     public static AbstractShop create(Location signLoc, UUID player, double pri, double priCombo, int amt, Boolean admin, ShopType shopType, BlockFace facing) {
 
         switch(shopType){
@@ -272,12 +237,7 @@ public abstract class AbstractShop {
         if(chestLocation == null || signLocation == null || !this.isChunkLoaded())
             return null;
         Block chestBlock = chestLocation.getBlock();
-        if(chestBlock.getType() == Material.ENDER_CHEST) {
-            OfflinePlayer ownerPlayer = this.getOwner();
-            if(ownerPlayer != null)
-                return Shop.getPlugin().getEnderChestHandler().getInventory(ownerPlayer);
-        }
-        else if(chestBlock.getState() instanceof InventoryHolder){
+        if(chestBlock.getState() instanceof InventoryHolder){
             return ((InventoryHolder)(chestBlock.getState())).getInventory();
         }
         return null;
@@ -628,9 +588,7 @@ public abstract class AbstractShop {
                 Map<ItemStack, Integer> items = new HashMap<>();
                 items.put(this.item, this.amount);
                 if (this.getSecondaryItemStack() != null) { items.put(this.getSecondaryItemStack(), (int) this.price); }
-//                String formattedMsg = ShopMessage.formatMessage(message, this, player, false);
-                (new ShopMessage(Shop.getPlugin())).sendMessage(message, player, this);
-//                ShopMessage.embedAndSendHoverItemsMessage(formattedMsg, player, items);
+                ShopMessage.sendMessage(message, player, this);
             }
         }
     }

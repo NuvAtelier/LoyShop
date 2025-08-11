@@ -29,22 +29,6 @@ public class ListPlayerShopsWindow extends ShopGuiWindow {
                 shortId = shortId.substring(0,3) + "..." + shortId.substring(shortId.length()-3);
                 this.title = "Unknown Player (" + shortId + ")";
             }
-
-            //TODO in the future, might add total shops / allowed shops in title of own player
-//            if(Shop.getPlugin().usePerms() && player.equals(playerToList)){
-//                Player playerObj = Bukkit.getPlayer(player);
-//                if(playerObj != null) {
-//                    int totalShops = Shop.getPlugin().getShopHandler().getNumberOfShops(player);
-//                    String numShops = " ("+totalShops+" / ";
-//                    if (playerObj.isOp() || playerObj.hasPermission("shop.operator")) {
-//                        numShops += "*)";
-//                    }
-//                    else{
-//                        numShops += Shop.getPlugin().getShopListener().getBuildLimit(playerObj)+")";
-//                    }
-//                    this.title += numShops;
-//                }
-//            }
         }
 
         this.page = Bukkit.createInventory(null, INV_SIZE, this.title);
@@ -62,11 +46,6 @@ public class ListPlayerShopsWindow extends ShopGuiWindow {
 
         List<AbstractShop> shops = Shop.getPlugin().getShopHandler().getShops(playerToList);
         Collections.sort(shops, new ComparatorShopItemNameLow());
-        //Collections.sort(shops, new ShopTypeComparator());
-
-        //System.out.println(player.toString()+" number of shops "+shops.size());
-
-        //TODO break up inventory into sections by type (by default. More sorting options to come)
 
         int startIndex = pageIndex * 36; //36 items is a full page in the inventory
         ItemStack icon;
@@ -88,23 +67,6 @@ public class ListPlayerShopsWindow extends ShopGuiWindow {
         else{
             page.setItem(53, this.getNextPageIcon());
         }
-    }
-
-    @Override
-    protected void makeMenuBarUpper(){
-        super.makeMenuBarUpper();
-
-//        ItemStack searchIcon = new ItemStack(Material.COMPASS);
-//        ItemMeta meta = searchIcon.getItemMeta();
-//        meta.setDisplayName("Search");
-//        searchIcon.setItemMeta(meta);
-//
-//        page.setItem(8, searchIcon);
-    }
-
-    @Override
-    protected void makeMenuBarLower(){
-        super.makeMenuBarLower();
     }
 }
 

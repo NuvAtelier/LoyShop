@@ -50,7 +50,7 @@ Change * currency to a custom item, virtual currency (Vault), or experience poin
 * Integrates with WorldGuard, Towny, AdvancedRegionMarket, and more!
 * Integrates with DynMap to [show shops on the map](https://proxy.spigotmc.org/03ee898c967e8983196a73b85a3a267226dc3e04?url=https%3A%2F%2Fi.imgur.com%2FbkzTlOz.png)
 * Integrates with BlueMap to [show shops on the map](https://user-images.githubusercontent.com/4141199/194400062-2dbdbad4-a2c5-4097-b1fd-9ab0b3d1a801.png)
-* Works with chests, barrels, shulker boxes, even ender chests!
+* Works with chests, barrels, and even shulker boxes!
 * Plug and Play.
 
 ## Display Types

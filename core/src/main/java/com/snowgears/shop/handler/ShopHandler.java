@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.AtomicMoveNotSupportedException;
 
 
 public class ShopHandler {
@@ -134,13 +133,6 @@ public class ShopHandler {
                 return false;
             }
 
-            // version did remap even though version number didn't increase
-            String mcVersion = Bukkit.getBukkitVersion().substring(0, Bukkit.getBukkitVersion().indexOf('-'));
-            //im not doing this right now. I'm only going to support 1.17.1 for now
-            //        if (mcVersion.equals("1.17.1")) {
-            //            nmsVersion =  "v1_17_R1_2";
-            //        }
-
             try {
                 Shop.getPlugin().getLogger().info( "Minecraft version is old or Spigot, watch out for bugs!");
                 Shop.getPlugin().getLogger().info("Using display class - com.snowgears.shop.display.Display_" + nmsVersion);
@@ -149,12 +141,7 @@ public class ShopHandler {
                     this.displayClass = clazz;
                     return true;
                 }
-            } catch (final Exception e) {
-                Shop.getPlugin().getLogger().severe("Error while loading com.snowgears.shop.display.Display_" + nmsVersion + " " + e.getMessage());
-                e.printStackTrace();
-                disableDisplayClass();
-                return false;
-            } catch (Error e) {
+            } catch (final Error | Exception e) {
                 Shop.getPlugin().getLogger().severe("Error while loading com.snowgears.shop.display.Display_" + nmsVersion + " " + e.getMessage());
                 e.printStackTrace();
                 disableDisplayClass();
@@ -172,7 +159,6 @@ public class ShopHandler {
             AbstractDisplay display = (AbstractDisplay) displayClass.getConstructor(Location.class).newInstance(loc);
             return display;
         } catch (Exception e){
-            // e.printStackTrace();
             plugin.getLogger().warning("Error creating display at | World: " + loc.getWorld().getName() + " at " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ());
         }
         return null;
@@ -231,47 +217,6 @@ public class ShopHandler {
             }
         } catch (NoClassDefFoundError e) {}
 
-// TODO not sure what this code was even doing here. might have been leftover
-
-//        if (this.isChest(shopChest)) {
-//            //BlockFace chestFacing = UtilMethods.getDirectionOfChest(shopChest);
-//
-//            ArrayList<Block> chestBlocks = new ArrayList<>();
-//            chestBlocks.add(shopChest);
-//
-//            InventoryHolder ih = null;
-//            if(shopChest.getState() instanceof Chest) {
-//                Chest chest = (Chest) shopChest.getState();
-//                ih = chest.getInventory().getHolder();
-//
-//                if (ih instanceof DoubleChest) {
-//                    DoubleChest dc = (DoubleChest) ih;
-//                    Chest leftChest = (Chest) dc.getLeftSide();
-//                    Chest rightChest = (Chest) dc.getRightSide();
-//                    if (chest.getLocation().equals(leftChest.getLocation()))
-//                        chestBlocks.add(rightChest.getBlock());
-//                    else
-//                        chestBlocks.add(leftChest.getBlock());
-//                }
-//            }
-//
-//            for (Block chestBlock : chestBlocks) {
-//                Block signBlock = chestBlock.getRelative(chestFacing);
-//                if (signBlock.getBlockData() instanceof WallSign) {
-//                    WallSign sign = (WallSign) signBlock.getBlockData();
-//                    //if (chestFacing == sign.getFacing()) {
-//                    AbstractShop shop = this.getShop(signBlock.getLocation());
-//                    if (shop != null)
-//                        return shop;
-//                    //}
-//                } else if(!(ih instanceof DoubleChest)){
-//                    AbstractShop shop = this.getShop(signBlock.getLocation());
-//                    //delete the shop if it doesn't have a sign
-//                    if (shop != null)
-//                        shop.delete();
-//                }
-//            }
-//        }
         return null;
     }
 
@@ -309,7 +254,6 @@ public class ShopHandler {
 
         String chunkKey = UtilMethods.getChunkKey(shop.getSignLocation());
         List<Location> chunkShopLocations = getShopLocations(chunkKey);
-        //System.out.println("[Shop] 1 - chunkShopLocations "+chunkShopLocations);
         if(!chunkShopLocations.contains(shop.getSignLocation())) {
             chunkShopLocations.add(shop.getSignLocation());
             chunkShops.put(chunkKey, chunkShopLocations);
@@ -435,7 +379,7 @@ public class ShopHandler {
         return shops;
     }
 
-    //TODO this is too resource intensive on large servers
+    // Note: this is resource intensive on large servers, maybe refactor at some point
     public List<OfflinePlayer> getShopOwners(){
         ArrayList<OfflinePlayer> owners = new ArrayList<>();
         for(UUID player : playerShops.keySet()) {
@@ -878,15 +822,6 @@ public class ShopHandler {
         }, 2);
     }
 
-//    public boolean shopDisplayTagIsActive(Player player, Location shopSignLocation){
-//
-//        if(playersActiveShopDisplayTag.containsKey(player.getUniqueId())){
-//            Location oldShopSignLocation = playersActiveShopDisplayTag.get(player.getUniqueId());
-//            return oldShopSignLocation.equals(shopSignLocation);
-//        }
-//        return false;
-//    }
-
     private List<Location> getUnloadedShopsByChunk(String chunkKey){
         List<Location> unloadedShopsInChunk;
         if(unloadedShopsByChunk.containsKey(chunkKey)) {
@@ -928,41 +863,20 @@ public class ShopHandler {
     public Map<String, Integer> getShopContainerCounts() {
         int chestShops = 0;
         int barrelShops = 0;
-        int enderChestShops = 0;
         int shulkerBoxShops = 0;
         for (AbstractShop shop : allShops.values()) {
             Material containerType = shop.getContainerType();
             if (containerType == null) continue;
             if (containerType == Material.CHEST || containerType == Material.TRAPPED_CHEST) { chestShops++; }
             if (containerType == Material.BARREL) { barrelShops++; }
-            if (containerType == Material.ENDER_CHEST) { enderChestShops++; }
             if (containerType.name().endsWith("SHULKER_BOX")) { shulkerBoxShops++; }
         }
         // Return a map of the container types
         Map<String, Integer> containerTypes = new HashMap<>();
         containerTypes.put("Chest Shops", chestShops);
         containerTypes.put("Barrel Shops", barrelShops);
-        containerTypes.put("Ender Chest Shops", enderChestShops);
         containerTypes.put("Shulker Box Shops", shulkerBoxShops);
         return containerTypes;
-    }
-
-    private ArrayList<AbstractShop> orderedShopList() {
-        ArrayList<AbstractShop> list = new ArrayList<AbstractShop>(allShops.values());
-        Collections.sort(list, new Comparator<AbstractShop>() {
-            @Override
-            public int compare(AbstractShop o1, AbstractShop o2) {
-                if(o1 == null || o2 == null)
-                    return 0;
-                
-                // Cache owner names to avoid calling getOwnerName() twice per comparison
-                String owner1Name = o1.getOwnerName();
-                String owner2Name = o2.getOwnerName();
-                
-                return owner1Name.toLowerCase().compareTo(owner2Name.toLowerCase());
-            }
-        });
-        return list;
     }
 
     public void removeAllDisplays(Player player) {
@@ -1028,7 +942,6 @@ public class ShopHandler {
         try {
 
             File fileDirectory = new File(plugin.getDataFolder(), "Data");
-            //UtilMethods.deleteDirectory(fileDirectory);
             if (!fileDirectory.exists())
                 fileDirectory.mkdir();
 
@@ -1039,10 +952,8 @@ public class ShopHandler {
             }
             else {
                 owner = player.toString();
-                //currentFile = new File(fileDirectory + "/" + owner + " (" + player.toString() + ").yml");
                 currentFile = new File(fileDirectory + "/" + player.toString() + ".yml");
             }
-            //owner = currentFile.getName().substring(0, currentFile.getName().length()-4); //remove .yml
 
             plugin.getLogger().trace("    current file " + currentFile);
 
@@ -1229,7 +1140,6 @@ public class ShopHandler {
         for (File file : fileDirectory.listFiles()) {
             if (file.isFile()) {
                 if (file.getName().endsWith(".yml")
-                        && !file.getName().contains("enderchests")
                         && !file.getName().contains("itemCurrency")
                         && !file.getName().contains("gambleDisplay")) {
                     YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -1257,7 +1167,6 @@ public class ShopHandler {
                 try {
                     if (file.isFile()) {
                         if (file.getName().endsWith(".yml")
-                                && !file.getName().contains("enderchests")
                                 && !file.getName().contains("itemCurrency")
                                 && !file.getName().contains("gambleDisplay")
                                 && !file.getName().contains("playerNameCache")) {
@@ -1304,14 +1213,6 @@ public class ShopHandler {
                 convertLegacyShopSaves();
 
             Shop.getPlugin().getLogger().log(Level.INFO, "Loaded " + numShopsLoaded + " Shops!");
-
-            //dont refresh displays at load time anymore. they are now loaded in client side on login
-    //                new BukkitRunnable() {
-    //                    @Override
-    //                    public void run() {
-    //                        refreshShopDisplays(null);
-    //                    }
-    //                }.runTaskLater(plugin, 20);
         });
     }
 
@@ -1325,7 +1226,6 @@ public class ShopHandler {
 
         for (String shopOwner : allShopOwners) {
             UUID owner = null;
-            //System.out.println("[Shop] loading shops for player - "+shopOwner);
 
             Set<String> allShopNumbers = config.getConfigurationSection("shops." + shopOwner).getKeys(false);
             int playerLoadedShops = 0;
@@ -1412,7 +1312,6 @@ public class ShopHandler {
                         }
                         //if the chunk is not already loaded, add it to a list to calculate it at chunkloadevent later
                         else {
-                            //System.out.println("[Shop] chunk not loaded. Adding to unloadedList");
                             Shop.getPlugin().getLogger().debug("Chunk not loaded. Adding shop to unloadedList to load later: " + shop);
                             addUnloadedShopToChunkList(shop);
                             addShop(shop);

@@ -50,15 +50,6 @@ public class CommandHandler extends BukkitCommand {
                     window.open();
                 }
                 else {
-
-                    //used for getting some large item eulerstand angles when new items are added in
-                    //for(Entity e : player.getNearbyEntities(1,1,1)){
-                    //    if(e instanceof ArmorStand){
-                    //        System.out.println(UtilMethods.getEulerAngleString(((ArmorStand)e).getRightArmPose()));
-                    //        System.out.println(UtilMethods.getEulerAngleString(((ArmorStand)e).getBodyPose()));
-                    //    }
-                    //}
-
                     //these are commands all players have access to
                     sendCommandMessage("list", player);
                     sendCommandMessage("currency", player);
@@ -114,7 +105,6 @@ public class CommandHandler extends BukkitCommand {
                         p.closeInventory();
                     }
                 }
-                //plugin.getShopHandler().refreshShopDisplays(null);
                 plugin.getShopHandler().removeLegacyDisplays();
 
             }
@@ -178,11 +168,9 @@ public class CommandHandler extends BukkitCommand {
                         sendCommandMessage("not_authorized", player);
                         return true;
                     }
-                    //plugin.getShopHandler().refreshShopDisplays(null);
                     plugin.getShopHandler().removeLegacyDisplays();
                     sendCommandMessage("itemrefresh_output", player);
                 } else {
-                    //plugin.getShopHandler().refreshShopDisplays(null);
                     plugin.getShopHandler().removeLegacyDisplays();
                     sender.sendMessage("[Shop] The display items on all of the shops have been refreshed.");
                 }

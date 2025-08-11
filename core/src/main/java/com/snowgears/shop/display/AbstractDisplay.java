@@ -7,7 +7,6 @@ import com.snowgears.shop.util.ArmorStandData;
 import com.snowgears.shop.util.DisplayUtil;
 import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.UtilMethods;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -17,7 +16,6 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -167,11 +165,6 @@ public abstract class AbstractDisplay {
                     break;
             }
         }
-//        if(player != null) {
-//            Shop.getPlugin().getShopHandler().addActiveShopDisplay(player, this.shopSignLocation);
-//        }
-
-        //shop.updateSign();
     }
 
     //DISPLAY TAGS
@@ -399,12 +392,7 @@ public abstract class AbstractDisplay {
         this.setType(cycle[index], true);
         this.spawn(player);
         Shop.getPlugin().getShopHandler().addActiveShopDisplay(player, this.shopSignLocation);
-        Shop.getPlugin().getLogger().trace("[AbstractDisplay.cycleType] updateSign");
-
-//        getShop().updateSign();
         getShop().setNeedsSave(true);
-        // We save upon shutdown now
-//        Shop.getPlugin().getShopHandler().saveShops(getShop().getOwnerUUID());
     }
 
     public void remove(Player player) {
@@ -412,16 +400,6 @@ public abstract class AbstractDisplay {
             removeDisplayEntities(player, false);
             removeDisplayEntities(player, true);
         } catch (Error | Exception e) { /** Allow other logic to continue even if this fails (non-critical) */ }
-
-//        if(player != null) {
-//            Shop.getPlugin().getShopHandler().removeActiveShopDisplay(player, this.shopSignLocation);
-//        }
-        //if(player == null)
-        //    entityIDs.clear();
-        //if(displayTagEntityIDs != null) {
-        //    if(player == null)
-        //        displayTagEntityIDs.clear();
-        //}
     }
 
     private Location getItemDropLocation(boolean isBarterItem) {
@@ -433,7 +411,7 @@ public abstract class AbstractDisplay {
         //calculate which x,z to drop items at depending on direction of the shop sign
         double dropY = 0.98; // 1 - 0.02 to account for dropped item shadow
         Material blockType = shop.getChestLocation().getBlock().getType();
-        if (blockType == Material.CHEST || blockType == Material.TRAPPED_CHEST || blockType == Material.ENDER_CHEST) {
+        if (blockType == Material.CHEST || blockType == Material.TRAPPED_CHEST) {
             dropY = 0.9;
         }
         double dropX = 0.5;
@@ -479,7 +457,6 @@ public abstract class AbstractDisplay {
         Vector offset = new Vector(0,0,0);
         double space = 0.48;
 
-        // @TODO: Verify that we are modifying the coordinates correctly!
         switch (shop.getFacing()) {
             case NORTH:
                 if (isRightShift)
@@ -546,21 +523,6 @@ public abstract class AbstractDisplay {
         return offset;
     }
 
-//    protected boolean playerIsViewingSign(Player player) {
-//        Block block = player.getTargetBlock(null, 8);
-//        if (block.getBlockData() instanceof WallSign) {
-//            AbstractShop shopObj = Shop.getPlugin().getShopHandler().getShop(block.getLocation());
-//            if (shopObj != null) {
-//                AbstractShop ownShopObj = Shop.getPlugin().getShopHandler().getShop(this.shopSignLocation);
-//                if (ownShopObj != null) {
-//                    if (block.getLocation().equals(this.shopSignLocation))
-//                        return true;
-//                }
-//            }
-//        }
-//        return false;
-//    }
-
     protected boolean playerIsLookingTowardShop(Player player) {
         try {
             if (player.getLocation().distanceSquared(this.shopSignLocation) > 64) { //player is more than 8 blocks away
@@ -576,7 +538,6 @@ public abstract class AbstractDisplay {
         Vector blockDirection = displayLocation.subtract(player.getEyeLocation()).toVector().normalize();
         double angle = blockDirection.angle(lookDirection);
         //return true if angle (in radians) is less than 1
-        //System.out.println("Angle to shop: "+angle);
         return angle < 1;
     }
 
@@ -660,7 +621,6 @@ public abstract class AbstractDisplay {
             }
         }
         else {
-            //entityIterator = this.entityIDs.iterator();
             if(player == null){
                 entityIterator = getAllEntityIDs().iterator();
             }

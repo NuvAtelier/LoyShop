@@ -14,14 +14,8 @@ import com.snowgears.shop.util.*;
 import com.snowgears.shop.hook.WorldGuardHook.WorldGuardConfig;
 import com.snowgears.shop.util.Metrics;
 import com.snowgears.shop.util.Metrics.*;
-import java.util.concurrent.Callable;
 import de.bluecolored.bluemap.api.BlueMapAPI;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.TextComponent;
 import net.milkbowl.vault.economy.Economy;
-import net.md_5.bungee.api.ChatColor;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -29,18 +23,14 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import com.tcoded.folialib.FoliaLib;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Shop extends JavaPlugin {
 
-    private static final Logger log = Logger.getLogger("Minecraft");
     private static Shop plugin;
     private ShopLogger logger = new ShopLogger(this, true);
     private FoliaLib foliaLib;
@@ -62,16 +52,11 @@ public class Shop extends JavaPlugin {
     private PlotSquaredHookListener plotSquaredHookListener;
 
     private ShopHandler shopHandler;
-    private CommandHandler commandHandler;
     private ShopGuiHandler guiHandler;
-    private EnderChestHandler enderChestHandler;
-    private ShopMessage shopMessage;
     private ItemNameUtil itemNameUtil;
-    private PriceUtil priceUtil;
     private ShopCreationUtil shopCreationUtil;
 
     private NMSBullshitHandler nmsBullshitHandler;
-    private NBTAdapter nbtAdapter;
 
     private boolean usePerms;
     private boolean checkUpdates;
@@ -275,23 +260,8 @@ public class Shop extends JavaPlugin {
         this.getLogger().enableColor(config.getBoolean("enableLogColor"));
 
         nmsBullshitHandler = new NMSBullshitHandler(this);
-        nbtAdapter = new NBTAdapter(this);
         
         shopCreationUtil = new ShopCreationUtil(this);
-
-        //removed item names file after item ids are no longer used. may revisit later with new materials
-//        File itemNameFile = new File(getDataFolder(), "items.tsv");
-//        if (!itemNameFile.exists()) {
-//            itemNameFile.getParentFile().mkdirs();
-//            UtilMethods.copy(getResource("items.tsv"), itemNameFile);
-//        }
-
-        //TODO
-//        File pricesFile = new File(getDataFolder(), "prices.tsv");
-//        if (!pricesFile.exists()) {
-//            pricesFile.getParentFile().mkdirs();
-//            UtilMethods.copy(getResource("prices.tsv"), pricesFile);
-//        }
 
         shopListener = new ShopListener(this);
         transactionHandler = new TransactionHandler(this);
@@ -299,9 +269,6 @@ public class Shop extends JavaPlugin {
         creativeSelectionListener = new CreativeSelectionListener(this);
         displayListener = new DisplayListener(this);
         guiListener = new ShopGUIListener(this);
-
-        //TODO set all config defaults here
-        //config.setDefaults();
 
         try {
             displayType = DisplayType.valueOf(config.getString("displayType"));
@@ -325,25 +292,9 @@ public class Shop extends JavaPlugin {
             }
         } catch (Exception e){ e.printStackTrace(); }
 
-        //TODO in the future read the Skull Texture for display item directly from a value in the config file instead of its own serialized item file
-//        ItemStack gambleDisplayItem = new ItemStack(Material.PLAYER_HEAD);
-//        SkullMeta gambleDisplayItemMeta = (SkullMeta) gambleDisplayItem.getItemMeta();
-//        GameProfile profile = new GameProfile(UUID.randomUUID(), "");
-//
-//        profile.getProperties().put("textures", new Property("texture", headTextureID));
-//        try {
-//            Field profileField = gambleDisplayItemMeta.getClass().getDeclaredField("profile");
-//            profileField.setAccessible(true);
-//            profileField.set(gambleDisplayItemMeta, profile);
-//        } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-//            e.printStackTrace();
-//        }
-//        gambleDisplayItem.setItemMeta(gambleDisplayItemMeta);
-
-
-        shopMessage = new ShopMessage(this);
+        // Load ShopMessage by initializing it once
+        new ShopMessage(this);
         itemNameUtil = new ItemNameUtil();
-        priceUtil = new PriceUtil();
 
         File fileDirectory = new File(this.getDataFolder(), "Data");
         if (!fileDirectory.exists()) {
@@ -414,23 +365,6 @@ public class Shop extends JavaPlugin {
             this.getLogger().warning("Please set `logging.type` to `FILE` or setup a database in `config.yml` to enable offline purchase notifications.");
             offlinePurchaseNotificationsEnabled = false;
         }
-
-        //TODO
-//        taxPercent = config.getDouble("taxPercent");
-
-//        String itemCurrencyIDString = config.getString("itemCurrencyID");
-//        int itemCurrencyId;
-//        int itemCurrencyData = 0;
-//        if (itemCurrencyIDString.contains(";")) {
-//            itemCurrencyId = Integer.parseInt(itemCurrencyIDString.substring(0, itemCurrencyIDString.indexOf(";")));
-//            itemCurrencyData = Integer.parseInt(itemCurrencyIDString.substring(itemCurrencyIDString.indexOf(";") + 1, itemCurrencyIDString.length()));
-//        } else {
-//            itemCurrencyId = Integer.parseInt(itemCurrencyIDString.substring(0, itemCurrencyIDString.length()));
-//        }
-//
-//        itemCurrency = new ItemStack(itemCurrencyId);
-//        itemCurrency.setData(new MaterialData(itemCurrencyId, (byte) itemCurrencyData));
-
 
         //Loading the itemCurrency from a file makes it easier to allow servers to use detailed itemstacks as the server's economy item
         File itemCurrencyFile = new File(fileDirectory, "itemCurrency.yml");
@@ -538,22 +472,12 @@ public class Shop extends JavaPlugin {
             this.getLogger().info("Shops will use " + itemNameUtil.getName(itemCurrency).toPlainText() + "(s) as the currency on the server.");
         }
 
-        commandHandler = new CommandHandler(this, null, commandAlias, "Base command for the Shop plugin", "/shop", new ArrayList(Arrays.asList(commandAlias)));
-        //this.getCommand(commandAlias).setExecutor(new CommandHandler(this));
-        //this.getCommand(commandAlias).setTabCompleter(new CommandTabCompleter());
-        //this.getCommand(commandAlias).setAliases(new ArrayList<>())
-
-        //check for unregistered enchantments when new MC updates come out
-        /*for (Enchantment enchantment : Enchantment.values()){
-            if(UtilMethods.getEnchantmentName(enchantment).equals("Unknown")){
-                System.out.println("[Shop] warning: unregistered enchantment: "+enchantment.getName());
-            }
-        }*/
+        // Load CommandHandler by initializing it once
+        new CommandHandler(this, null, commandAlias, "Base command for the Shop plugin", "/shop", new ArrayList(Arrays.asList(commandAlias)));
 
         guiHandler = new ShopGuiHandler(plugin);
         shopHandler = new ShopHandler(plugin);
         guiHandler.loadIconsAndTitles();
-        enderChestHandler = new EnderChestHandler(plugin);
         logHandler = new LogHandler(plugin, config);
 
         getServer().getPluginManager().registerEvents(displayListener, this);
@@ -629,10 +553,6 @@ public class Shop extends JavaPlugin {
 
         int bstatsPluginId = 25211;
         metrics = new Metrics(plugin, bstatsPluginId);
-        // transactions would be cool
-        // It would also be cool to see the number of items transacted (bought/sold & item currency)
-        // I don't think showing vault currency is worth it, since people have vastly different economy scaling
-        // It would be worth it to show a pie chart of what economy type is being used!
         metrics.addCustomChart(new SingleLineChart("transactions", () -> logHandler.getRecentTransactionCount()));
         metrics.addCustomChart(new SingleLineChart("item_volume", () -> logHandler.getRecentItemVolume()));
         metrics.addCustomChart(new SingleLineChart("shops", () -> shopHandler.getNumberOfShops()));
@@ -715,11 +635,6 @@ public class Shop extends JavaPlugin {
             boolean hasBarrel = enabledContainers.contains(Material.BARREL);
             valueMap.put("Barrels Allowed", hasBarrel ? 1 : 0);
             valueMap.put("Barrels Disabled", hasBarrel ? 0 : 1);
-            
-            // Track ender chests
-            boolean hasEnderChest = enabledContainers.contains(Material.ENDER_CHEST);
-            valueMap.put("Ender Chests Allowed", hasEnderChest ? 1 : 0);
-            valueMap.put("Ender Chests Disabled", hasEnderChest ? 0 : 1);
             
             // Track if any shulker box is enabled
             boolean hasShulker = enabledContainers.stream()
@@ -902,10 +817,6 @@ public class Shop extends JavaPlugin {
 
     public ShopGuiHandler getGuiHandler(){
         return guiHandler;
-    }
-
-    public EnderChestHandler getEnderChestHandler(){
-        return enderChestHandler;
     }
 
     public boolean usePerms() {
@@ -1134,10 +1045,6 @@ public class Shop extends JavaPlugin {
         return enabledContainers;
     }
 
-    public boolean useEnderChests(){
-        return enabledContainers.contains(Material.ENDER_CHEST);
-    }
-
     public boolean inverseComboShops(){
         return inverseComboShops;
     }
@@ -1193,10 +1100,6 @@ public class Shop extends JavaPlugin {
 
     public NMSBullshitHandler getNmsBullshitHandler() {
         return nmsBullshitHandler;
-    }
-
-    public NBTAdapter getNBTAdapter() {
-        return nbtAdapter;
     }
 
     public NamespacedKey getSignLocationNameSpacedKey(){

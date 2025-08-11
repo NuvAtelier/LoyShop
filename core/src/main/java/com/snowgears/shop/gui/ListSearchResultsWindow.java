@@ -18,7 +18,6 @@ public class ListSearchResultsWindow extends ShopGuiWindow {
     public ListSearchResultsWindow(UUID player, ItemStack searchItem){
         super(player);
 
-        //this.title = "Shops with item: "+Shop.getPlugin().getItemNameUtil().getName(searchItem);
         this.title = Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.LIST_SEARCH_RESULTS);
 
         this.page = Bukkit.createInventory(null, INV_SIZE, this.title);
@@ -36,10 +35,6 @@ public class ListSearchResultsWindow extends ShopGuiWindow {
 
         List<AbstractShop> shops = Shop.getPlugin().getShopHandler().getShopsByItem(this.searchItem);
         Collections.sort(shops, new ComparatorShopType());
-
-        //System.out.println(player.toString()+" number of shops "+shops.size());
-
-        //TODO break up inventory into sections by type (by default. More sorting options to come)
 
         int startIndex = pageIndex * 36; //36 items is a full page in the inventory
         ItemStack icon;
@@ -61,23 +56,6 @@ public class ListSearchResultsWindow extends ShopGuiWindow {
         else{
             page.setItem(53, this.getNextPageIcon());
         }
-    }
-
-    @Override
-    protected void makeMenuBarUpper(){
-        super.makeMenuBarUpper();
-
-//        ItemStack searchIcon = new ItemStack(Material.COMPASS);
-//        ItemMeta meta = searchIcon.getItemMeta();
-//        meta.setDisplayName("Search");
-//        searchIcon.setItemMeta(meta);
-//
-//        page.setItem(8, searchIcon);
-    }
-
-    @Override
-    protected void makeMenuBarLower(){
-        super.makeMenuBarLower();
     }
 }
 

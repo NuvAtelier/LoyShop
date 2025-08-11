@@ -127,17 +127,6 @@ public class MiscListener implements Listener {
                     return;
                 }
 
-                //change default shop type based on permissions
-                //TODO I dont like this. I would rather throw an error for permissions
-//                type = ShopType.SELL;
-//                if (plugin.usePerms()) {
-//                    if (!player.hasPermission("shop.create.sell")) {
-//                        type = ShopType.BUY;
-//                        if (!player.hasPermission("shop.create.buy"))
-//                            type = ShopType.BARTER;
-//                    }
-//                }
-
                 type = plugin.getShopCreationUtil().getShopType(event.getLine(3));
                 isAdmin = plugin.getShopCreationUtil().getShopIsAdmin(event.getLine(3));
 
@@ -302,7 +291,6 @@ public class MiscListener implements Listener {
                             return;
                         }
                         else if (currentProcess == null && player.isSneaking()){
-                            // Long lastCreatedProcess = lastChatCreation.get(player.getUniqueId());
                             //if the player has created a new process in the last 5 seconds, block them from creating another
                             if(lastCreatedProcess != null && (new Date().getTime() - lastCreatedProcess) < plugin.getDebug_shopCreateCooldown()) {
                                 ShopMessage.sendMessage("interactionIssue", "createCooldown", player, null);
@@ -430,7 +418,6 @@ public class MiscListener implements Listener {
                         ShopMessage.sendMessage("interactionIssue", "line2", player, null);
                         ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
                         process.cleanup();
-                        //event.setCancelled(true);
                         //instead of cancelling the chat event, just let them know what they typed wasnt a number and break them out of the creation process so they aren't chat locked
                         playerChatCreationSteps.remove(player.getUniqueId());
                         return;
@@ -441,7 +428,6 @@ public class MiscListener implements Listener {
                     if(process.getShopType() == ShopType.BARTER){
                         process.displayFloatingText(process.getShopType().toString(), "createHitChest");
                         if (plugin.allowCreativeSelection()) {
-                            // ToDo: Allow multiple floating displays, or combine this text, up to you
                             ShopMessage.sendMessage(process.getShopType().toString(), "initializeBarterAlt", player, null);
                         }
                     }
@@ -452,7 +438,6 @@ public class MiscListener implements Listener {
                 case ITEM_PRICE:
                     double price = plugin.getShopCreationUtil().getShopPrice(player, event.getMessage(), process.getShopType());
                     if(price == -1){
-                        //event.setCancelled(true);
                         //instead of cancelling the chat event, just let them know what they typed wasnt a number and break them out of the creation process so they aren't chat locked
                         process.cleanup();
                         playerChatCreationSteps.remove(player.getUniqueId());
@@ -474,7 +459,6 @@ public class MiscListener implements Listener {
                 case ITEM_PRICE_COMBO:
                     double priceCombo = plugin.getShopCreationUtil().getShopPriceCombo(player, event.getMessage(), process.getShopType());
                     if(priceCombo == -1){
-                        //event.setCancelled(true);
                         //instead of cancelling the chat event, just let them know what they typed wasnt a number and break them out of the creation process so they aren't chat locked
                         process.cleanup();
                         playerChatCreationSteps.remove(player.getUniqueId());
@@ -503,7 +487,6 @@ public class MiscListener implements Listener {
                     } catch (NumberFormatException e) {
                         ShopMessage.sendMessage("interactionIssue", "line2", player, null);
                         ShopMessage.sendMessage("interactionIssue", "createCancel", player, null);
-                        //event.setCancelled(true);
                         //instead of cancelling the chat event, just let them know what they typed wasnt a number and break them out of the creation process so they aren't chat locked
                         process.cleanup();
                         playerChatCreationSteps.remove(player.getUniqueId());
@@ -689,7 +672,7 @@ public class MiscListener implements Listener {
                     }
                 } else {
                     ShopMessage.sendMessage("permission", "destroyOther", player, shop);
-                    event.setCancelled(true);
+                    // event.setCancelled(true);
                 }
             }
             else{
@@ -734,8 +717,6 @@ public class MiscListener implements Listener {
             //find out if the player placed a chest next to an already active shop
             AbstractShop shop = plugin.getShopHandler().getShopTouchingBlock(b);
             if (shop == null || (b.getType() != shop.getChestLocation().getBlock().getType()))
-                return;
-            else if(b.getType() == Material.ENDER_CHEST)
                 return;
 
             //owner is trying to
