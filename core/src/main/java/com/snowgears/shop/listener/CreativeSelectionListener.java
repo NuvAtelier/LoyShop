@@ -346,7 +346,7 @@ public class CreativeSelectionListener implements Listener {
      * Make sure that if player somehow quit without getting their old data back, return it to them when they login next
      */
     @EventHandler
-    public void onLogin(PlayerLoginEvent event){
+    public void onLogin(PlayerJoinEvent event){
         final Player player = event.getPlayer();
         
         // Immediately attempt to restore PlayerData if it exists
