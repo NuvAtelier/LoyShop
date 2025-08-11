@@ -186,6 +186,71 @@ public class ShopListenerClickMatrixTest extends BaseMockBukkitTest {
     }
 
     @Test
+    void chest_rightClick_nonOwner_operator_nonAdmin_noExecute_noCancel() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 28, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+
+        // Operator but non-owner
+        PlayerMock operator = server.addPlayer();
+        operator.setOp(false);
+        operator.addAttachment(getPlugin(), "shop.operator", true);
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(operator, Action.RIGHT_CLICK_BLOCK, operator.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        // For non-admin shops, operator should receive an info message and not execute an action or cancel the event
+        Mockito.verify(spy, Mockito.never()).executeClickAction(any(PlayerInteractEvent.class), any(ShopClickType.class));
+        assertFalse(event.isCancelled(), "Operator opening non-admin shop should not be cancelled and should not execute an action");
+    }
+
+    @Test
+    void chest_rightClick_nonOwner_operator_admin_executes_andCancels() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 29, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+        // Make the shop behave like an admin shop
+        when(spy.isAdmin()).thenReturn(true);
+
+        // Operator but non-owner
+        PlayerMock operator = server.addPlayer();
+        operator.setOp(false);
+        operator.addAttachment(getPlugin(), "shop.operator", true);
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(operator, Action.RIGHT_CLICK_BLOCK, operator.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        verify(spy).executeClickAction(any(PlayerInteractEvent.class), Mockito.eq(ShopClickType.RIGHT_CLICK_CHEST));
+        assertTrue(event.isCancelled(), "Operator opening admin shop should cancel and execute action");
+    }
+
+    @Test
+    void chest_rightClick_nonOwner_displayTagsShown_whenRightClickChestOptionEnabled() {
+        // Enable RIGHT_CLICK_CHEST display tag behavior
+        setConfig("displayTagOption", com.snowgears.shop.display.DisplayTagOption.RIGHT_CLICK_CHEST);
+
+        AbstractShop shop = createInitializedShopAt(new Location(world, 31, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+
+        // Spy display and inject
+        com.snowgears.shop.display.AbstractDisplay displayMock = Mockito.mock(com.snowgears.shop.display.AbstractDisplay.class);
+        when(spy.getDisplay()).thenReturn(displayMock);
+
+        // Non-owner without operator permission
+        PlayerMock stranger = server.addPlayer();
+        stranger.setOp(false);
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(stranger, Action.RIGHT_CLICK_BLOCK, stranger.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        // Non-owner path should cancel, execute action, and show display tags when RIGHT_CLICK_CHEST option is enabled
+        verify(spy).executeClickAction(any(PlayerInteractEvent.class), Mockito.eq(ShopClickType.RIGHT_CLICK_CHEST));
+        verify(displayMock).showDisplayTags(stranger);
+        assertTrue(event.isCancelled(), "Non-owner RIGHT_CLICK_CHEST should be cancelled and show display tags");
+    }
+
+    @Test
     void chest_offHand_ignored_noCall_noCancel() {
         AbstractShop shop = createInitializedShopAt(new Location(world, 26, 65, 10));
         AbstractShop spy = spyAndReplace(shop);
