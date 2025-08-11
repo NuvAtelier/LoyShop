@@ -159,21 +159,13 @@ public class InventoryUtils {
             Repairable item2Cost = (Repairable) itemStack2.getItemMeta();
             item2Cost.setRepairCost(0);
 
-            itemStack1.setItemMeta(item1Cost); // @TODO: I believe this should be item1Cost
+            itemStack1.setItemMeta(item1Cost);
             itemStack2.setItemMeta(item2Cost);
         }
 
         ItemMeta i1Meta = itemStack1.getItemMeta();
         ItemMeta i2Meta = itemStack2.getItemMeta();
 
-        //special case to check for beehives
-        //TODO might have to implement some other case checks for potions and other unique items
-
-        //would have to check for 1.15 here too
-//        if(i1.getType() == Material.BEEHIVE){
-//            if(((Beehive)((BlockStateMeta)i1Meta).getBlockState()).getEntityCount() == ((Beehive)((BlockStateMeta)i2Meta).getBlockState()).getEntityCount())
-//                return true;
-//        }
 
         // Check if shulker box contents are identical
         if(itemStack1.getType().toString().toLowerCase().contains("shulker_box")){

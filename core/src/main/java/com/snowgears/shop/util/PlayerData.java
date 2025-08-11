@@ -104,7 +104,6 @@ public class PlayerData {
         player.setGameMode(oldGameMode);
         player.setAllowFlight(allowFlight);
         player.setFlying(isFlying);
-        //System.out.println("[Shop] set old gamemode to "+oldGameMode.toString());
         removeFile();
     }
 

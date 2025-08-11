@@ -46,9 +46,6 @@ public class ShopCreationUtil {
         int numberOfShops = plugin.getShopHandler().getNumberOfShops(player);
         int buildPermissionNumber = plugin.getShopListener().getBuildLimit(player);
 
-        //System.out.println("[Shop] "+player.getName()+" currently has "+numberOfShops+" shops.");
-        //System.out.println("[Shop] "+player.getName()+" build limit is "+buildPermissionNumber+" shops.");
-
         if ((!plugin.usePerms() && !player.isOp()) || (plugin.usePerms() && !player.hasPermission("shop.operator"))) {
             if (numberOfShops >= buildPermissionNumber) {
                 ShopMessage.sendMessage("permission", "buildLimit", player, null);
@@ -159,7 +156,6 @@ public class ShopCreationUtil {
         //removed all the direction checking code. just make sure its a container
         //make sure that the sign is in front of the chest, unless it is a shulker box
         if (chestBlock.getState() instanceof Container || (plugin.useEnderChests() && chestBlock.getType() == Material.ENDER_CHEST)) {
-            //System.out.println("Chest of shop was a container.");
             existingShop = plugin.getShopHandler().getShopByChest(chestBlock);
             if (existingShop != null) {
                 //if the block they are adding a sign to is already a shop, do not let them
@@ -260,16 +256,13 @@ public class ShopCreationUtil {
             boolean passesItemList = plugin.getShopHandler().passesItemListCheck(itemStack);
             if (!passesItemList) {
                 ShopMessage.sendMessage("interactionIssue", "itemListDeny", player, null);
-                //shop.sendEffects(false, player);
                 return false;
             }
         }
 
-        //System.out.println("[shop] item: "+ itemStack.getType().toString()+", otherItem: "+barterItemStack.getType().toString());
         // Always perform this check, even if admin!
         if (InventoryUtils.itemstacksAreSimilar(itemStack, barterItemStack)) {
             ShopMessage.sendMessage("interactionIssue", "sameItem", player, null);
-            //shop.sendEffects(false, player);
             return false;
         }
         return true;
@@ -295,8 +288,6 @@ public class ShopCreationUtil {
             if (!UtilMethods.materialIsNonIntrusive(aboveShop.getType())) {
                 if(plugin.forceDisplayToNoneIfBlocked()){
                     shop.getDisplay().setType(DisplayType.NONE, false);
-                    //shop.getDisplay().spawn(player);
-                    //shop.updateSign();
                 }
                 else {
                     ShopMessage.sendMessage("interactionIssue", "displayRoom", player, shop);
@@ -348,7 +339,6 @@ public class ShopCreationUtil {
                 ShopMessage.sendMessage(shop.getType().toString(), "initializeInfo", player, shop);
                 process.setStep(ShopCreationProcess.ChatCreationStep.SIGN_BARTER_ITEM);
                 process.displayFloatingText(shop.getType().toString(), "initializeBarter");
-                // ShopMessage.sendMessage(shop.getType().toString(), "initializeBarter", player, shop);
                 if(plugin.allowCreativeSelection()) {
                     ShopMessage.sendMessage("BUY", "initializeAlt", player, shop);
                 }
@@ -414,7 +404,6 @@ public class ShopCreationUtil {
             }
         }
         //only allow price to be zero if the type is selling
-        //if (price < 0 || (price == 0 && !(type == ShopType.SELL))) {
         if (price < 0 || (price == 0 && shopType == ShopType.BARTER)) {
             ShopMessage.sendMessage("interactionIssue", "line3", player, null);
             return -1;
@@ -453,7 +442,6 @@ public class ShopCreationUtil {
     }
 
     public PricePair getShopPricePair(Player player, String input, ShopType shopType){
-        PricePair pricePair = null;
         double price = 0;
         double priceCombo = 0;
         if (plugin.getCurrencyType() == CurrencyType.VAULT) {
@@ -503,7 +491,6 @@ public class ShopCreationUtil {
             }
         }
         //only allow price to be zero if the type is selling
-        //if (price < 0 || (price == 0 && !(type == ShopType.SELL))) {
         if (price < 0 || (price == 0 && shopType == ShopType.BARTER)) {
             ShopMessage.sendMessage("interactionIssue", "line3", player, null);
             return null;

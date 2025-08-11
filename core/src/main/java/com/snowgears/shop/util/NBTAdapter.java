@@ -69,7 +69,6 @@ public class NBTAdapter {
                 ItemStack is = de.tr7zw.changeme.nbtapi.NBTItem.convertNBTtoItem(enderNBTCompounds[i]);
                 int slot = enderListCompounds.get(i).getByte("Slot");
                 tempEnderEnv.setItem(slot, is);
-                //System.out.println(slot+" - "+is.getType().toString());
             }
             return tempEnderEnv;
         } catch (Exception e) { handleException(e.getMessage()); }
@@ -98,13 +97,10 @@ public class NBTAdapter {
                     de.tr7zw.changeme.nbtapi.NBTCompound nbtCompound = de.tr7zw.changeme.nbtapi.NBTItem.convertItemtoNBT(is);
                     nbtCompound.setByte("Slot", (byte)i);
                     enderListCompounds.addCompound(nbtCompound);
-                    //System.out.println("saving -> " + i + " - " + is.getType().toString());
                 }
             }
             nbtFile.save();
-        } catch (Exception e) { handleException(e.getMessage()); }
-        catch (NoClassDefFoundError e) { handleException(e.getMessage()); }
-        catch (Error e) { handleException(e.getMessage()); }
+        } catch (Error | Exception e) { handleException(e.getMessage()); }
         // Note, should have shut down shop already, but just in case
         plugin.getLogger().severe("[NBTAdapter] Error while trying to use built in NBTAPI library! Unable to save EnderChest player data!");
         plugin.getLogger().severe("[NBTAdapter] Please disable Ender Chests as a supported container, or install the latest version of Shop!");

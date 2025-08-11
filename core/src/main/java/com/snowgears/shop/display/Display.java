@@ -49,7 +49,7 @@ public class Display extends AbstractDisplay {
         entityItem.setRemainingFireTicks(-1);
         entityItem.setNoGravity(true);
         entityItem.persist = true;
-        entityItem.setDeltaMovement(new Vec3(0.0D, 0.0D, 0.0D)); //setDeltaMovements() //not sure if this is the same as setMot() that was there first
+        entityItem.setDeltaMovement(new Vec3(0.0D, 0.0D, 0.0D)); //not sure if this is the same as setMot() that was there first
         entityItem.setPickUpDelay(32767);
         entityItem.setTicksFrozen(2147483647);
 
@@ -68,8 +68,7 @@ public class Display extends AbstractDisplay {
 
     @Override
     protected void spawnArmorStandPacket(Player player, ArmorStandData armorStandData, String text) {
-        boolean hasText = (text != null && ChatColor.stripColor(text).length() > 0);
-        boolean hasEquipment = armorStandData.getEquipment() != null;
+        boolean hasText = (text != null && !ChatColor.stripColor(text).isEmpty());
         
         Location location = armorStandData.getLocation();
         ServerLevel mcServerLevel = nmsHelper.getMCServerLevel(location);
@@ -99,7 +98,6 @@ public class Display extends AbstractDisplay {
             float z = (float)Math.toDegrees(angle.getZ());
             armorStand.setRightArmPose(new Rotations(x, y, z));
         }
-        //armorStand.setHeadPose(new Rotations(0.0F, 0.0F, 0.0F));
         armorStand.setMarker(true);
         armorStand.setNoGravity(true);
         armorStand.setInvulnerable(true);
@@ -169,8 +167,7 @@ public class Display extends AbstractDisplay {
                 if(isSameWorld(player)) {
                     ServerPlayerConnection connection = (ServerPlayerConnection) Shop.getPlugin().getShopHandler().getCachedPlayerConnection(player);
                     if (connection != null) {
-                        connection.send(packet); //sendPacket()
-                        //System.out.println("Sending player a packet: "+packet.getClass().toString());
+                        connection.send(packet);
                     }
                 }
             }
@@ -178,7 +175,7 @@ public class Display extends AbstractDisplay {
                 for (Player onlinePlayer : this.shopSignLocation.getWorld().getPlayers()) {
                     ServerPlayerConnection connection = (ServerPlayerConnection) Shop.getPlugin().getShopHandler().getCachedPlayerConnection(onlinePlayer);
                     if(connection != null) {
-                        connection.send(packet); //sendPacket
+                        connection.send(packet);
                     }
                 }
             }

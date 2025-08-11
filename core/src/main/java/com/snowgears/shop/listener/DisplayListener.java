@@ -90,7 +90,6 @@ public class DisplayListener implements Listener {
             Iterator<Recipe> recipeIterator = plugin.getServer().recipeIterator();
             while(recipeIterator.hasNext()) {
                 ItemStack result = recipeIterator.next().getResult();
-                //System.out.println("[Shop] adding recipe for gamble. "+result.getType().toString()+" (x"+result.getAmount()+")");
                 if(result.getAmount() != 0)
                     recipes.put(result, true);
             }
@@ -106,8 +105,6 @@ public class DisplayListener implements Listener {
 
         if(InventoryUtils.isEmpty(shop.getInventory())) {
             int index = new Random().nextInt(allServerRecipeResults.size());
-            //TODO maybe later on add random amount between 1-64 depending on item type
-            //like you could get 46 stack of dirt but not 46 stack of swords
             return allServerRecipeResults.get(index);
         } else {
             return InventoryUtils.getRandomItem(shop.getInventory());

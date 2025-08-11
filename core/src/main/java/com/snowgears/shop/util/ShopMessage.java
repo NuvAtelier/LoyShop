@@ -7,7 +7,6 @@ import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import net.md_5.bungee.api.chat.*;
-// import net.md_5.bungee.chat.ComponentSerializer;
 
 import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
@@ -109,13 +108,9 @@ public class ShopMessage {
                     plugin.getLogger().trace("[ShopMessage.replacePlaceholder]  *** placeholder " + placeholder + "  value: " + message);
                     return message;
                 }
-            } catch (Exception e) {
+            } catch (Error | Exception e) {
                 // Log the exception
                 Bukkit.getLogger().warning("Error replacing placeholder " + placeholder + ": " + e.getMessage());
-                // e.printStackTrace();
-            } catch (Error e) {
-                Bukkit.getLogger().warning("Error replacing placeholder " + placeholder + ": " + e.getMessage());
-                // e.printStackTrace();
             }
         }
         // If placeholder not found, remove the placeholder and just return an empty string
@@ -248,8 +243,6 @@ public class ShopMessage {
      */
     public static void sendMessage(String message, Player player, PlaceholderContext context) {
         TextComponent fancyMessage = format(message, context);
-        // Verify we are not trying to send an empty string or null
-        // if(!ChatColor.stripColor(fancyMessage.toLegacyText()).trim().isEmpty())
         plugin.getLogger().debug("Sent msg to player " + player.getName() + ": " + fancyMessage.toLegacyText(), true);
         try {
             player.spigot().sendMessage(fancyMessage);
@@ -734,7 +727,6 @@ public class ShopMessage {
 
             // Add the lines for each
             int i = 0;
-            int remainingOutOfStock = 0;
             List<String> remainingShopsMsgs = new ArrayList<>();
             for (AbstractShop shop : outOfStock) {
                 i++;
@@ -865,26 +857,12 @@ public class ShopMessage {
     }
 
     public static ArrayList<String> getDisplayTags(AbstractShop shop, ShopType shopType){
-
-        //in future may need to add more options here like "admin" or "no stock" or "no display" other than normal
-
-//        String shopFormat;
-//        if(shop.isAdmin())
-//            shopFormat = "admin";
-//        else
-            String shopFormat = "normal";
-
-//        if(displayType == DisplayType.NONE){
-//            shopFormat += "_no_display";
-//        }
-
         ArrayList<String> formattedLines = new ArrayList<>();
-        List<String> lines = displayTextMap.get(shopType.toString().toUpperCase()+"_"+shopFormat);
+        List<String> lines = displayTextMap.get(shopType.toString().toUpperCase()+"_normal");
 
         String formattedLine;
         for(String line : lines) {
             formattedLine = formatMessage(line, shop, null, false);
-//            formattedLine = ChatColor.translateAlternateColorCodes('&', formattedLine);
 
             Boolean splitLine = formattedLine.contains("[split]");
             formattedLine = formattedLine.replace("[split]", "");

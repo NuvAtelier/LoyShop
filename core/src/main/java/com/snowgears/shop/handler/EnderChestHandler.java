@@ -91,6 +91,5 @@ public class EnderChestHandler {
         } catch (Exception e) {
             Shop.getPlugin().getLogger().log(Level.SEVERE, "Unable to save enderchest to file!");
         }
-
     }
 }

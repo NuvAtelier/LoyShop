@@ -24,9 +24,6 @@ public abstract class ShopGuiWindow {
     private int currentSlot;
     protected int pageIndex;
 
-    //TODO FOR SORTING, HAVE AN ARRAY LIST OF SORT_OPTIONS HERE THAT YOU USE ALONG WITH PAGE INDEX TO GO TO NEXT PAGE
-    //For example, sort by name_ascending, name_descending, keyword, number of stock, shop type, etc...
-
     public ShopGuiWindow(UUID player){
         this.player = player;
         page = null;
@@ -70,15 +67,6 @@ public abstract class ShopGuiWindow {
         return false;
     }
 
-    //TODO make paging (scrolling) and previous window different
-    //previous window will be in top left always (BARRIER?), going back to another window
-    //previous page will simply set the inventory to the next group of items to display within the current window
-
-//    public void setPrevWindow(ShopGuiWindow prevWindow){
-//        this.prevWindow = this;
-//        page.setItem(45, new ItemStack(Material.STAINED_GLASS_PANE));
-//    }
-
     public void setPrevWindow(ShopGuiWindow prevWindow){
         this.prevWindow = prevWindow;
         page.setItem(0, this.getBackIcon());
@@ -112,17 +100,6 @@ public abstract class ShopGuiWindow {
         return false;
     }
 
-    //use plugin.getGuiHandler().closeWindow(player);
-//    public boolean close(){
-//        Player p = this.getPlayer();
-//        if(p != null){
-//            p.closeInventory();
-//            return true;
-//        }
-//        return false;
-//    }
-
-
     //override in subclasses
     protected void initInvContents(){
         currentSlot = 9;
@@ -134,14 +111,8 @@ public abstract class ShopGuiWindow {
         }
     }
 
-    //TODO search will always be in top right and will search anything all items in page or in list
-    protected void makeMenuBarUpper(){
-        //override in subclasses
-    }
-
-    protected void makeMenuBarLower(){
-        //override in subclasses
-    }
+    protected void makeMenuBarUpper(){/* override in subclasses */}
+    protected void makeMenuBarLower(){/* override in subclasses */}
 
     public Player getPlayer(){
         return Bukkit.getPlayer(player);

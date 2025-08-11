@@ -7,27 +7,19 @@ import java.util.UUID;
 
 public class SearchWindow extends ShopGuiWindow {
 
-    //TODO make this inventory of type anvil and do an acition on pressing enter after searching
     public SearchWindow(UUID player){
         super(player);
-        //String title = Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.SEARCH);
         this.page = Bukkit.createInventory(null, InventoryType.ANVIL, "Search");
         initInvContents();
     }
 
     @Override
-    protected void initInvContents(){
-
-    }
+    protected void initInvContents(){/* no-op */}
 
     @Override
-    protected void makeMenuBarUpper(){
-
-    }
+    protected void makeMenuBarUpper(){ /* no-op */}
 
     @Override
-    protected void makeMenuBarLower(){
-
-    }
+    protected void makeMenuBarLower(){ /* no-op */}
 }
 

@@ -117,9 +117,6 @@ public class UtilMethods {
         if (value == Double.MIN_VALUE) return formatLongToKString(Double.MIN_VALUE + 1, formatZeros);
         if (value < 0) return "-" + formatLongToKString(-value, formatZeros);
 
-        //System.out.println("formatting value: "+value);
-        //NavigableMap<Double, Pair<Double, Double>> e = Shop.getPlugin().getPriceSuffixes();
-
         Map.Entry<Double, String> e = Shop.getPlugin().getPriceSuffixes().floorEntry(value);
         Double minimumValue = Shop.getPlugin().getPriceSuffixMinimumValue();;
 
@@ -130,11 +127,8 @@ public class UtilMethods {
                 return new DecimalFormat("#.##").format(value);
         }
 
-        //Map.Entry<Double, String> e = suffixes.floorEntry(value);
         Double divideBy = e.getKey();
         String suffix = e.getValue();
-
-        //System.out.println("divideBy: "+divideBy+", suffix: "+suffix);
 
         double truncated = value / (divideBy / 10); //the number part of the output times 10
         boolean hasDecimal = truncated < 100 && (truncated / 10d) != (truncated / 10);
@@ -148,10 +142,6 @@ public class UtilMethods {
             fPrice = (truncated / 10);
         }
 
-//        if(formatZeros)
-//            builtString = new DecimalFormat("0.00").format(fPrice);
-//        else
-//            builtString = new DecimalFormat("#.##").format(fPrice);
         builtString = new DecimalFormat("#.##").format(fPrice);
         builtString += suffix;
         return builtString;
@@ -345,7 +335,6 @@ public class UtilMethods {
 
         if(player.getLocation().getPitch() < 0)
             d = -d;
-        //System.out.println("Side clicked: "+d);
 
         if(d > 0)
             return 1;

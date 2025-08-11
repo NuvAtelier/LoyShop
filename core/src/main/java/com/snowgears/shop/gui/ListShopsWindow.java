@@ -19,20 +19,12 @@ public class ListShopsWindow extends ShopGuiWindow {
     private List<AbstractShop> allShops;
 
     public ListShopsWindow(UUID player){
-
         super(player);
-
         //TODO save a list of all shops to a collection when opening this window for you to modify with filters
-
         this.title = Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.LIST_SHOPS);
-
         this.page = Bukkit.createInventory(null, INV_SIZE, this.title);
-
         allShops = Shop.getPlugin().getShopHandler().getAllShops();
-        //Collections.sort(allShops, new ShopItemComparator()); //this will be taken care of in inv contents
-
         initInvContents();
-
     }
 
     @Override
@@ -149,11 +141,6 @@ public class ListShopsWindow extends ShopGuiWindow {
             ItemStack searchIcon = Shop.getPlugin().getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.HOME_SEARCH, null, null);
             page.setItem(8, searchIcon);
         }
-    }
-
-    @Override
-    protected void makeMenuBarLower(){
-        super.makeMenuBarLower();
     }
 }
 

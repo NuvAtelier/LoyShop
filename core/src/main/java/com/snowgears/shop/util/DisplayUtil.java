@@ -319,18 +319,6 @@ public class DisplayUtil {
             standLocation.setYaw(blockfaceToYaw(nextFace(facing)));
         }
 
-        //TODO come back to this
-        //removed barrel and shulker box check because it requires getBlock() which ends up loading the chunk
-//        try {
-//            Block chestBlock = blockLocation.getBlock();
-//            if (chestBlock.getRelative(BlockFace.DOWN).getState() instanceof ShulkerBox) {
-//                standLocation.add(0, 0.1, 0);
-//            }
-//            else if(UtilMethods.isMCVersion14Plus() && (chestBlock.getType() == Material.BARREL || chestBlock.getRelative(BlockFace.DOWN).getType() == Material.BARREL)){
-//                standLocation.add(0, 0.1, 0); //y was 0.22 for items before packets were used
-//            }
-//        } catch (NoClassDefFoundError e) {}
-
         //material is an item
         return standLocation;
     }

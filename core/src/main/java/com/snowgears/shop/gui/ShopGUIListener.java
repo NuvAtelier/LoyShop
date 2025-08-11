@@ -97,15 +97,6 @@ public class ShopGUIListener implements Listener {
                         }
                     }
 
-                    //TODO search window
-                    //this is the case in all windows
-//                    if(event.getRawSlot() == 8 && clicked.getType() == Material.COMPASS) {
-//                        SearchWindow searchWindow = new SearchWindow(player.getUniqueId());
-//                        searchWindow.setPrevWindow(window);
-//                        plugin.getGuiHandler().setWindow(player, searchWindow);
-//                        return;
-//                    }
-
                     //this is the case in all windows
                     if(event.getRawSlot() == 45){
                         window.scrollPagePrev();
@@ -168,8 +159,6 @@ public class ShopGUIListener implements Listener {
                         }
                     }
                     else if(window instanceof ListPlayersWindow){
-                        //ItemStack playerIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER, null, null); //for some reason this is returning null
-                        //ItemStack adminPlayerIcon = plugin.getGuiHandler().getIcon(ShopGuiHandler.GuiIcon.LIST_PLAYER_ADMIN, null, null);
 
                         String playerUUIDString = clicked.getItemMeta().getPersistentDataContainer().get(plugin.getPlayerUUIDNameSpacedKey(), PersistentDataType.STRING);
                         UUID uuid;
@@ -378,14 +367,6 @@ public class ShopGUIListener implements Listener {
 
                         Shop.getPlugin().getGuiHandler().toggleNotificationSetting(player, option);
 
-                        //switch the color
-//                        if(clicked.getDurability() == 5){
-//                            clicked.setDurability((short)14);
-//                        }
-//                        else{
-//                            clicked.setDurability((short)5);
-//                        }
-
                         player.updateInventory();
                         return;
                     }
@@ -447,8 +428,6 @@ public class ShopGUIListener implements Listener {
                     }
                 }
             }
-            //System.out.println("Inventory slot: "+event.getSlot());
-            //System.out.println("Inventory raw slot: "+event.getRawSlot());
         }
     }
 }

@@ -144,20 +144,5 @@ public class UpdateChecker {
         // For now, ignore the tags, since it is likely the "commit" tag on the local version
         // but on the spigot version we do not include the commit hash in the version string
         return 0;
-
-        // // Numeric parts are equal, compare tags
-        // boolean v1TagEmpty = v1Tag.isEmpty();
-        // boolean v2TagEmpty = v2Tag.isEmpty();
-
-        // if (v1TagEmpty && v2TagEmpty) {
-        //     return 0; // Both tags are empty
-        // } else if (v1TagEmpty) {
-        //     return 1; // v1 has no tag, so it's newer
-        // } else if (v2TagEmpty) {
-        //     return -1; // v2 has no tag, so it's newer
-        // } else {
-        //     // Both have tags, compare them lexicographically
-        //     return v1Tag.compareTo(v2Tag);
-        // }
     }
 }

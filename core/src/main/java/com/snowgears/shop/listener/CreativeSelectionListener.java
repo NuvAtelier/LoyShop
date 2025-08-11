@@ -315,7 +315,6 @@ public class CreativeSelectionListener implements Listener {
         if(playerDataMap.containsKey(player.getUniqueId())) {
             return;
         }
-        //System.out.println("Creating new player data.");
         PlayerData data = new PlayerData(player, shopSignLocation, guiSearch);
         playerDataMap.put(player.getUniqueId(), data);
 

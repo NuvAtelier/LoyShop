@@ -11,7 +11,6 @@ import java.util.UUID;
 
 public class PlayerSettingsWindow extends ShopGuiWindow {
 
-    //TODO this window will call the player settings handler and set different variables in the associated player settings class
     public PlayerSettingsWindow(UUID player){
         super(player);
         this.title = Shop.getPlugin().getGuiHandler().getTitle(ShopGuiHandler.GuiTitle.SETTINGS);
@@ -39,14 +38,5 @@ public class PlayerSettingsWindow extends ShopGuiWindow {
         }
     }
 
-//    @Override
-//    protected void makeMenuBarUpper(){
-//
-//    }
-//
-//    @Override
-//    protected void makeMenuBarLower(){
-//
-//    }
 }
 

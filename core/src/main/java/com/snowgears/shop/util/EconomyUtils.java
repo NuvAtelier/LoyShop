@@ -23,7 +23,6 @@ public class EconomyUtils {
                 return (stock >= amount);
             case EXPERIENCE:
                 int exp = getExperience(player);
-//                System.out.println("hasSufficientFunds is "+(exp > amount));
                 return (exp > amount);
             default:
                 return false;
@@ -54,7 +53,6 @@ public class EconomyUtils {
                 double balance = Shop.getPlugin().getEconomy().getBalance(player);
                 return balance;
             case EXPERIENCE:
-//                System.out.println("getFunds is "+getExperience(player));
                 return getExperience(player);
             case ITEM:
                 ItemStack currency = Shop.getPlugin().getItemCurrency().clone();
@@ -78,9 +76,7 @@ public class EconomyUtils {
             case EXPERIENCE:
                 Player onlinePlayer = player.getPlayer();
                 if (onlinePlayer != null) {
-//                    System.out.println("removeFunds before: "+onlinePlayer.getTotalExperience());
                     setTotalExperience(onlinePlayer, getTotalExperience(onlinePlayer) - (int)amount);
-//                    System.out.println("removeFunds after: "+onlinePlayer.getTotalExperience());
                     return true;
                 } else {
                     PlayerExperience expData = PlayerExperience.loadFromFile(player);
@@ -118,9 +114,7 @@ public class EconomyUtils {
             case EXPERIENCE:
                 Player onlinePlayer = player.getPlayer();
                 if (onlinePlayer != null) {
-//                    System.out.println("addFunds before: "+onlinePlayer.getTotalExperience());
                     setTotalExperience(onlinePlayer, getTotalExperience(onlinePlayer) + (int)amount);
-//                    System.out.println("addFunds after: "+onlinePlayer.getTotalExperience());
                     return true;
                 } else {
                     PlayerExperience expData = PlayerExperience.loadFromFile(player);

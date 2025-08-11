@@ -7,7 +7,6 @@ import com.snowgears.shop.util.ConfigUpdater;
 import com.snowgears.shop.util.PlayerSettings;
 import com.snowgears.shop.util.ShopMessage;
 import com.snowgears.shop.util.UtilMethods;
-import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -51,7 +50,6 @@ public class ShopGuiHandler {
     private HashMap<GuiTitle, String> guiWindowTitles = new HashMap<>();
 
     private HashMap<UUID, ItemStack> playerHeads = new HashMap<>();
-    //private HashMap<UUID, String>
 
     public ShopGuiHandler(Shop instance){
         plugin = instance;
@@ -79,7 +77,6 @@ public class ShopGuiHandler {
         player.closeInventory();
     }
 
-    //TODO make this text configurable
     public void reloadPlayerHeadIcon(AbstractShop shop){
         if(shop == null || shop.getOwnerUUID() == null)
             return;
@@ -90,8 +87,6 @@ public class ShopGuiHandler {
         ItemMeta itemMeta;
         ItemStack placeHolderIcon;
         if(playerHead == null) {
-            //System.out.println("[Shop] building new player head for player - "+playerUUID);
-
             //playerUUID is the fake admin UUID
             if(playerUUID.equals(plugin.getShopHandler().getAdminUUID())) {
                 playerHead = Shop.getPlugin().getGuiHandler().getIcon(GuiIcon.ALL_ADMIN_ICON, playerUUID, null).clone();
@@ -101,7 +96,6 @@ public class ShopGuiHandler {
                 playerHead = new ItemStack(Material.PLAYER_HEAD);
                 itemMeta = playerHead.getItemMeta();
 
-                //System.out.println("[Shop] player was not null. Adding owning player to icon skin");
                 if (offlinePlayer != null && offlinePlayer.getName() != null)
                     ((SkullMeta)itemMeta).setOwningPlayer(offlinePlayer);
             }
@@ -153,9 +147,6 @@ public class ShopGuiHandler {
                 Collectors.toCollection(ArrayList::new)
         );
     }
-
-    //TODO have a change window to type method here that can be called from the button listener to clean things up?
-
 
     public GuiIcon getIconFromOption(Player player, PlayerSettings.Option option){
         return getIconFromOption(player.getUniqueId(), option);
@@ -261,7 +252,6 @@ public class ShopGuiHandler {
         for(GuiTitle titleEnum : GuiTitle.values()) {
             String titleString = config.getString("titles."+titleEnum.toString().toLowerCase());
             guiWindowTitles.put(titleEnum, ChatColor.translateAlternateColorCodes('&', titleString));
-//            System.out.println(titleString);
         }
 
         Set<String> icons = config.getConfigurationSection("icons").getKeys(false);
