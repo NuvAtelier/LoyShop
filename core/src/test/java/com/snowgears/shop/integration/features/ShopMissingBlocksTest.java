@@ -97,15 +97,15 @@ public class ShopMissingBlocksTest extends BaseMockBukkitTest {
         assertNotNull(getPlugin().getShopHandler().getShop(signLoc), "Shop should be registered");
 
         // Corrupt the sign block so it is no longer a Sign
-        world.getBlockAt(signLoc).setType(Material.CHEST);
+        world.getBlockAt(signLoc).setType(Material.DIRT);
+        world.loadChunk(signLoc.getChunk());
 
         // Trigger updateSign, which should catch the ClassCastException and delete the shop
-        shop.setSignLinesRequireRefresh(true);
-        shop.updateSign();
-        server.getScheduler().performTicks(5);
+        shop.updateSign(true);
         server.getScheduler().waitAsyncTasksFinished();
 
         assertNull(getPlugin().getShopHandler().getShop(signLoc), "Shop should be deleted when updateSign detects non-Sign block at sign location");
+        assertTrue(world.getBlockAt(signLoc).getType() == Material.DIRT, "Sign block should remain dirt");
     }
 
     @Test

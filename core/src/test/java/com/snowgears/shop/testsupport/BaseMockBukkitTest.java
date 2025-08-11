@@ -3,6 +3,10 @@ package com.snowgears.shop.testsupport;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockbukkit.mockbukkit.ServerMock;
+import org.mockbukkit.mockbukkit.world.WorldMock;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.block.BlockFace;
 import java.util.Collections;
@@ -59,6 +63,8 @@ public abstract class BaseMockBukkitTest {
             Mockito.doReturn("{count:1,id:\"minecraft:dirt\"}").when(spy).getNBTforItem(Mockito.any());
             setPluginField("nbtAdapter", spy);
         }
+
+        // Test worlds can opt into a chunk auto-load patch via addSimpleWorldPatched(name)
     }
 
     @AfterEach
@@ -172,5 +178,59 @@ public abstract class BaseMockBukkitTest {
                     .thenAnswer(inv -> new EconomyResponse(inv.getArgument(1), 10_000.0, ResponseType.SUCCESS, "ok"));
             setPluginField("econ", mockedEconomy);
         } 
+    }
+
+    // ---------- World helpers to simulate Bukkit's implicit chunk loading ----------
+    /**
+     * Creates a WorldMock and returns a spy that auto-loads chunks on common accessors
+     * (getBlockAt, getChunkAt). Tests should prefer this over server.addSimpleWorld(...)
+     * when verifying chunk-load behavior.
+     * This can be removed once we have pulled our changes into MockBukkit.
+     */
+    protected WorldMock addSimpleWorldPatched(String name) {
+        WorldMock world = getServer().addSimpleWorld(name);
+        WorldMock spyWorld = Mockito.spy(world);
+
+        // getBlockAt(Location) -> ensure chunk loaded
+        Mockito.doAnswer(inv -> {
+            Location loc = inv.getArgument(0);
+            if (loc != null && loc.getWorld() != null) {
+                int cx = loc.getBlockX() >> 4;
+                int cz = loc.getBlockZ() >> 4;
+                spyWorld.loadChunk(cx, cz);
+            }
+            return inv.callRealMethod();
+        }).when(spyWorld).getBlockAt(Mockito.any(Location.class));
+
+        // getBlockAt(int, int, int) -> ensure chunk loaded
+        Mockito.doAnswer(inv -> {
+            int x = inv.getArgument(0);
+            int z = inv.getArgument(2);
+            int cx = x >> 4;
+            int cz = z >> 4;
+            spyWorld.loadChunk(cx, cz);
+            return inv.callRealMethod();
+        }).when(spyWorld).getBlockAt(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt());
+
+        // getChunkAt(Location)
+        Mockito.doAnswer(inv -> {
+            Location loc = inv.getArgument(0);
+            if (loc != null && loc.getWorld() != null) {
+                int cx = loc.getBlockX() >> 4;
+                int cz = loc.getBlockZ() >> 4;
+                spyWorld.loadChunk(cx, cz);
+            }
+            return inv.callRealMethod();
+        }).when(spyWorld).getChunkAt(Mockito.any(Location.class));
+
+        // getChunkAt(int, int)
+        Mockito.doAnswer(inv -> {
+            int cx = inv.getArgument(0);
+            int cz = inv.getArgument(1);
+            spyWorld.loadChunk(cx, cz);
+            return inv.callRealMethod();
+        }).when(spyWorld).getChunkAt(Mockito.anyInt(), Mockito.anyInt());
+
+        return spyWorld;
     }
 }

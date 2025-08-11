@@ -238,8 +238,7 @@ public class ShopCreationUtil {
     public void sendCreationSuccess(Player player, AbstractShop shop){
         if (shop.getDisplay() != null) shop.getDisplay().spawn(player);
         Shop.getPlugin().getLogger().trace("[ShopCreationUtil.sendCreationSuccess] updateSign");
-        shop.setSignLinesRequireRefresh(true);
-        shop.updateSign();
+        shop.updateSign(true);
         shop.setNeedsSave(true);
         ShopMessage.sendMessage(shop.getType().toString(), "create", player, shop);
         shop.sendEffects(true, player);

@@ -171,7 +171,7 @@ public class MiscListener implements Listener {
                     if (!shop.isInitialized()) {
                         shop.delete();
                         if (b.getBlockData() instanceof WallSign) {
-                            String[] lines = ShopMessage.getTimeoutSignLines(shop);
+                            String[] lines = ShopMessage.getSignLines("timeout", shop);
                             Sign sign = (Sign) b.getState();
                             sign.setLine(0, lines[0]);
                             sign.setLine(1, lines[1]);

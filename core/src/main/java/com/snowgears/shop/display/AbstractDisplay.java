@@ -29,26 +29,17 @@ public abstract class AbstractDisplay {
     protected DisplayType type;
     protected HashMap<UUID, ArrayList<Integer>> entityIDs; //player UUID. display entities
     protected HashMap<UUID, ArrayList<Integer>> displayTagEntityIDs; //player UUID. display tags
-    protected int chunkX;
-    protected int chunkZ;
 
     public AbstractDisplay(Location shopSignLocation) {
         this.shopSignLocation = shopSignLocation;
         entityIDs = new HashMap<>();
         displayTagEntityIDs = new HashMap<>();
-
-        chunkX = UtilMethods.floor(shopSignLocation.getBlockX()) >> 4;
-        chunkZ = UtilMethods.floor(shopSignLocation.getBlockZ()) >> 4;
     }
 
     public boolean isEnabled() { return true; }
 
-    public boolean isInChunk(Chunk chunk){
-        return chunk.getX() == chunkX && chunk.getZ() == chunkZ && chunk.getWorld().toString().equals(shopSignLocation.getWorld().toString());
-    }
-
     public boolean isChunkLoaded(){
-        return shopSignLocation.getWorld() != null && shopSignLocation.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
+        return UtilMethods.isChunkLoaded(this.shopSignLocation);
     }
 
     //spawns a floating item packet for a specific player

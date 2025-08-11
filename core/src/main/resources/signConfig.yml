@@ -162,6 +162,11 @@ sign_text:
       2: "&7CREATION TIMEOUT"
       3: ""
       4: ""
+   deleted:
+      1: "&cSHOP CLOSED"
+      2: ""
+      3: ""
+      4: ""
    zeroPrice: "FREE"
    adminStock: "unlimited"
    serverDisplayName: "Server"

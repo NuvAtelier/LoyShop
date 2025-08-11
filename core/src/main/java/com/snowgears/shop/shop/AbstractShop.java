@@ -5,7 +5,6 @@ import com.snowgears.shop.display.AbstractDisplay;
 import com.snowgears.shop.handler.ShopGuiHandler;
 import com.snowgears.shop.util.*;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,7 +27,6 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
-import java.util.logging.Level;
 
 import static com.snowgears.shop.util.UtilMethods.isMCVersion17Plus;
 
@@ -36,6 +34,7 @@ public abstract class AbstractShop {
 
     protected UUID id = UUID.randomUUID();
     protected boolean needsSave = false;
+    protected boolean isLoaded = false;
     protected Location signLocation;
     protected Location chestLocation;
     protected BlockFace facing;
@@ -133,6 +132,10 @@ public abstract class AbstractShop {
         return id;
     }
 
+    public boolean isChunkLoaded() {
+        return UtilMethods.isChunkLoaded(this.getSignLocation());
+    }
+
     //this calls BlockData which loads the chunk the shop is in by doing so
     public boolean load() {
         try {
@@ -159,6 +162,7 @@ public abstract class AbstractShop {
             // Now that we are loaded, we can update the stock
             this.updateStock();
             Shop.getPlugin().getLogger().debug("Loaded shop successfully: " + this);
+            isLoaded = true;
             return true;
         } catch (Error | Exception error) {
             //this shop has no sign on it. return false
@@ -192,11 +196,11 @@ public abstract class AbstractShop {
                 stock = -1;
             return stock;
         }
-        stock = InventoryUtils.getAmount(this.getInventory(), this.getItemStack()) / this.getAmount();
+        int itemsInShop = InventoryUtils.getAmount(this.getInventory(), this.getItemStack());
+        stock = itemsInShop / this.getAmount();
         if(stock == 0 && Shop.getPlugin().getAllowPartialSales()){
             // Calculate the minimum items required to show as in stock
             int minItemAmountRequired = (int) Math.ceil(1 / this.getPricePerItem());
-            int itemsInShop = InventoryUtils.getAmount(this.getInventory(), this.getItemStack());
 
             if(itemsInShop >= minItemAmountRequired){
                 stock = 1;
@@ -214,9 +218,8 @@ public abstract class AbstractShop {
         // Update sign if needed
         boolean hasStockChange = stock != oldStock;
         if(hasStockChange){
-            signLinesRequireRefresh = true;
             Shop.getPlugin().getLogger().trace("[AbstractShop.updateStock] updateSign, new stock != oldStock! newStock: " + stock + " old stock: " + oldStock + "\n" + this);
-            this.updateSign();
+            this.updateSign(true);
 
             //also set marker in here if using a marker integration
             if(Shop.getPlugin().getBluemapHookListener() != null) {
@@ -227,11 +230,8 @@ public abstract class AbstractShop {
             return;
         }
 
-        // If there is not a stock change but we need to refresh the signs, then update the sign.
-        // This is triggered upon a server restart to make sure that the signs are updated.
-        if (!hasStockChange && signLinesRequireRefresh) {
-            this.updateSign();
-        }
+        // Allow sign to update if there is a pending change (signLinesRequireRefresh)
+        this.updateSign();
     }
 
     public int getStock(){
@@ -256,6 +256,7 @@ public abstract class AbstractShop {
     }
 
     public WallSign getSign(){
+        if (!this.isChunkLoaded()) { return null; }
         BlockData signBlockData = this.getSignLocation().getBlock().getBlockData();
         if(signBlockData instanceof WallSign){
             return (WallSign)signBlockData;
@@ -268,7 +269,7 @@ public abstract class AbstractShop {
     }
 
     public Inventory getInventory() {
-        if(chestLocation == null || signLocation == null)
+        if(chestLocation == null || signLocation == null || !this.isChunkLoaded())
             return null;
         Block chestBlock = chestLocation.getBlock();
         if(chestBlock.getType() == Material.ENDER_CHEST) {
@@ -283,7 +284,7 @@ public abstract class AbstractShop {
     }
 
     public Material getContainerType() {
-        if(chestLocation == null)
+        if(chestLocation == null || !this.isChunkLoaded())
             return null;
         try {
             return chestLocation.getBlock().getType();
@@ -401,14 +402,14 @@ public abstract class AbstractShop {
 
         // Remove "0 Damage" from item meta (old config bug)
         this.item = this.removeZeroDamageMeta(is.clone());
-        this.signLinesRequireRefresh = true;
         this.calculateStock();
+        this.updateSign(true);
     }
 
     public void setSecondaryItemStack(ItemStack is) {
         this.secondaryItem = this.removeZeroDamageMeta(is.clone());
-        this.signLinesRequireRefresh = true;
         this.calculateStock();
+        this.updateSign(true);
     }
 
     public ItemStack removeZeroDamageMeta(ItemStack item) {
@@ -433,12 +434,12 @@ public abstract class AbstractShop {
             // Default return original item
             return item;
         } catch (Exception e) {
-            Shop.getPlugin().getLogger().warning("Error removing zero damage meta from item: " + item);
-            Shop.getPlugin().getLogger().warning("checkItemDurability feature may be unsupported on your version of Paper/Spigot!");
+            Shop.getPlugin().getLogger().debug("Error removing zero damage meta from item: " + item);
+            Shop.getPlugin().getLogger().helpful("checkItemDurability feature may be unsupported on your version of Paper/Spigot!");
             return item;
         } catch (Error e) {
-            Shop.getPlugin().getLogger().warning("Error removing zero damage meta from item: " + item);
-            Shop.getPlugin().getLogger().warning("checkItemDurability feature may be unsupported on your version of Paper/Spigot!");
+            Shop.getPlugin().getLogger().debug("Error removing zero damage meta from item: " + item);
+            Shop.getPlugin().getLogger().helpful("checkItemDurability feature may be unsupported on your version of Paper/Spigot!");
             return item;
         }
     }
@@ -501,22 +502,18 @@ public abstract class AbstractShop {
         return UtilMethods.getDurabilityPercent(item);
     }
 
-    public void setSignLinesRequireRefresh(boolean signLinesRequireRefresh){
-        this.signLinesRequireRefresh = signLinesRequireRefresh;
-    }
-
-    public boolean getSignLinesRequireRefresh(){
-        return this.signLinesRequireRefresh;
-    }
-
     public boolean isPerformingTransaction(){
         return isPerformingTransaction;
     }
 
-    public void updateSign() {
+    public void updateSign() { this.updateSign(false); }
+    public void updateSign(boolean forceUpdate) {
         // If we don't need to update the lines, then don't update them!
-        if (!signLinesRequireRefresh) { return; }
-
+        if (!signLinesRequireRefresh && !forceUpdate) { return; }
+        // Do not trigger the sign update if the chunk has not been loaded yet
+        if (!this.isChunkLoaded()) { if (forceUpdate) { signLinesRequireRefresh = true; } return; }
+        // Immediately set to false to prevent multiple calls to updateSign overlapping
+        signLinesRequireRefresh = false;
         signLines = ShopMessage.getSignLines(this, this.type);
 
         // Use the sign's location to ensure the update runs in the correct region in Folia
@@ -526,38 +523,42 @@ public abstract class AbstractShop {
 
             Sign signBlock;
             try {
-                signBlock = (Sign) signLocation.getBlock().getState();
+                signBlock = (Sign) signLocation.getBlock().getState(); // this will load the sign
             } catch (ClassCastException e){
                 Shop.getPlugin().getLogger().warning("Error attempting to update Shop sign! Sign Block for Shop is not a Sign (detected: " + signLocation.getBlock().getType() + "), deleting shop: " + this);
                 this.delete();
                 return;
             }
 
-            String[] lines = signLines.clone();
+            String[] oldLines = signBlock.getLines();
+            String[] newLines = signLines.clone();
+            boolean hasSignUpdate = false;
+            // If the sign lines are the same, don't update them!
+            boolean linesMatch = newLines[0].equals(oldLines[0]) && newLines[1].equals(oldLines[1]) && newLines[2].equals(oldLines[2]) && newLines[3].equals(oldLines[3]);
 
             if (!isInitialized()) {
-                signBlock.setLine(0, ChatColor.RED + ChatColor.stripColor(lines[0]));
-                signBlock.setLine(1, ChatColor.RED + ChatColor.stripColor(lines[1]));
-                signBlock.setLine(2, ChatColor.RED + ChatColor.stripColor(lines[2]));
-                signBlock.setLine(3, ChatColor.RED + ChatColor.stripColor(lines[3]));
-            } else {
-                signBlock.setLine(0, lines[0]);
-                signBlock.setLine(1, lines[1]);
-                signBlock.setLine(2, lines[2]);
-                signBlock.setLine(3, lines[3]);
+                hasSignUpdate = true; // force update the sign
+                signBlock.setLine(0, ChatColor.RED + ChatColor.stripColor(newLines[0]));
+                signBlock.setLine(1, ChatColor.RED + ChatColor.stripColor(newLines[1]));
+                signBlock.setLine(2, ChatColor.RED + ChatColor.stripColor(newLines[2]));
+                signBlock.setLine(3, ChatColor.RED + ChatColor.stripColor(newLines[3]));
+            } else if (!linesMatch) {
+                hasSignUpdate = true; // force update the sign
+                signBlock.setLine(0, newLines[0]);
+                signBlock.setLine(1, newLines[1]);
+                signBlock.setLine(2, newLines[2]);
+                signBlock.setLine(3, newLines[3]);
             }
-
+            // If the sign is glowing, update it if the setting has changed
             if(isMCVersion17Plus()) {
-                if (Shop.getPlugin().getGlowingSignText()) {
-                    signBlock.setGlowingText(true);
-                }
-                else{
-                    signBlock.setGlowingText(false);
+                boolean shouldGlow = Shop.getPlugin().getGlowingSignText();
+                if (shouldGlow != signBlock.isGlowingText()) { 
+                    hasSignUpdate = true;
+                    signBlock.setGlowingText(shouldGlow);
                 }
             }
-
-            signBlock.update(true);
-            signLinesRequireRefresh = false;
+            // Update the sign if it has changed
+            if (hasSignUpdate) { signBlock.update(true); }
 
             // Update the floating holograms for anybody who currently has them open
             if (display != null) display.updateDisplayTags();
@@ -583,10 +584,11 @@ public abstract class AbstractShop {
             Block b = this.getSignLocation().getBlock();
             if (b.getBlockData() instanceof WallSign) {
                 Sign signBlock = (Sign) b.getState();
-                signBlock.setLine(0, "");
-                signBlock.setLine(1, "");
-                signBlock.setLine(2, "");
-                signBlock.setLine(3, "");
+                String[] deletedLines = ShopMessage.getSignLines("deleted", this);
+                signBlock.setLine(0, deletedLines[0]);
+                signBlock.setLine(1, deletedLines[1]);
+                signBlock.setLine(2, deletedLines[2]);
+                signBlock.setLine(3, deletedLines[3]);
                 signBlock.update(true);
             }
 

@@ -307,7 +307,7 @@ public class ShopHandler {
             playerShops.put(shop.getOwnerUUID(), playerShopLocations);
         }
 
-        String chunkKey = getChunkKey(shop.getSignLocation());
+        String chunkKey = UtilMethods.getChunkKey(shop.getSignLocation());
         List<Location> chunkShopLocations = getShopLocations(chunkKey);
         //System.out.println("[Shop] 1 - chunkShopLocations "+chunkShopLocations);
         if(!chunkShopLocations.contains(shop.getSignLocation())) {
@@ -337,7 +337,7 @@ public class ShopHandler {
                 changed = true;
             }
         }
-        String chunkKey = getChunkKey(shop.getSignLocation());
+        String chunkKey = UtilMethods.getChunkKey(shop.getSignLocation());
         if(chunkShops.containsKey(chunkKey)){
             List<Location> chunkShopLocations = getShopLocations(chunkKey);
             if(chunkShopLocations.contains(shop.getSignLocation())) {
@@ -365,7 +365,7 @@ public class ShopHandler {
     }
 
     public void processUnloadedShopsInChunk(Chunk chunk){
-        String key = getChunkKey(chunk);
+        String key = UtilMethods.getChunkKey(chunk);
         if(unloadedShopsByChunk.containsKey(key)){
             List<UUID> playerUUIDs = new ArrayList<>();
             List<Location> shopLocations = getUnloadedShopsByChunk(key);
@@ -388,7 +388,7 @@ public class ShopHandler {
     }
 
     public void addUnloadedShopToChunkList(AbstractShop shop){
-        String chunkKey = getChunkKey(shop.getSignLocation());
+        String chunkKey = UtilMethods.getChunkKey(shop.getSignLocation());
         List<Location> shopLocations = getUnloadedShopsByChunk(chunkKey);
         if(!shopLocations.contains(shop.getSignLocation())) {
             shopLocations.add(shop.getSignLocation());
@@ -462,11 +462,6 @@ public class ShopHandler {
         return shopLocations;
     }
 
-    private List<Location> getShopLocations(Location locationInChunk){
-        String chunkKey = getChunkKey(locationInChunk);
-        return getShopLocations(chunkKey);
-    }
-
     private List<Location> getShopLocations(String chunkKey){
         List<Location> shopLocations;
         if(chunkShops.containsKey(chunkKey)) {
@@ -502,8 +497,8 @@ public class ShopHandler {
             throw new IllegalArgumentException("Chunk radius cannot be negative");
         }
         
-        int chunkX = getChunkX(location);
-        int chunkZ = getChunkZ(location);
+        int chunkX = UtilMethods.getChunkX(location);
+        int chunkZ = UtilMethods.getChunkZ(location);
         String worldName = location.getWorld().getName();
         
         HashSet<Location> shopsNearLocation = new HashSet<>();
@@ -511,7 +506,7 @@ public class ShopHandler {
         // Loop through all chunks in the specified radius
         for (int x = -chunkRadius; x <= chunkRadius; x++) {
             for (int z = -chunkRadius; z <= chunkRadius; z++) {
-                String chunkKey = createChunkKey(worldName, chunkX + x, chunkZ + z);
+                String chunkKey = UtilMethods.createChunkKey(worldName, chunkX + x, chunkZ + z);
                 List<Location> shopLocations = getShopLocations(chunkKey);
                 shopsNearLocation.addAll(shopLocations);
             }
@@ -970,57 +965,6 @@ public class ShopHandler {
         return list;
     }
 
-//    public void refreshShopDisplays(Player player) {
-//        for (AbstractShop shop : allShops.values()) {
-//            //check that the shop is loaded first
-//            if(shop.getChestLocation() != null)
-//                shop.getDisplay().spawn(player);
-//        }
-//    }
-
-    private String getChunkKey(Location location){
-        int chunkX = getChunkX(location);
-        int chunkZ = getChunkZ(location);
-        String worldName = location.getWorld() != null ? location.getWorld().getName() : "unknown_world";
-        return createChunkKey(worldName, chunkX, chunkZ);
-    }
-
-    private String getChunkKey(Chunk chunk){
-        return createChunkKey(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
-    }
-
-    /**
-     * Creates a chunk key from world name and chunk coordinates
-     * 
-     * @param worldName The name of the world
-     * @param chunkX The x-coordinate of the chunk
-     * @param chunkZ The z-coordinate of the chunk
-     * @return A string key uniquely identifying the chunk
-     */
-    private String createChunkKey(String worldName, int chunkX, int chunkZ) {
-        return worldName + "_" + chunkX + "_" + chunkZ;
-    }
-
-    /**
-     * Gets the chunk X coordinate for a location
-     * 
-     * @param location The location
-     * @return The chunk X coordinate
-     */
-    private int getChunkX(Location location) {
-        return UtilMethods.floor(location.getBlockX()) >> 4;
-    }
-
-    /**
-     * Gets the chunk Z coordinate for a location
-     * 
-     * @param location The location
-     * @return The chunk Z coordinate
-     */
-    private int getChunkZ(Location location) {
-        return UtilMethods.floor(location.getBlockZ()) >> 4;
-    }
-
     public void removeAllDisplays(Player player) {
         for (AbstractShop shop : allShops.values()) {
             shop.getDisplay().remove(player);
@@ -1044,7 +988,7 @@ public class ShopHandler {
         }
         for(UUID shopOwnerUUID : plugin.getShopHandler().getShopOwnerUUIDs()){
             for(AbstractShop shop : plugin.getShopHandler().getShops(shopOwnerUUID)){
-                if(shop.getChestLocation().getChunk().isLoaded()) {
+                if(UtilMethods.isChunkLoaded(shop.getChestLocation())) {
                     plugin.getLogger().debug("[ShopHander.removeLegacyDisplays] updateSign");
                     shop.updateSign();
                 }
@@ -1458,7 +1402,7 @@ public class ShopHandler {
                         if (idString == null || idString.isEmpty()) { shop.setNeedsSave(true); }
 
                         //if chunk its in is already loaded, calculate it here
-                        if(shop.getDisplay().isChunkLoaded()) {
+                        if(shop.isChunkLoaded()) {
                             //run this task synchronously
                             plugin.getFoliaLib().getScheduler().runAtLocation(shop.getSignLocation(), task -> {
                                 boolean loadSuccess = shop.load();
@@ -1693,7 +1637,7 @@ public class ShopHandler {
      */
     public void rebuildDisplaysInChunk(Chunk chunk) {
         // Get shop locations in this chunk
-        String chunkKey = getChunkKey(chunk);
+        String chunkKey = UtilMethods.getChunkKey(chunk);
         List<Location> shopLocations = getShopLocations(chunkKey);
         
         // Only proceed if this chunk has shops
