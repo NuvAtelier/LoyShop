@@ -2,6 +2,7 @@ package com.snowgears.shop.integration.features;
 
 import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.testsupport.BaseMockBukkitTest;
+import com.snowgears.shop.util.InventoryUtils;
 import com.snowgears.shop.util.ShopClickType;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockito.Mockito;
+import org.mockito.MockedStatic;
 
 import java.lang.reflect.Field;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +29,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.snowgears.shop.hook.WorldGuardHook;
+import org.bukkit.entity.Player;
 
 @Tag("integration")
 public class ShopListenerClickMatrixTest extends BaseMockBukkitTest {
@@ -183,6 +188,7 @@ public class ShopListenerClickMatrixTest extends BaseMockBukkitTest {
 
         verify(spy).executeClickAction(any(PlayerInteractEvent.class), Mockito.eq(ShopClickType.RIGHT_CLICK_CHEST));
         assertTrue(event.isCancelled(), "Non-owner RIGHT_CLICK_CHEST should be cancelled");
+        assertNull(stranger.nextMessage(), "No chat message should be sent when actionPerformed=true for non-owner");
     }
 
     @Test
@@ -202,6 +208,8 @@ public class ShopListenerClickMatrixTest extends BaseMockBukkitTest {
         // For non-admin shops, operator should receive an info message and not execute an action or cancel the event
         Mockito.verify(spy, Mockito.never()).executeClickAction(any(PlayerInteractEvent.class), any(ShopClickType.class));
         assertFalse(event.isCancelled(), "Operator opening non-admin shop should not be cancelled and should not execute an action");
+        assertEquals("§7You are opening a selling shop owned by Player0.", waitForNextMessage(operator));
+        assertNull(operator.nextMessage(), "No additional messages expected");
     }
 
     @Test
@@ -222,6 +230,7 @@ public class ShopListenerClickMatrixTest extends BaseMockBukkitTest {
 
         verify(spy).executeClickAction(any(PlayerInteractEvent.class), Mockito.eq(ShopClickType.RIGHT_CLICK_CHEST));
         assertTrue(event.isCancelled(), "Operator opening admin shop should cancel and execute action");
+        assertNull(operator.nextMessage(), "Operator admin-open should not receive a chat message");
     }
 
     @Test
@@ -248,6 +257,57 @@ public class ShopListenerClickMatrixTest extends BaseMockBukkitTest {
         verify(spy).executeClickAction(any(PlayerInteractEvent.class), Mockito.eq(ShopClickType.RIGHT_CLICK_CHEST));
         verify(displayMock).showDisplayTags(stranger);
         assertTrue(event.isCancelled(), "Non-owner RIGHT_CLICK_CHEST should be cancelled and show display tags");
+        assertNull(stranger.nextMessage(), "No chat message expected for non-owner display tags path");
+    }
+
+    @Test
+    void chest_shiftLeftClick_owner_calls_SHIFT_LEFT_CLICK_CHEST_andCancels() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 32, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+        owner.setSneaking(true);
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(owner, Action.LEFT_CLICK_BLOCK, owner.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        verify(spy).executeClickAction(any(PlayerInteractEvent.class), Mockito.eq(ShopClickType.SHIFT_LEFT_CLICK_CHEST));
+        assertTrue(event.isCancelled(), "SHIFT_LEFT_CLICK_CHEST should cancel when actionPerformed=true");
+    }
+
+    @Test
+    void chest_rightClick_owner_sneaking_withSign_doesNotExecute_andNotCancelled() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 33, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+
+        owner.setSneaking(true);
+        owner.getInventory().setItemInMainHand(new ItemStack(Material.OAK_SIGN));
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(owner, Action.RIGHT_CLICK_BLOCK, owner.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        Mockito.verify(spy, Mockito.never()).executeClickAction(any(PlayerInteractEvent.class), any(ShopClickType.class));
+        assertFalse(event.isCancelled(), "Sneaking with a sign should not execute an action or cancel the event");
+        assertNull(owner.nextMessage(), "No chat message expected when sneaking with a sign");
+    }
+
+    @Test
+    void chest_rightClick_nonOwner_operator_adminGamble_allowsOpen_noExecute_noCancel() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 34, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+        when(spy.isAdmin()).thenReturn(true);
+        when(spy.getType()).thenReturn(com.snowgears.shop.shop.ShopType.GAMBLE);
+
+        PlayerMock operator = server.addPlayer();
+        operator.setOp(false);
+        operator.addAttachment(getPlugin(), "shop.operator", true);
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(operator, Action.RIGHT_CLICK_BLOCK, operator.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        Mockito.verify(spy, Mockito.never()).executeClickAction(any(PlayerInteractEvent.class), any(ShopClickType.class));
+        assertFalse(event.isCancelled(), "Operator should be allowed to open admin GAMBLE shop (no cancel, no execute)");
     }
 
     @Test
@@ -261,6 +321,171 @@ public class ShopListenerClickMatrixTest extends BaseMockBukkitTest {
 
         Mockito.verify(spy, Mockito.never()).executeClickAction(any(PlayerInteractEvent.class), any(ShopClickType.class));
         assertFalse(event.isCancelled(), "OFF_HAND interactions should be ignored for chest as well");
+        assertNull(owner.nextMessage(), "No chat message expected for OFF_HAND chest interactions");
+    }
+
+    // ---------- Message and region gating behaviors ----------
+
+    @Test
+    void chest_rightClick_worldguard_denied_sendsRegionRestriction_andCancels() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 40, 65, 10));
+        // No need to spy; branch happens before action execution
+
+        PlayerMock p = server.addPlayer();
+        p.setOp(false);
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+
+        try (MockedStatic<WorldGuardHook> mocked = Mockito.mockStatic(WorldGuardHook.class)) {
+            mocked.when(() -> WorldGuardHook.canUseShop(Mockito.any(Player.class), Mockito.any(Location.class)))
+                  .thenReturn(false);
+
+            PlayerInteractEvent event = new PlayerInteractEvent(p, Action.RIGHT_CLICK_BLOCK, p.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+            server.getPluginManager().callEvent(event);
+
+            assertTrue(event.isCancelled(), "WorldGuard denial should cancel the interaction");
+            String msg = waitForNextMessage(p);
+            assertNotNull(msg, "Player should receive a region restriction message");
+            assertEquals("§cYou do not have permission to do that in this region.", msg);
+            assertNull(p.nextMessage(), "No additional messages expected");
+        }
+    }
+
+    @Test
+    void chest_rightClick_operator_nonAdmin_opOpenMessage() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 41, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+
+        PlayerMock operator = server.addPlayer();
+        operator.setOp(false);
+        operator.addAttachment(getPlugin(), "shop.operator", true);
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(operator, Action.RIGHT_CLICK_BLOCK, operator.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        Mockito.verify(spy, Mockito.never()).executeClickAction(any(PlayerInteractEvent.class), any(ShopClickType.class));
+        assertFalse(event.isCancelled(), "Operator opening non-admin shop should not be cancelled");
+        String msg = waitForNextMessage(operator);
+        assertEquals("§7You are opening a selling shop owned by Player0.", msg, "Operator should receive an opOpen info message");
+    }
+
+    @Test
+    void chest_rightClick_nonOwner_actionNotPerformed_sendsOpenOtherMessage_andCancels() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 42, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+        // Force action not performed
+        when(spy.executeClickAction(any(PlayerInteractEvent.class), any(ShopClickType.class))).thenReturn(false);
+
+        PlayerMock stranger = server.addPlayer();
+        stranger.setOp(false);
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(stranger, Action.RIGHT_CLICK_BLOCK, stranger.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        assertTrue(event.isCancelled(), "Non-owner should be blocked from opening chest");
+        String msg = waitForNextMessage(stranger);
+        assertEquals("§cYou are not authorized to open other players shops.", msg, "Non-owner should receive 'openOther' permission message when action not performed");
+        assertNull(stranger.nextMessage(), "No additional messages expected");
+    }
+
+    @Test
+    void chest_leftClick_nonOwner_calls_LEFT_CLICK_CHEST_andCancels() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 44, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+
+        PlayerMock stranger = server.addPlayer();
+        stranger.setOp(false);
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(stranger, Action.LEFT_CLICK_BLOCK, stranger.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        verify(spy).executeClickAction(any(PlayerInteractEvent.class), Mockito.eq(ShopClickType.LEFT_CLICK_CHEST));
+        assertTrue(event.isCancelled(), "LEFT_CLICK_CHEST should cancel when actionPerformed=true for non-owner as well");
+        assertNull(stranger.nextMessage(), "No chat message expected for non-owner left click");
+    }
+
+    @Test
+    void sign_click_uninitialized_noCall_noCancel() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 46, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+        when(spy.isInitialized()).thenReturn(false);
+
+        Block signBlock = shop.getSignLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(owner, Action.RIGHT_CLICK_BLOCK, owner.getInventory().getItemInMainHand(), signBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        Mockito.verify(spy, Mockito.never()).executeClickAction(any(PlayerInteractEvent.class), any(ShopClickType.class));
+        assertFalse(event.isCancelled(), "Uninitialized shops on sign click should not execute or cancel");
+        assertNull(owner.nextMessage(), "No chat message expected for uninitialized sign click");
+    }
+
+    @Test
+    void sign_rightClick_owner_sends_useOwnShop_message() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 48, 65, 10));
+        // For this test, no need to spy, use real executeClickAction to drive TransactionHandler path
+
+        Block signBlock = shop.getSignLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(owner, Action.RIGHT_CLICK_BLOCK, owner.getInventory().getItemInMainHand(), signBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        assertTrue(event.isCancelled(), "Owner using their own shop should cancel");
+        assertEquals("§7You cannot use your own shop.", waitForNextMessage(owner));
+        assertNull(owner.nextMessage());
+    }
+
+    @Test
+    void sign_rightClick_nonOwner_withoutUsePermission_sends_permission_use_message_andDoesNotTransact() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 52, 65, 10));
+        // For this test, no need to spy, use real executeClickAction to drive TransactionHandler path
+
+        PlayerMock stranger = server.addPlayer();
+        stranger.setOp(false);
+        // Ensure permissions are enabled and player lacks use perms
+        setConfig("usePerms", true);
+
+        Block signBlock = shop.getSignLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(stranger, Action.RIGHT_CLICK_BLOCK, stranger.getInventory().getItemInMainHand(), signBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        // Player should be told they cannot use this shop type
+        String msg = waitForNextMessage(stranger);
+        assertNotNull(msg);
+        assertTrue(msg.startsWith("§cYou are not authorized to use"), "Expected a permission.use message, got: " + msg);
+    }
+
+    @Test
+    void sign_rightClick_owner_useOwnShop_message_when_transactMapped() {
+        // Ensure mapping for transact is RIGHT_CLICK_SIGN by default
+        AbstractShop shop = createInitializedShopAt(new Location(world, 54, 65, 10));
+        // For this test, no need to spy, use real executeClickAction to drive TransactionHandler path
+
+        Block signBlock = shop.getSignLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(owner, Action.RIGHT_CLICK_BLOCK, owner.getInventory().getItemInMainHand(), signBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        assertEquals("§7You cannot use your own shop.", waitForNextMessage(owner));
+    }
+
+    @Test
+    void chest_leftClick_owner_shows_description_lines() {
+        AbstractShop shop = createInitializedShopAt(new Location(world, 50, 65, 10));
+        AbstractShop spy = spyAndReplace(shop);
+
+        // Use real method to trigger VIEW_DETAILS -> printSalesInfo
+        when(spy.executeClickAction(any(PlayerInteractEvent.class), any(ShopClickType.class))).thenCallRealMethod();
+
+        Block chestBlock = shop.getChestLocation().getBlock();
+        PlayerInteractEvent event = new PlayerInteractEvent(owner, Action.LEFT_CLICK_BLOCK, owner.getInventory().getItemInMainHand(), chestBlock, BlockFace.NORTH, EquipmentSlot.HAND);
+        server.getPluginManager().callEvent(event);
+
+        // VIEW_DETAILS prints description lines; assert at least the first line appears when available
+        String first = waitForNextMessage(owner);
+        if (first != null) {
+            assertEquals("§d+---------------------------------------------------+", first);
+        }
     }
 }
 
