@@ -1,14 +1,8 @@
 package com.snowgears.shop.shop;
 
-import com.snowgears.shop.Shop;
-import com.snowgears.shop.event.PlayerExchangeShopEvent;
 import com.snowgears.shop.util.*;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
 
