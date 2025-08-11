@@ -321,7 +321,7 @@
                             <relocations>
                                 <relocation>
                                     <pattern>com.zaxxer.hikari</pattern>
-                                    <shadedPattern>com.snowgears.shop.artifact.hikari</shadedPattern>
+                                    <shadedPattern>ShopDB</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.mariadb.jdbc</pattern>

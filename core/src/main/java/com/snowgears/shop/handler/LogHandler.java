@@ -106,6 +106,7 @@ public class LogHandler {
             dataSource.setLeakDetectionThreshold(10000);
             dataSource.setMaximumPoolSize(10);
             dataSource.setMaxLifetime(600000);
+            dataSource.setPoolName("MYSQL");
         }
         else if (type.equalsIgnoreCase("MARIADB")) {
             HikariConfig config = new HikariConfig();
@@ -118,6 +119,7 @@ public class LogHandler {
             config.setLeakDetectionThreshold(10000);
             config.setMaximumPoolSize(10);
             config.setMaxLifetime(600000);
+            config.setPoolName("MARIADB");
 
             dataSource = new HikariDataSource(config);
         }
@@ -131,6 +133,7 @@ public class LogHandler {
             config.setLeakDetectionThreshold(10000);
             config.setMaximumPoolSize(10);
             config.setMaxLifetime(600000);
+            config.setPoolName("FILE");
 
             dataSource = new HikariDataSource(config);
         }
