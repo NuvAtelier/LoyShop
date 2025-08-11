@@ -7,6 +7,7 @@ import com.snowgears.shop.shop.AbstractShop;
 import com.snowgears.shop.shop.ComboShop;
 import com.snowgears.shop.shop.ShopType;
 import net.md_5.bungee.api.chat.*;
+import net.md_5.bungee.api.chat.hover.content.Item;
 
 import org.bukkit.Bukkit;
 import net.md_5.bungee.api.ChatColor;
@@ -26,6 +27,8 @@ import com.google.gson.JsonParseException;
 public class ShopMessage {
 
     private final static Shop plugin = Shop.getPlugin();
+
+    private static boolean disableItemHover = false;
 
     private static final Map<String, Function<PlaceholderContext, TextComponent>> placeholders = new HashMap<>();
     // Regex pattern to identify placeholders within square brackets, e.g., [owner]
@@ -248,7 +251,8 @@ public class ShopMessage {
             player.spigot().sendMessage(fancyMessage);
             return;
         } catch (JsonParseException e) {
-            plugin.getNBTAdapter().handleException("Possible NBTAPI error while sending message to player, Item Hover events will now be disabled! Details: " + e.getMessage());
+            plugin.getLogger().debug("Possible NBT error while sending message to player, Item Hover events will now be disabled! Details: " + e.getMessage());
+            disableItemHover = true;
         } catch (Exception e) {
             plugin.getLogger().warning("Error sending message to player: " + e.getMessage());
         } catch (Error e) {
@@ -520,25 +524,16 @@ public class ShopMessage {
     }
 
     private static HoverEvent getItemHoverEvent(ItemStack item) {
-        if (item == null) { return null; }
-        if (plugin.getNBTAdapter().haveErrorsOccured()) {
-            plugin.getNBTAdapter().handleException("NBTAPI errors occurred, unable to show embedded Hover Text for item!");
-            return null; 
-        }
+        if (item == null || disableItemHover) { return null; }
         try {
-            ItemStack hoverItem = item.clone();
-            hoverItem.setAmount(1);
-            BaseComponent[] component = new BaseComponent[]{new TextComponent(plugin.getNBTAdapter().getNBTforItem(hoverItem))};
-            return new HoverEvent(HoverEvent.Action.SHOW_ITEM, component);
-            // 1.21.5 Paper - hover event is borked: https://github.com/PaperMC/Paper/issues/12289
-
-            // In theory in the future we could remove the NBTAPI dependency and do:
-            // String itemId = item.getType().getKey().toString();
-            // String nbt = item.getItemMeta().getAsString(); // Special Bukkit function to get the NBT as a string built for HoverEvents!
-            // ItemTag tag = ItemTag.ofNbt(nbt);
-            // Item itemContent = new Item(itemId, item.getAmount(), tag);
-            // return new HoverEvent(HoverEvent.Action.SHOW_ITEM, itemContent);
-        } catch (Exception e) {
+            String itemId = item.getType().getKey().toString();
+            String nbt = item.getItemMeta().getAsString(); // Special Bukkit function to get the NBT as a string built for HoverEvents!
+            ItemTag tag = ItemTag.ofNbt(nbt);
+            Item itemContent = new Item(itemId, item.getAmount(), tag);
+            return new HoverEvent(HoverEvent.Action.SHOW_ITEM, itemContent);
+        } catch (Error | Exception e) {
+            plugin.getLogger().severe("Unable to embed item hover text, disabling item hover text for all players! Please make sure your server is running the latest version of Paper! Error: " + e.getMessage());
+            disableItemHover = true;
             return null;
         }
     }
@@ -546,23 +541,18 @@ public class ShopMessage {
     private static TextComponent embedItem(String message, ItemStack item) {
         return embedItem(new TextComponent(message), item);
     }
-
     private static TextComponent embedItem(TextComponent message, ItemStack item) {
-        // If we have any NBTAPI errors, don't try to embed the item hover text
-        if (plugin.getNBTAdapter().haveErrorsOccured()) {
-            return message;
-        }
+        // If we have any NBT errors, don't try to embed the item hover text
+        if (disableItemHover) { return message; }
         try {
             if (item == null) { return null; }
             BaseComponent msg = TextComponent.fromLegacy(UtilMethods.removeColorsIfOnlyWhite(message.toLegacyText()));
             HoverEvent event = getItemHoverEvent(item);
             if (event != null) { msg.setHoverEvent(event); }
             return (TextComponent) msg;
-        } catch (Exception e) {
-            plugin.getNBTAdapter().handleException("Error embedding item hover text: " + e.getMessage());
-            return message;
-        } catch (Error e) {
-            plugin.getNBTAdapter().handleException("Error embedding item hover text: " + e.getMessage());
+        } catch (Error | Exception e) {
+            plugin.getLogger().severe("Unable to embed item hover text, disabling item hover text for all players! Your version of : " + e.getMessage());
+            disableItemHover = true;
             return message;
         }
     }
