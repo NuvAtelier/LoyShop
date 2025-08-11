@@ -938,6 +938,7 @@ public class ShopMessage {
         messageMap.put("permission_create", chatConfig.getString("permission.create"));
         messageMap.put("permission_destroy", chatConfig.getString("permission.destroy"));
         messageMap.put("permission_destroyOther", chatConfig.getString("permission.destroyOther"));
+        messageMap.put("permission_openOther", chatConfig.getString("permission.openOther"));
         messageMap.put("permission_buildLimit", chatConfig.getString("permission.buildLimit"));
 
         messageMap.put("creativeSelection_disabled", chatConfig.getString("creativeSelection.disabled"));
