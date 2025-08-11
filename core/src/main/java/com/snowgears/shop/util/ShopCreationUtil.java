@@ -185,7 +185,11 @@ public class ShopCreationUtil {
             signBlockState.update();
 
             shop.setAdmin(isAdmin);
-            shop.load();
+            boolean loaded = shop.load();
+            if (!loaded) {
+                plugin.getLogger().warning("Shop creation failed, unable to load the shop. Aborting shop creation."); // only seen this happen in tests
+                return null;
+            }
 
             PlayerCreateShopEvent e = new PlayerCreateShopEvent(player, shop);
             plugin.getServer().getPluginManager().callEvent(e);
@@ -234,12 +238,14 @@ public class ShopCreationUtil {
     public void sendCreationSuccess(Player player, AbstractShop shop){
         if (shop.getDisplay() != null) shop.getDisplay().spawn(player);
         Shop.getPlugin().getLogger().trace("[ShopCreationUtil.sendCreationSuccess] updateSign");
-        shop.setSignLinesRequireRefresh(true);
-        shop.updateSign();
+        shop.updateSign(true);
         shop.setNeedsSave(true);
         ShopMessage.sendMessage(shop.getType().toString(), "create", player, shop);
         shop.sendEffects(true, player);
-        // Save the shop to disk
+        // Save the shop to disk 
+        // TODO: We should move this save trigger elsewhere, it doesn't belong in `sendCreationSuccess`,
+        //       it is currently non-intuitive that this is the method to save a shop when it is created.
+        //       We should move it elsewhere.
         Shop.getPlugin().getShopHandler().saveShops(shop.getOwnerUUID(), true);
         // Cleanup the shop creation process
         cleanupShopCreationProcess(player);

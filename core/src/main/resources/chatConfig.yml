@@ -191,6 +191,7 @@ interaction_issue:
    initializeOtherShop: "&cYou may not initialize another players shop with an item."
    useShopAlreadyInUse: "&cThis shop is in the middle of a transaction."
    destroyChest: "&cYou must remove the sign from this shop to break it."
+   destroyUninitializedChest: "&cThis chest cannot be destroyed while a shop is being created for it."
    useOwnShop: "&7You cannot use your own shop."
    adminOpen: "&7Admin shops are not able to be opened."
    worldBlacklist: "&cShops are not allowed to be created in this world."
@@ -245,7 +246,8 @@ description:
 permission:
    use: "&cYou are not authorized to use [shop type] shops."
    create: "&cYou are not authorized to create [shop type] shops."
-   destroy: "&cYou are not authorized to destroy shops."
+   destroy: "&cYou are not authorized to destroy your own shops."
+   destroyOther: "&cYou are not authorized to destroy other players shops."
    buildLimit: "&cYou have already reached your build limit of [user amount]/[build limit] shops."
 
 hover:

@@ -259,6 +259,46 @@ public class UtilMethods {
         }
     }
 
+    /**
+     * Checks if a chunk is loaded
+     * 
+     * @param location The location to check
+     * @return True if the chunk is loaded, false otherwise
+     * 
+     * Note: This method should be used instead of `location.getChunk().isChunkLoaded()` 
+     * because calling `location.getChunk()` will force a chunk load, which defeats 
+     * the purpose of checking if the chunk is already loaded.
+     */
+    public static boolean isChunkLoaded(Location location) {
+        if (location == null || location.getWorld() == null) { return false; }
+        return location.getWorld().isChunkLoaded(UtilMethods.floor(location.getBlockX()) >> 4, UtilMethods.floor(location.getBlockZ()) >> 4);
+    }
+    public static int getChunkX(Location location){ return UtilMethods.floor(location.getBlockX()) >> 4; }
+    public static int getChunkZ(Location location){ return UtilMethods.floor(location.getBlockZ()) >> 4; }
+    public static boolean isInChunk(Location location, Chunk chunk){
+        if (location == null || location.getWorld() == null || chunk == null) { return false; }
+        if (!chunk.getWorld().toString().equals(location.getWorld().toString())) { return false; }
+        return chunk.getX() == getChunkX(location) && chunk.getZ() == getChunkZ(location);
+    }
+    /**
+     * Chunk keys are used to identify chunks in the shop handler inside of Maps/sets
+     * these helpers are used to create and get chunk keys from locations and chunks
+     * and help with consistency across the codebase.
+     */
+    public static String getChunkKey(Location location){
+        int chunkX = getChunkX(location);
+        int chunkZ = getChunkZ(location);
+        String worldName = location.getWorld() != null ? location.getWorld().getName() : "unknown_world";
+        return createChunkKey(worldName, chunkX, chunkZ);
+    }
+    public static String getChunkKey(Chunk chunk){
+        return createChunkKey(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
+    }
+    public static String createChunkKey(String worldName, int chunkX, int chunkZ) {
+        return worldName + "_" + chunkX + "_" + chunkZ;
+    }
+    
+    // todo: dig deeper into why we need to use this method
     public static int floor(double num) {
         int floor = (int) num;
         return floor == num ? floor : floor - (int) (Double.doubleToRawLongBits(num) >>> 63);
@@ -877,7 +917,7 @@ public class UtilMethods {
 
     public static String cleanNumberText(String text){
         String cleaned = "";
-        String toClean = ChatColor.stripColor(text);
+        String toClean = ChatColor.stripColor(text).trim(); // remove color and whitespace not between characters
         for(int i=0; i<toClean.length(); i++) {
             if(Character.isDigit(toClean.charAt(i)))
                 cleaned += toClean.charAt(i);

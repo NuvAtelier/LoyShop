@@ -26,17 +26,18 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
 
 
 public class ShopHandler {
@@ -60,19 +61,11 @@ public class ShopHandler {
 
     private ArrayList<ItemStack> itemListItems = new ArrayList<>();
 
-    private ArrayList<UUID> playersSavingShops = new ArrayList<>();
-    
     // Map to track player last processed locations for movement-based display updates
     private ConcurrentHashMap<UUID, Location> lastProcessedLocations = new ConcurrentHashMap<>();
 
     // Cache for player connections to avoid expensive reflection calls
     private ConcurrentHashMap<UUID, Object> playerConnectionCache = new ConcurrentHashMap<>();
-
-    // Default chunk radius for shop location searches and maximum display distance
-    // these values come from the Shop class configuration - see getShopSearchRadius() and getMaxShopDisplayDistance()
-    
-    // Very close distance for immediate shop display
-    private static final double CLOSE_SHOP_DISPLAY_DISTANCE = 2.0;
 
     // Teleport cooldown map to prevent multiple display updates during teleportation
     private ConcurrentHashMap<UUID, Long> teleportCooldowns = new ConcurrentHashMap<>();
@@ -90,7 +83,7 @@ public class ShopHandler {
         }, 10);
     }
 
-    private void disableDisplayClass() {
+    public void disableDisplayClass() {
         try {
             final Class<?> clazz = Class.forName("com.snowgears.shop.display.DisplayDisabled");
             if (AbstractDisplay.class.isAssignableFrom(clazz))
@@ -134,6 +127,12 @@ public class ShopHandler {
         } else {
             // We are still on an older version, so go ahead
             String nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
+
+            // MockBukkit testing does not support NMS, so we need to just return early
+            if (plugin.isMockBukkit()) {
+                disableDisplayClass();
+                return false;
+            }
 
             // version did remap even though version number didn't increase
             String mcVersion = Bukkit.getBukkitVersion().substring(0, Bukkit.getBukkitVersion().indexOf('-'));
@@ -308,7 +307,7 @@ public class ShopHandler {
             playerShops.put(shop.getOwnerUUID(), playerShopLocations);
         }
 
-        String chunkKey = getChunkKey(shop.getSignLocation());
+        String chunkKey = UtilMethods.getChunkKey(shop.getSignLocation());
         List<Location> chunkShopLocations = getShopLocations(chunkKey);
         //System.out.println("[Shop] 1 - chunkShopLocations "+chunkShopLocations);
         if(!chunkShopLocations.contains(shop.getSignLocation())) {
@@ -320,31 +319,53 @@ public class ShopHandler {
     }
 
     //This method should only be used by AbstractShop object to delete
-    public boolean removeShop(AbstractShop shop) {
+    public void removeShop(AbstractShop shop, boolean forceSave) {
+        boolean changed = false;
         if (allShops.containsKey(shop.getSignLocation())) {
             allShops.remove(shop.getSignLocation());
+            changed = true;
         }
         if(playerShops.containsKey(shop.getOwnerUUID())){
             List<Location> playerShopLocations = getShopLocations(shop.getOwnerUUID());
             if(playerShopLocations.contains(shop.getSignLocation())) {
                 playerShopLocations.remove(shop.getSignLocation());
-                playerShops.put(shop.getOwnerUUID(), playerShopLocations);
+                if (playerShopLocations.isEmpty()) {
+                    playerShops.remove(shop.getOwnerUUID());
+                } else {
+                    playerShops.put(shop.getOwnerUUID(), playerShopLocations);
+                }
+                changed = true;
             }
         }
-        String chunkKey = getChunkKey(shop.getSignLocation());
+        String chunkKey = UtilMethods.getChunkKey(shop.getSignLocation());
         if(chunkShops.containsKey(chunkKey)){
             List<Location> chunkShopLocations = getShopLocations(chunkKey);
             if(chunkShopLocations.contains(shop.getSignLocation())) {
                 chunkShopLocations.remove(shop.getSignLocation());
-                chunkShops.put(chunkKey, chunkShopLocations);
+                if (chunkShopLocations.isEmpty()) {
+                    chunkShops.remove(chunkKey);
+                } else {
+                    chunkShops.put(chunkKey, chunkShopLocations);
+                }
+                changed = true;
             }
         }
 
-        return false;
+
+        if (changed) {
+            Shop.getPlugin().getLogger().debug("Removed Shop internally from ShopHandler: " + shop);
+            // Immediate force save if there were any changes since we deleted a shop 
+            // Note that we don't pass forceSave down, it is only a flag on if we should trigger the save attempt immediately
+            // we only hold off on doing this if we are bulk deleting shops for users to prevent repeated saves.
+            // The forceSave flag should rarely be `false`, and you should be careful when setting it to false.
+            if (forceSave) {
+                this.saveShops(shop.getOwnerUUID(), true);
+            }
+        }
     }
 
     public void processUnloadedShopsInChunk(Chunk chunk){
-        String key = getChunkKey(chunk);
+        String key = UtilMethods.getChunkKey(chunk);
         if(unloadedShopsByChunk.containsKey(key)){
             List<UUID> playerUUIDs = new ArrayList<>();
             List<Location> shopLocations = getUnloadedShopsByChunk(key);
@@ -353,14 +374,11 @@ public class ShopHandler {
                 if(shop != null){
                     // Run at the shop's location to ensure it works in the correct region in Folia
                     plugin.getFoliaLib().getScheduler().runAtLocation(shopLocation, task -> {
-                        boolean signExists = shop.load();
-                        if(signExists) {
+                        boolean loadSuccess = shop.load();
+                        if(loadSuccess) {
                             if (!playerUUIDs.contains(shop.getOwnerUUID())) {
                                 playerUUIDs.add(shop.getOwnerUUID());
                             }
-                        }
-                        else{
-                            removeShop(shop);
                         }
                     });
                 }
@@ -370,7 +388,7 @@ public class ShopHandler {
     }
 
     public void addUnloadedShopToChunkList(AbstractShop shop){
-        String chunkKey = getChunkKey(shop.getSignLocation());
+        String chunkKey = UtilMethods.getChunkKey(shop.getSignLocation());
         List<Location> shopLocations = getUnloadedShopsByChunk(chunkKey);
         if(!shopLocations.contains(shop.getSignLocation())) {
             shopLocations.add(shop.getSignLocation());
@@ -444,11 +462,6 @@ public class ShopHandler {
         return shopLocations;
     }
 
-    private List<Location> getShopLocations(Location locationInChunk){
-        String chunkKey = getChunkKey(locationInChunk);
-        return getShopLocations(chunkKey);
-    }
-
     private List<Location> getShopLocations(String chunkKey){
         List<Location> shopLocations;
         if(chunkShops.containsKey(chunkKey)) {
@@ -484,8 +497,8 @@ public class ShopHandler {
             throw new IllegalArgumentException("Chunk radius cannot be negative");
         }
         
-        int chunkX = getChunkX(location);
-        int chunkZ = getChunkZ(location);
+        int chunkX = UtilMethods.getChunkX(location);
+        int chunkZ = UtilMethods.getChunkZ(location);
         String worldName = location.getWorld().getName();
         
         HashSet<Location> shopsNearLocation = new HashSet<>();
@@ -493,7 +506,7 @@ public class ShopHandler {
         // Loop through all chunks in the specified radius
         for (int x = -chunkRadius; x <= chunkRadius; x++) {
             for (int z = -chunkRadius; z <= chunkRadius; z++) {
-                String chunkKey = createChunkKey(worldName, chunkX + x, chunkZ + z);
+                String chunkKey = UtilMethods.createChunkKey(worldName, chunkX + x, chunkZ + z);
                 List<Location> shopLocations = getShopLocations(chunkKey);
                 shopsNearLocation.addAll(shopLocations);
             }
@@ -550,8 +563,12 @@ public class ShopHandler {
         // Filter by distance
         for (Location shopLocation : nearbyLocations) {
             // Using distanceSquared is more efficient than distance
-            if (location.distanceSquared(shopLocation) <= maxDistanceSquared) {
-                filteredLocations.add(shopLocation);
+            try {
+                if (location.distanceSquared(shopLocation) <= maxDistanceSquared) {
+                    filteredLocations.add(shopLocation);
+                }
+            } catch (Exception e) {
+                // distanceSquared does not exist in MockBukkit and this is the easiest way to disable it
             }
         }
         
@@ -948,57 +965,6 @@ public class ShopHandler {
         return list;
     }
 
-//    public void refreshShopDisplays(Player player) {
-//        for (AbstractShop shop : allShops.values()) {
-//            //check that the shop is loaded first
-//            if(shop.getChestLocation() != null)
-//                shop.getDisplay().spawn(player);
-//        }
-//    }
-
-    private String getChunkKey(Location location){
-        int chunkX = getChunkX(location);
-        int chunkZ = getChunkZ(location);
-        String worldName = location.getWorld() != null ? location.getWorld().getName() : "unknown_world";
-        return createChunkKey(worldName, chunkX, chunkZ);
-    }
-
-    private String getChunkKey(Chunk chunk){
-        return createChunkKey(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
-    }
-
-    /**
-     * Creates a chunk key from world name and chunk coordinates
-     * 
-     * @param worldName The name of the world
-     * @param chunkX The x-coordinate of the chunk
-     * @param chunkZ The z-coordinate of the chunk
-     * @return A string key uniquely identifying the chunk
-     */
-    private String createChunkKey(String worldName, int chunkX, int chunkZ) {
-        return worldName + "_" + chunkX + "_" + chunkZ;
-    }
-
-    /**
-     * Gets the chunk X coordinate for a location
-     * 
-     * @param location The location
-     * @return The chunk X coordinate
-     */
-    private int getChunkX(Location location) {
-        return UtilMethods.floor(location.getBlockX()) >> 4;
-    }
-
-    /**
-     * Gets the chunk Z coordinate for a location
-     * 
-     * @param location The location
-     * @return The chunk Z coordinate
-     */
-    private int getChunkZ(Location location) {
-        return UtilMethods.floor(location.getBlockZ()) >> 4;
-    }
-
     public void removeAllDisplays(Player player) {
         for (AbstractShop shop : allShops.values()) {
             shop.getDisplay().remove(player);
@@ -1022,7 +988,7 @@ public class ShopHandler {
         }
         for(UUID shopOwnerUUID : plugin.getShopHandler().getShopOwnerUUIDs()){
             for(AbstractShop shop : plugin.getShopHandler().getShops(shopOwnerUUID)){
-                if(shop.getChestLocation().getChunk().isLoaded()) {
+                if(UtilMethods.isChunkLoaded(shop.getChestLocation())) {
                     plugin.getLogger().debug("[ShopHander.removeLegacyDisplays] updateSign");
                     shop.updateSign();
                 }
@@ -1030,36 +996,29 @@ public class ShopHandler {
         }
     }
 
+    /**
+     * Saves the shops for a player.
+     * 
+     * @param player The UUID of the player to save the shops for.
+     * @return The number of shops saved.
+     * 1+: Total number of shops saved for player
+     * 0:  No shops need updating (file was not touched)
+     * -1: No shops for player exist (file was deleted)
+     * -2: Failed to save new shop file, left original file intact
+     * -3: Backup file exists, but needs to be manually restored
+     * -5: Critical error, total data loss for player, all files are missing
+     */
+    private boolean immediateShutdown = false;
     public int saveShops(final UUID player){ return saveShops(player, false); }
     public int saveShops(final UUID player, boolean force){
-        return saveShopsDriver(player, force);
-//        // async code
-//        if(playersSavingShops.contains(player))
-//            return 0;
-//
-//        playersSavingShops.add(player);
-//        saveShopsDriver(player, force);
-//
-//        BukkitScheduler scheduler = plugin.getServer().getScheduler();
-//        scheduler.runTaskAsynchronously(plugin, new Runnable() {
-//            @Override
-//            public void run() {
-//                playersSavingShops.add(player);
-//                saveShopsDriver(player, force);
-//            }
-//        });
-    }
+        // If the plugin is in immediate shutdown mode, skip saving any new files to protect against data loss
+        if (this.immediateShutdown) return -5;
 
-    private int saveShopsDriver(UUID player, boolean force) {
         // Check if any of the players shops want to be saved
         String playerName = player == this.getAdminUUID() ? "admin" : plugin.getServer().getOfflinePlayer(player).getName();
         int numWantingToUpdate = numShopsNeedSave(player);
-        if (!force && numWantingToUpdate == 0) {
+        if (!force && numWantingToUpdate == 0 && getNumberOfShops(player) > 0) {
             plugin.getLogger().trace("save shops for player (" + playerName + ") was called, but no shops for player need updating! " + player.toString());
-//            // async code
-//            if(playersSavingShops.contains(player)){
-//                playersSavingShops.remove(player);
-//            }
             return 0;
         }
 
@@ -1087,35 +1046,26 @@ public class ShopHandler {
 
             plugin.getLogger().trace("    current file " + currentFile);
 
-            if (!currentFile.exists()) // file doesn't exist
-                currentFile.createNewFile();
-            else{
-                currentFile.delete();
-                currentFile.createNewFile();
-            }
-            YamlConfiguration config = YamlConfiguration.loadConfiguration(currentFile);
-            plugin.getLogger().trace("    loaded yaml... " + currentFile);
+            // We will build the YAML in-memory and write via a temp file to avoid data loss.
+            YamlConfiguration config = new YamlConfiguration();
+            plugin.getLogger().trace("    preparing yaml for " + currentFile);
 
             List<AbstractShop> shopList = getShops(player);
             if (shopList.isEmpty()) {
                 currentFile.delete();
                 plugin.getLogger().debug("    no shops exist for player (" + playerName + "), deleting file... " + currentFile);
-//                // async code
-//                if(playersSavingShops.contains(player)){
-//                    playersSavingShops.remove(player);
-//                }
-                return 0;
+                return -1;
             }
 
-            int shopNumber = 1;
+            int shopNumber = 0;
             for (AbstractShop shop : shopList) {
-
                 //this is to remove a bug that caused one shop to be saved to multiple files at one point
                 if(!shop.getOwnerUUID().equals(player))
                     continue;
 
                 //don't save shops that are not initialized with items
                 if (shop.isInitialized()) {
+                    shopNumber++;
                     config.set("shops." + owner + "." + shopNumber + ".id", shop.getId().toString());
                     config.set("shops." + owner + "." + shopNumber + ".location", locationToString(shop.getSignLocation()));
                     if(shop.getFacing() != null)
@@ -1156,7 +1106,9 @@ public class ShopHandler {
                     }
 
                     shop.setNeedsSave(false);
-                    shopNumber++;
+                }
+                else {
+                    plugin.getLogger().debug("    shop " + shop + " is not initialized, skipping...");
                 }
             }
             
@@ -1165,13 +1117,83 @@ public class ShopHandler {
                 plugin.getLogger().spam("    built config to save... \n" + config.saveToString());
             }
             
-            config.save(currentFile);
-            plugin.getLogger().helpful("Saved " + shopNumber + " Shops for Player " + playerName + " to file: " + currentFile);
-            return shopNumber;
-        } catch (Exception e){
-            plugin.getLogger().severe("Unable to save player shop file: " + currentFile);
-            e.printStackTrace();
-            return 0;
+            // ---------- Safe file write ----------
+            Path targetPath = currentFile.toPath();
+            Path tempFile = Files.createTempFile(targetPath.getParent(), owner + "_", ".tmp");
+            config.save(tempFile.toFile());
+            try {
+                // Atomic moves are very safe, so we use them if possible
+                Files.move(tempFile, targetPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                plugin.getLogger().helpful("Saved " + shopNumber + " Shops for Player " + playerName + " to file: " + currentFile);
+                return shopNumber;
+            } catch (Error | Exception ex) {
+                plugin.getLogger().debug("Error during atomic move", ex);
+                plugin.getLogger().debug("Filesystem does not support atomic move; using manual two-step replacement with backup...");
+                // Filesystem does not support atomic move; use manual two-step replacement with backup
+                Path backupPath = targetPath.resolveSibling(targetPath.getFileName().toString() + ".bak");
+                try {
+                    if (Files.exists(targetPath)) {
+                        plugin.getLogger().debug("Backing up existing shop file for " + playerName + " from (" + targetPath + ") to (" + backupPath + ")...");
+                        Files.move(targetPath, backupPath, StandardCopyOption.REPLACE_EXISTING);
+                        plugin.getLogger().debug("Successfully backed up existing shop file for " + playerName + " from (" + targetPath + ") to (" + backupPath + ")");
+                    }
+                    plugin.getLogger().debug("Moving new shop file for " + playerName + " from (" + tempFile + ") to (" + targetPath + ")");
+                    Files.move(tempFile, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    plugin.getLogger().debug("Successfully moved new shop file for " + playerName + " from (" + tempFile + ") to (" + targetPath + ")!");
+                    // New file written successfully – delete backup
+                    if (Files.exists(backupPath)) {
+                        plugin.getLogger().debug("Deleting temporary backup of old shop file for " + playerName + " from (" + backupPath + ")");
+                        Files.deleteIfExists(backupPath);
+                        plugin.getLogger().debug("Successfully deleted temporary backup of old shop file for " + playerName + " from (" + backupPath + ")!");
+                    }
+
+                    plugin.getLogger().helpful("Saved " + shopNumber + " Shops for Player " + playerName + " to file: " + currentFile);
+                    return shopNumber;
+                } catch (Error | Exception moveEx) {
+                    // Attempt to restore from backup on failure
+                    plugin.getLogger().severe("Critical error writing updated shop file for (" + playerName + ") to (" + targetPath + ")! This issue should not be ignored! Error message: " + moveEx.getMessage());
+                    try {
+                        if (Files.exists(targetPath)) {
+                            plugin.getLogger().warning("Original file was left untouched. Player shop updates were not saved!" );
+                        } else if (Files.exists(backupPath)) {
+                            plugin.getLogger().warning("Restoring backup player shop file for " + playerName + " from (" + backupPath + ") to (" + targetPath + ")");
+                            Files.move(backupPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                            plugin.getLogger().info("Successfully restored backup player shop file for " + playerName + " from (" + backupPath + ") to (" + targetPath + ")!");
+                        }
+                    } catch (Error | Exception restoreEx) {
+                        plugin.getLogger().severe("Failed to restore backup player shop file for " + playerName + " from (" + backupPath + ") to (" + targetPath + ")! Exception: " + restoreEx.getMessage());
+                    }
+                    // Double check that the file was restored successfully and/or the current state of the files
+                    if (Files.exists(targetPath)) {
+                        plugin.getLogger().warning("Original file was left untouched. Player shop updates were not saved!" );
+                        return -2;
+                    }
+                    else if (Files.exists(backupPath)) {
+                        plugin.getLogger().severe("Failed to restore backup player shop file for " + playerName);
+                        plugin.getLogger().severe("You will need to manually restore this players backup file from (" + backupPath + ") to (" + targetPath + ")!");
+                        return -3;
+                    } else {
+                        // uh... no files exist somehow? Should never get here, but just in case since this is a critical failure
+                        plugin.getLogger().severe("Possible data loss detected! Original file does not exist and Backup file does not exist for player (" + playerName + ")! Original MISSING: (" + targetPath + "), Backup MISSING: (" + backupPath + ")!!!");
+                        plugin.getLogger().severe("Do not startup the plugin again until you have traced and fixed the issue! You may delete a new player file with each startup if the issue is not fixed!");
+                        // Immediate shutdown of server. Something is very wrong.
+                        plugin.getLogger().severe("Shutting down plugin immediately to prevent Shop save data loss...");
+                        plugin.getPluginLoader().disablePlugin(plugin);
+                        this.immediateShutdown = true;
+                        return -5;
+                    }
+                }
+            }
+        } catch (Error | Exception e){
+            // log severe: the player file failed to be generated/saved
+            plugin.getLogger().severe("Unable to update/save player shop file for (" + playerName + ") at (" + currentFile + ")! Original file was left untouched. Error message: " + e.getMessage());
+            // log warning: Are these Shop files from an older version of the Minecraft? 
+            plugin.getLogger().warning("Are these Shop player files from an older version of the Minecraft? You can run into issues with Item NBT data not migrating correctly if you jump forward/skip too many MC versions at a time. You might be able to fix this error by copying the affected player(s) file(s) to a new test server (you do not have to copy the world, but should if you are able to) and starting up the server in each 'skipped' version of Minecraft with the Shop plugin's `debug_forceResaveAll` config option set to `true`. This will force a resave of all Shop files and will update any NBT changes between the last run version of Minecraft and the new one you are trying to use.");
+            // log about if they are unable to fix this error they might have to delete the Shop plugin data folder to start fresh
+            plugin.getLogger().severe("If you are unable to fix this error, you will need to delete or manually fix the affected player shop file at (" + currentFile + ") in order to allow them to create new Shops and make this error go away. This will delete all Shops for the player and will require the player to re-add their shops.");
+            // log stack trace at debug level
+            plugin.getLogger().debug("Stacktrace: ", e);
+            return -2;
         }
     }
 
@@ -1380,17 +1402,18 @@ public class ShopHandler {
                         if (idString == null || idString.isEmpty()) { shop.setNeedsSave(true); }
 
                         //if chunk its in is already loaded, calculate it here
-                        if(shop.getDisplay().isChunkLoaded()) {
+                        if(shop.isChunkLoaded()) {
                             //run this task synchronously
                             plugin.getFoliaLib().getScheduler().runAtLocation(shop.getSignLocation(), task -> {
-                                boolean signDefined = shop.load();
-                                if(signDefined)
+                                boolean loadSuccess = shop.load();
+                                if(loadSuccess)
                                     addShop(shop);
                             });
                         }
                         //if the chunk is not already loaded, add it to a list to calculate it at chunkloadevent later
                         else {
                             //System.out.println("[Shop] chunk not loaded. Adding to unloadedList");
+                            Shop.getPlugin().getLogger().debug("Chunk not loaded. Adding shop to unloadedList to load later: " + shop);
                             addUnloadedShopToChunkList(shop);
                             addShop(shop);
                         }
@@ -1614,7 +1637,7 @@ public class ShopHandler {
      */
     public void rebuildDisplaysInChunk(Chunk chunk) {
         // Get shop locations in this chunk
-        String chunkKey = getChunkKey(chunk);
+        String chunkKey = UtilMethods.getChunkKey(chunk);
         List<Location> shopLocations = getShopLocations(chunkKey);
         
         // Only proceed if this chunk has shops

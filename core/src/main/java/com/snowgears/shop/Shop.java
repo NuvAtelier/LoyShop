@@ -138,6 +138,9 @@ public class Shop extends JavaPlugin {
     private boolean debug_transactionDebugLogs;
     private int debug_shopCreateCooldown;
     private boolean debug_forceResaveAll;
+
+    private Metrics metrics;
+
     public static Shop getPlugin() {
         return plugin;
     }
@@ -625,7 +628,7 @@ public class Shop extends JavaPlugin {
         }
 
         int bstatsPluginId = 25211;
-        Metrics metrics = new Metrics(plugin, bstatsPluginId);
+        metrics = new Metrics(plugin, bstatsPluginId);
         // transactions would be cool
         // It would also be cool to see the number of items transacted (bought/sold & item currency)
         // I don't think showing vault currency is worth it, since people have vastly different economy scaling
@@ -817,6 +820,10 @@ public class Shop extends JavaPlugin {
         // Save player name cache to ensure no data loss
         PlayerNameCache.saveToFile();
 
+        // shutdown the database
+        if (logHandler != null) logHandler.shutdown();
+        if (metrics != null) metrics.shutdown();
+
         this.getLogger().info("Disabled Shop " + this.getDescription().getVersion());
     }
 
@@ -1003,6 +1010,13 @@ public class Shop extends JavaPlugin {
         return offlinePurchaseNotificationsEnabled;
     }
 
+    private Boolean isMockBukkit = null;
+    public boolean isMockBukkit() { 
+        if (this.isMockBukkit == null) {
+            this.isMockBukkit = plugin.getServer().getClass().getPackage().getName().contains("mockbukkit");
+        }
+        return this.isMockBukkit;
+    }
     public boolean getDebug_allowUseOwnShop() { return debug_allowUseOwnShop; }
     public boolean getDebug_transactionDebugLogs() { return debug_transactionDebugLogs; }
     public int getDebug_shopCreateCooldown() { return debug_shopCreateCooldown; }

@@ -97,6 +97,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.StringWriter;
+import java.io.PrintWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -191,6 +193,10 @@ public class ShopLogger extends Logger {
         if (this.getLogLevel().intValue() > DEBUG.intValue()) { return; }
         Bukkit.getConsoleSender().sendMessage(INTENSE_WHITE + "[" + plugin.getDescription().getName() + "] " + DIM_GREY + "[Debug] " + message + RESET);
     }
+    public void debug(String message, Throwable t) {
+        debug(message);
+        debug(getStackTrace(t), false);
+    }
     public void trace(String message) { logFilterLevel(TRACE, addColor(VERY_DIM_GREY, "[Trace] " + message)); }
     public void spam(String message) { logFilterLevel(SPAM, addColor(VERY_VERY_DIM_GREY, "[Spam] " + message)); }
     public void spam(String message, boolean withChatColors) {
@@ -216,5 +222,12 @@ public class ShopLogger extends Logger {
 
     public void enableColor(boolean enabled) {
         enableColor = enabled;
+    }
+
+    // Get the stack trace of a Throwable as a string
+    public String getStackTrace(Throwable t) {
+        StringWriter sw = new StringWriter();
+        t.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
 }

@@ -346,13 +346,10 @@ public class ShopListener implements Listener {
                     long hoursSinceLastPlayed = TimeUnit.MILLISECONDS.toHours(msSinceLastPlayed);
 
                     if (hoursSinceLastPlayed >= plugin.getHoursOfflineToRemoveShops()) {
-                        boolean deletedShop = false;
                         for (AbstractShop shop : plugin.getShopHandler().getShops(offlinePlayer.getUniqueId())) {
                             plugin.getLogger().notice("Deleting Shop because player " + offlinePlayer.getName() + " has not logged in within the required " + (int) hoursSinceLastPlayed + " hours! " + shop);
                             shop.delete();
-                            deletedShop = true;
                         }
-                        if (deletedShop) { plugin.getShopHandler().saveShops(offlinePlayer.getUniqueId(), true); }
                     }
                 }
             }

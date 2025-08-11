@@ -29,26 +29,17 @@ public abstract class AbstractDisplay {
     protected DisplayType type;
     protected HashMap<UUID, ArrayList<Integer>> entityIDs; //player UUID. display entities
     protected HashMap<UUID, ArrayList<Integer>> displayTagEntityIDs; //player UUID. display tags
-    protected int chunkX;
-    protected int chunkZ;
 
     public AbstractDisplay(Location shopSignLocation) {
         this.shopSignLocation = shopSignLocation;
         entityIDs = new HashMap<>();
         displayTagEntityIDs = new HashMap<>();
-
-        chunkX = UtilMethods.floor(shopSignLocation.getBlockX()) >> 4;
-        chunkZ = UtilMethods.floor(shopSignLocation.getBlockZ()) >> 4;
     }
 
     public boolean isEnabled() { return true; }
 
-    public boolean isInChunk(Chunk chunk){
-        return chunk.getX() == chunkX && chunk.getZ() == chunkZ && chunk.getWorld().toString().equals(shopSignLocation.getWorld().toString());
-    }
-
     public boolean isChunkLoaded(){
-        return shopSignLocation.getWorld() != null && shopSignLocation.getWorld().isChunkLoaded(this.chunkX, this.chunkZ);
+        return UtilMethods.isChunkLoaded(this.shopSignLocation);
     }
 
     //spawns a floating item packet for a specific player
@@ -417,8 +408,10 @@ public abstract class AbstractDisplay {
     }
 
     public void remove(Player player) {
-        removeDisplayEntities(player, false);
-        removeDisplayEntities(player, true);
+        try {
+            removeDisplayEntities(player, false);
+            removeDisplayEntities(player, true);
+        } catch (Error | Exception e) { /** Allow other logic to continue even if this fails (non-critical) */ }
 
 //        if(player != null) {
 //            Shop.getPlugin().getShopHandler().removeActiveShopDisplay(player, this.shopSignLocation);

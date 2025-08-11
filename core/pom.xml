@@ -19,34 +19,6 @@
 
     <repositories>
         <repository>
-            <id>spigot-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-        </repository>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-        <repository>
-            <id>sk89q-repo</id>
-            <url>https://maven.enginehub.org/repo/</url>
-        </repository>
-        <repository>
-            <id>ender-zone-repo</id>
-            <url>https://ci.ender.zone/plugin/repository/everything/</url>
-        </repository>
-        <repository>
-            <id>dynmap-repo</id>
-            <url>https://repo.mikeprimm.com/</url>
-        </repository>
-        <repository>
-            <id>codemc-repo</id>
-            <url>https://repo.codemc.org/repository/maven-public/</url>
-        </repository>
-        <repository>
-            <id>bluecolored</id>
-            <url>https://repo.bluecolored.de/releases</url>
-        </repository>
-        <repository>
             <id>central</id>
             <name>Central Repository</name>
             <url>https://repo.maven.apache.org/maven2</url>
@@ -58,6 +30,34 @@
         <repository>
             <id>papermc</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+        <repository>
+            <id>spigot-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>codemc-repo</id>
+            <url>https://repo.codemc.org/repository/maven-public/</url>
+        </repository>
+        <repository>
+            <id>sk89q-repo</id>
+            <url>https://maven.enginehub.org/repo/</url>
+        </repository>
+        <repository>
+            <id>bluecolored</id>
+            <url>https://repo.bluecolored.de/releases</url>
+        </repository>
+        <repository>
+            <id>dynmap-repo</id>
+            <url>https://repo.mikeprimm.com/</url>
+        </repository>
+        <repository>
+            <id>ender-zone-repo</id>
+            <url>https://ci.ender.zone/plugin/repository/everything/</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </repository>
     </repositories>
 
@@ -93,6 +93,27 @@
             <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockbukkit.mockbukkit</groupId>
+            <artifactId>mockbukkit-v1.21</artifactId>
+            <version>4.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- (binds Hikari / other libs during MockBukkit runtime to prevent errors) -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.13</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- Paper API added for MockBukkit 4 runtime classes -->
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>${spigot.version}</version>
+            <scope>test</scope>
+        </dependency>
+
 
         <!-- Core Dependencies -->
         <dependency>
@@ -222,11 +243,79 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.1.2</version>
+                    <configuration>
+                        <!-- When we eventually drop the compile target to Java 8, MockBukkit (still on 21) may
+                             need reflective access to JDK internals.  Keep the add-opens flag now so we don’t
+                             forget later.  Harmless on 17+ runtimes. -->
+                        <argLine>${argLine} --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                        <!-- Parallel test execution -->
+                        <parallel>methods</parallel>
+                        <forkCount>1</forkCount>
+                        <reuseForks>true</reuseForks>
+                        <!-- Ensure JDK 21 is available for tests because MockBukkit 4 requires 21 -->
+                        <jdkToolchain>
+                            <version>21</version>
+                            <vendor>any</vendor>
+                        </jdkToolchain>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
+            <!-- Toolchains plugin: ensure JDK 21 is available for tests because MockBukkit 4 requires 21, but we still want to compile with a lower Java target in mind -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-toolchains-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>toolchain</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <toolchains>
+                        <jdk>
+                            <version>21</version>
+                            <vendor>any</vendor>
+                        </jdk>
+                    </toolchains>
+                </configuration>
+            </plugin>
+            <!-- Always enable JaCoCo agent and reporting by default -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <configuration>
+                    <propertyName>argLine</propertyName>
+                    <append>true</append>
+                    <output>file</output>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                        <configuration>
+                            <destFile>${project.build.directory}/jacoco.exec</destFile>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -262,6 +351,22 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <!-- Ensure Surefire picks up ${argLine} (JaCoCo agent) in this module -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.1.2</version>
+                <configuration>
+                    <argLine>${argLine} --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+                    <parallel>methods</parallel>
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <jdkToolchain>
+                        <version>21</version>
+                        <vendor>any</vendor>
+                    </jdkToolchain>
+                </configuration>
             </plugin>
 <!--            <plugin>-->
 <!--                <groupId>net.md-5</groupId>-->
@@ -302,5 +407,30 @@
     <properties>
         <spigot.version>1.21.1-R0.1-SNAPSHOT</spigot.version>
     </properties>
+
+    <profiles>
+        
+        <profile>
+            <id>coverage-report</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.11</version>
+                        <executions>
+                            <execution>
+                                <id>report-only</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

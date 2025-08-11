@@ -34,7 +34,13 @@ public class LogHandler {
     public LogHandler(Shop plugin, YamlConfiguration shopConfig){
         this.plugin = plugin;
         // Setup database connection and check if we should enable database logging
-        defineDataSource(shopConfig);
+        try {
+            startup(shopConfig);
+        } catch (Error | Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Error initializing database connection. Database logging will not be used. Exception: " + e.getMessage());
+            this.enabled = false;
+            return;
+        }
 
         if(!enabled)
             return;
@@ -69,7 +75,7 @@ public class LogHandler {
         plugin.getLogger().helpful("Offline Purchase Notifications are Enabled!");
     }
 
-    public void defineDataSource(YamlConfiguration shopConfig){
+    public void startup(YamlConfiguration shopConfig){
         String type = shopConfig.getString("logging.type");
         String serverName = shopConfig.getString("logging.serverName");
         String databaseName = shopConfig.getString("logging.databaseName");
@@ -135,6 +141,12 @@ public class LogHandler {
         }
 
         this.enabled = true;
+    }
+
+    public void shutdown() {
+        if (dataSource != null) {
+            dataSource.close();
+        }
     }
 
     public void logAction(Player player, AbstractShop shop, ShopActionType actionType) {

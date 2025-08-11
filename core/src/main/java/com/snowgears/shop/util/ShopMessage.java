@@ -854,10 +854,8 @@ public class ShopMessage {
         return lines;
     }
 
-    public static String[] getTimeoutSignLines(AbstractShop shop){
-
-        String[] lines = shopSignTextMap.get("timeout");
-
+    public static String[] getSignLines(String key, AbstractShop shop){
+        String[] lines = shopSignTextMap.get(key);
         for(int i=0; i<lines.length; i++) {
             lines[i] = formatMessage(lines[i], shop, null, true);
             lines[i] = ChatColor.translateAlternateColorCodes('&', lines[i]);
@@ -971,6 +969,7 @@ public class ShopMessage {
         messageMap.put("permission_use", chatConfig.getString("permission.use"));
         messageMap.put("permission_create", chatConfig.getString("permission.create"));
         messageMap.put("permission_destroy", chatConfig.getString("permission.destroy"));
+        messageMap.put("permission_destroyOther", chatConfig.getString("permission.destroyOther"));
         messageMap.put("permission_buildLimit", chatConfig.getString("permission.buildLimit"));
 
         messageMap.put("creativeSelection_disabled", chatConfig.getString("creativeSelection.disabled"));
@@ -991,6 +990,7 @@ public class ShopMessage {
         messageMap.put("interactionIssue_teleportInsufficientCooldown", chatConfig.getString("interaction_issue.teleportInsufficientCooldown"));
         messageMap.put("interactionIssue_initialize", chatConfig.getString("interaction_issue.initializeOtherShop"));
         messageMap.put("interactionIssue_destroyChest", chatConfig.getString("interaction_issue.destroyChest"));
+        messageMap.put("interactionIssue_destroyUninitializedChest", chatConfig.getString("interaction_issue.destroyUninitializedChest"));
         messageMap.put("interactionIssue_useOwnShop", chatConfig.getString("interaction_issue.useOwnShop"));
         messageMap.put("interactionIssue_useShopAlreadyInUse", chatConfig.getString("interaction_issue.useShopAlreadyInUse"));
         messageMap.put("interactionIssue_adminOpen", chatConfig.getString("interaction_issue.adminOpen"));
@@ -1063,98 +1063,39 @@ public class ShopMessage {
         messageMap.put("command_notify_off", chatConfig.getString("command.notify_off"));
     }
 
+    private String[] getSignConfigLines(String key) { return getConfigLines(signConfig, key);  }
+    private String[] getConfigLines(YamlConfiguration config, String key) {
+        List<String> lines = new ArrayList<>();
+        int count = 1;
+        try {
+            String message = config.getString(key + "." + count);
+            while (message != null) {
+                lines.add(message);
+                count++;
+                message = config.getString(key + "." + count);
+            }
+        } catch (NullPointerException e) {}
+        return lines.toArray(new String[0]);
+    }
+
     private void loadSignTextFromConfig() {
         messageMap.put("signtext_instockcolor", signConfig.getString("stock_color.in_stock"));
         messageMap.put("signtext_outofstockcolor", signConfig.getString("stock_color.out_of_stock"));
         Set<String> allTypes = signConfig.getConfigurationSection("sign_text").getKeys(false);
         for (String typeString : allTypes) {
-
             ShopType type = null;
             try { type = ShopType.valueOf(typeString);}
             catch (IllegalArgumentException e){}
 
             if (type != null) {
-                try {
-                    Set<String> normalLineNumbers = signConfig.getConfigurationSection("sign_text." + typeString + ".normal").getKeys(false);
-                    String[] normalLines = new String[4];
-
-                    int i = 0;
-                    for (String number : normalLineNumbers) {
-                        String message = signConfig.getString("sign_text." + typeString + ".normal." + number);
-                        if (message == null)
-                            normalLines[i] = "";
-                        else
-                            normalLines[i] = message;
-                        i++;
-                    }
-
-                    this.shopSignTextMap.put(type.toString() + "_normal", normalLines);
-                } catch (NullPointerException e) {}
-
-                try {
-                    Set<String> adminLineNumbers = signConfig.getConfigurationSection("sign_text." + typeString + ".admin").getKeys(false);
-                    String[] adminLines = new String[4];
-
-                    int i = 0;
-                    for (String number : adminLineNumbers) {
-                        String message = signConfig.getString("sign_text." + typeString + ".admin." + number);
-                        if (message == null)
-                            adminLines[i] = "";
-                        else
-                            adminLines[i] = message;
-                        i++;
-                    }
-
-                    this.shopSignTextMap.put(type.toString() + "_admin", adminLines);
-                } catch (NullPointerException e) {}
-
-                try {
-                    Set<String> normalNoDisplayLineNumbers = signConfig.getConfigurationSection("sign_text." + typeString + ".normal_no_display").getKeys(false);
-                    String[] normalNoDisplayLines = new String[4];
-
-                    int i = 0;
-                    for (String number : normalNoDisplayLineNumbers) {
-                        String message = signConfig.getString("sign_text." + typeString + ".normal_no_display." + number);
-                        if (message == null)
-                            normalNoDisplayLines[i] = "";
-                        else
-                            normalNoDisplayLines[i] = message;
-                        i++;
-                    }
-
-                    this.shopSignTextMap.put(type.toString() + "_normal_no_display", normalNoDisplayLines);
-                } catch (NullPointerException e) {}
-
-                try {
-                    Set<String> adminNoDisplayLineNumbers = signConfig.getConfigurationSection("sign_text." + typeString + ".admin_no_display").getKeys(false);
-                    String[] adminNoDisplayLines = new String[4];
-
-                    int i = 0;
-                    for (String number : adminNoDisplayLineNumbers) {
-                        String message = signConfig.getString("sign_text." + typeString + ".admin_no_display." + number);
-                        if (message == null)
-                            adminNoDisplayLines[i] = "";
-                        else
-                            adminNoDisplayLines[i] = message;
-                        i++;
-                    }
-
-                    this.shopSignTextMap.put(type.toString() + "_admin_no_display", adminNoDisplayLines);
-                } catch (NullPointerException e) {}
+                this.shopSignTextMap.put(type.toString() + "_normal", getSignConfigLines("sign_text." + typeString + ".normal"));
+                this.shopSignTextMap.put(type.toString() + "_admin", getSignConfigLines("sign_text." + typeString + ".admin"));
+                this.shopSignTextMap.put(type.toString() + "_normal_no_display", getSignConfigLines("sign_text." + typeString + ".normal_no_display"));
+                this.shopSignTextMap.put(type.toString() + "_admin_no_display", getSignConfigLines("sign_text." + typeString + ".admin_no_display"));
             }
         }
-        String[] timeoutLines = new String[4];
-
-        for (int i=1; i<5; i++) {
-            String message = signConfig.getString("sign_text.timeout." + i);
-            if (message == null)
-                timeoutLines[i] = "";
-            else
-                timeoutLines[i] = message;
-            i++;
-        }
-
-        this.shopSignTextMap.put("timeout", timeoutLines);
+        this.shopSignTextMap.put("timeout", getSignConfigLines("sign_text.timeout"));
+        this.shopSignTextMap.put("deleted", getSignConfigLines("sign_text.deleted"));
     }
 
     private void loadDisplayTextFromConfig() {
