@@ -230,11 +230,16 @@
             <version>0.4.4</version>
             <scope>compile</scope>
         </dependency>
-        <!-- DataFixerUpper dependency (needed for a Display class... for now...) -->
+        <!-- DataFixerUpper & brigadier dependencies (needed for the Display class... for now...) -->
         <dependency>
             <groupId>com.mojang</groupId>
             <artifactId>datafixerupper</artifactId>
             <version>6.0.8</version>
+        </dependency>
+        <dependency>
+            <groupId>com.mojang</groupId>
+            <artifactId>brigadier</artifactId>
+            <version>1.0.500</version>
         </dependency>
     </dependencies>
 

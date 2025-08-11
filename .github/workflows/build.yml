@@ -133,21 +133,33 @@ jobs:
         path: scripts/diff-cover.html
 
     - name: Create workflow summary
+      if: always()
       run: |
-        touch build-summary.md
-        echo "# Build Completed Successfully! 🎉" > build-summary.md
-        echo "" >> build-summary.md
-        echo "**Version:** ${{ env.VERSION }}" >> build-summary.md
-        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
-          echo "**Diff Cover:** [View report](${{ steps.upload-diff-cover-report.outputs.artifact-url }})" >> build-summary.md
-        fi
-        echo "" >> build-summary.md
-        echo "### Download Build" >> build-summary.md
-        echo "⬇️ [${{ env.JAR_FILENAME }}](${{ steps.upload-shop-jar.outputs.artifact-url }})" >> build-summary.md
-        echo "" >> build-summary.md
-        cat build-summary.md >> $GITHUB_STEP_SUMMARY
+        STATUS="${{ job.status }}"
+        JAR_URL="${{ steps.upload-shop-jar.outputs.artifact-url }}"
+        DIFF_URL="${{ steps.upload-diff-cover-report.outputs.artifact-url }}"
+        {
+          if [ "$STATUS" = "success" ]; then
+            echo "# Build Completed Successfully! 🎉"
+          else
+            echo "# Build Failed ❌"
+          fi
+          echo ""
+          echo "**Version:** $VERSION"
+          if [ -n "$DIFF_URL" ]; then
+            echo "**Diff Cover:** [View report]($DIFF_URL)"
+          fi
+          echo ""
+          if [ -n "$JAR_URL" ]; then
+            echo "### Download Build"
+            echo "⬇️ [$JAR_FILENAME]($JAR_URL)"
+            echo ""
+          fi
+        } > build-summary.md
+        cat build-summary.md >> "$GITHUB_STEP_SUMMARY"
 
     - name: Build Summary
+      if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         path: build-summary.md
