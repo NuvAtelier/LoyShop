@@ -248,6 +248,7 @@ permission:
    create: "&cYou are not authorized to create [shop type] shops."
    destroy: "&cYou are not authorized to destroy your own shops."
    destroyOther: "&cYou are not authorized to destroy other players shops."
+   openOther: "&cYou are not authorized to open other players shops."
    buildLimit: "&cYou have already reached your build limit of [user amount]/[build limit] shops."
 
 hover:

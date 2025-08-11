@@ -466,6 +466,7 @@ public abstract class AbstractShop {
         return isPerformingTransaction;
     }
 
+    public String[] getSignLines() { return signLines; }
     public void updateSign() { this.updateSign(false); }
     public void updateSign(boolean forceUpdate) {
         // If we don't need to update the lines, then don't update them!

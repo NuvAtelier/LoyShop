@@ -198,10 +198,14 @@ public class ShopListener implements Listener {
                             ShopMessage.sendMessage(shop.getType().toString(), "opOpen", player, shop);
                         }
                     } else {
+                        // Cancel event to prevent other players from opening the chest
                         event.setCancelled(true);
 
-                        shop.executeClickAction(event, ShopClickType.RIGHT_CLICK_CHEST);
-                        //we are cancelling this event regardless so no need to check if the action was performed
+                        boolean actionPerformed = shop.executeClickAction(event, ShopClickType.RIGHT_CLICK_CHEST);
+                        if (!actionPerformed) {
+                            // only send a message if the action was not performed, always deny opening the chest
+                            ShopMessage.sendMessage("permission", "openOther", player, shop);
+                        }
 
                         if(plugin.getDisplayTagOption() == DisplayTagOption.RIGHT_CLICK_CHEST){
                             shop.getDisplay().showDisplayTags(player);
