@@ -947,24 +947,6 @@ public class ShopHandler {
         return containerTypes;
     }
 
-    private ArrayList<AbstractShop> orderedShopList() {
-        ArrayList<AbstractShop> list = new ArrayList<AbstractShop>(allShops.values());
-        Collections.sort(list, new Comparator<AbstractShop>() {
-            @Override
-            public int compare(AbstractShop o1, AbstractShop o2) {
-                if(o1 == null || o2 == null)
-                    return 0;
-                
-                // Cache owner names to avoid calling getOwnerName() twice per comparison
-                String owner1Name = o1.getOwnerName();
-                String owner2Name = o2.getOwnerName();
-                
-                return owner1Name.toLowerCase().compareTo(owner2Name.toLowerCase());
-            }
-        });
-        return list;
-    }
-
     public void removeAllDisplays(Player player) {
         for (AbstractShop shop : allShops.values()) {
             shop.getDisplay().remove(player);

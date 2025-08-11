@@ -55,7 +55,6 @@ public class ShopCreationSignTest extends BaseMockBukkitTest {
         
         Block chestBlock = world.getBlockAt(chestLoc);
         chestBlock.setType(Material.CHEST);
-        System.out.println("Chest location: " + chestLoc);
         // playerSim.simulateBlockPlace(Material.CHEST, new Location(world, 5, 65, 6));
 
         // Fire SignChangeEvent with proper lines
