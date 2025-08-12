@@ -21,6 +21,15 @@
         <repository>
             <id>central</id>
             <name>Central Repository</name>
+            <url>https://repo1.maven.org/maven2/</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>central-apache</id>
+            <name>Central Apache Repository</name>
             <url>https://repo.maven.apache.org/maven2</url>
             <layout>default</layout>
             <snapshots>
@@ -111,19 +120,11 @@
             <version>2.0.13</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <!-- Paper API added for MockBukkit 4 runtime classes -->
-            <groupId>io.papermc.paper</groupId>
-            <artifactId>paper-api</artifactId>
-            <version>${spigot.version}</version>
-            <scope>test</scope>
-        </dependency>
-
 
         <!-- Core Dependencies -->
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
             <version>${spigot.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -235,11 +236,18 @@
             <groupId>com.mojang</groupId>
             <artifactId>datafixerupper</artifactId>
             <version>6.0.8</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.mojang</groupId>
             <artifactId>brigadier</artifactId>
             <version>1.0.500</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.11.0</version>
         </dependency>
     </dependencies>
 
