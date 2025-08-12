@@ -262,6 +262,7 @@ public class ShopMessage {
             player.sendMessage(fancyMessage.toLegacyText());
             plugin.getLogger().warning("Sent legacy text message to player as backup, removed hover/click events");
         } catch (Error | Exception e) {
+            plugin.getLogger().debug("Error sending message to player", e);
         }
     }
 
