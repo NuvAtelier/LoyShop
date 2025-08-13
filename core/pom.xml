@@ -14,7 +14,6 @@
         <version>${revision}</version>
     </parent>
 
-
     <properties>
         <spigot.version>1.21.1-R0.1-SNAPSHOT</spigot.version>
     </properties>
@@ -235,6 +234,19 @@
             <artifactId>FoliaLib</artifactId>
             <version>0.4.4</version>
             <scope>compile</scope>
+        </dependency>
+        <!-- DataFixerUpper & brigadier dependencies (needed for the Display class... for now...) -->
+        <dependency>
+            <groupId>com.mojang</groupId>
+            <artifactId>datafixerupper</artifactId>
+            <version>6.0.8</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.mojang</groupId>
+            <artifactId>brigadier</artifactId>
+            <version>1.0.500</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
