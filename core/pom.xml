@@ -14,6 +14,11 @@
         <version>${revision}</version>
     </parent>
 
+
+    <properties>
+        <spigot.version>1.21.1-R0.1-SNAPSHOT</spigot.version>
+    </properties>
+
     <!-- core module info -->
     <artifactId>shop-core</artifactId>
 
@@ -231,23 +236,11 @@
             <version>0.4.4</version>
             <scope>compile</scope>
         </dependency>
-        <!-- DataFixerUpper & brigadier dependencies (needed for the Display class... for now...) -->
-        <dependency>
-            <groupId>com.mojang</groupId>
-            <artifactId>datafixerupper</artifactId>
-            <version>6.0.8</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.mojang</groupId>
-            <artifactId>brigadier</artifactId>
-            <version>1.0.500</version>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.11.0</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -333,8 +326,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.4.1</version>
-                <configuration>
-                </configuration>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -377,45 +368,8 @@
                     </jdkToolchain>
                 </configuration>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>net.md-5</groupId>-->
-<!--                <artifactId>specialsource-maven-plugin</artifactId>-->
-<!--                <version>2.0.3</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>remap</goal>-->
-<!--                        </goals>-->
-<!--                        <id>remap-obf</id>-->
-<!--                        <configuration>-->
-<!--                            <srgIn>org.spigotmc:minecraft-server:${spigot.version}:txt:maps-mojang</srgIn>-->
-<!--                            <reverse>true</reverse>-->
-<!--                            <remappedDependencies>org.spigotmc:spigot:${spigot.version}:jar:remapped-mojang</remappedDependencies>-->
-<!--                            <remappedArtifactAttached>true</remappedArtifactAttached>-->
-<!--                            <remappedClassifierName>remapped-obf</remappedClassifierName>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                    <execution>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>remap</goal>-->
-<!--                        </goals>-->
-<!--                        <id>remap-spigot</id>-->
-<!--                        <configuration>-->
-<!--                            <inputFile>${project.build.directory}/${project.artifactId}-${project.version}-remapped-obf.jar</inputFile>-->
-<!--                            <srgIn>org.spigotmc:minecraft-server:${spigot.version}:csrg:maps-spigot</srgIn>-->
-<!--                            <remappedDependencies>org.spigotmc:spigot:${spigot.version}:jar:remapped-obf</remappedDependencies>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
         </plugins>
     </build>
-
-    <properties>
-        <spigot.version>1.21.1-R0.1-SNAPSHOT</spigot.version>
-    </properties>
 
     <profiles>
         
